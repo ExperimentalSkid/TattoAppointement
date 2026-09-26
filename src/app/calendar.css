@@ -1,0 +1,354 @@
+.calendar-page {
+  min-width: 0;
+}
+
+.calendar-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.calendar-title-row .page-heading {
+  margin-bottom: 0;
+  text-transform: capitalize;
+}
+
+.calendar-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.calendar-view-switch,
+.calendar-navigation {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 4px;
+}
+
+.calendar-view-switch button,
+.calendar-navigation button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text);
+  padding: 7px 12px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.calendar-view-switch button[data-active="true"] {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.calendar-agenda {
+  min-width: 0;
+}
+
+.calendar-agenda > h2 {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+  text-transform: capitalize;
+}
+
+.calendar-agenda-list {
+  display: grid;
+  gap: 10px;
+}
+
+.calendar-appointment {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 14px;
+  background: var(--surface);
+  padding: 14px;
+}
+
+.calendar-appointment[data-status="CANCELLED"] {
+  opacity: 0.62;
+  border-left-color: var(--muted);
+}
+
+.calendar-appointment[data-conflict="true"] {
+  border-color: var(--danger);
+  border-left-color: var(--danger);
+}
+
+.calendar-appointment-main {
+  min-width: 0;
+}
+
+.calendar-time-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+.calendar-time-row strong {
+  font-size: 1rem;
+}
+
+.calendar-time-row span,
+.calendar-appointment-main > p {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.calendar-appointment-main h3 {
+  margin: 0 0 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.98rem;
+  white-space: nowrap;
+}
+
+.calendar-appointment-main > p {
+  margin: 0;
+}
+
+.calendar-appointment-main .calendar-conflict {
+  margin-top: 8px;
+  color: var(--danger);
+  font-weight: 800;
+}
+
+.calendar-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.calendar-card-actions a {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 6px 9px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.calendar-empty {
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  color: var(--muted);
+  padding: 22px 16px;
+  text-align: center;
+}
+
+.calendar-empty.compact {
+  min-height: 80px;
+  display: grid;
+  place-items: center;
+  padding: 10px;
+}
+
+.calendar-week-grid {
+  display: none;
+}
+
+.calendar-mobile-week {
+  display: grid;
+  gap: 18px;
+}
+
+.calendar-mobile-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  overflow: hidden;
+}
+
+.calendar-mobile-days button {
+  min-width: 0;
+  min-height: 58px;
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 5px 2px;
+  cursor: pointer;
+}
+
+.calendar-mobile-days button[data-active="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.calendar-mobile-days span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: clip;
+  font-size: 0.64rem;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.calendar-mobile-days strong {
+  font-size: 0.95rem;
+}
+
+.overlap-warning {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--danger);
+  border-radius: 14px;
+  background: var(--surface);
+  padding: 14px;
+  color: var(--danger);
+}
+
+.overlap-warning label {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.overlap-warning input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+@media (max-width: 430px) {
+  .calendar-title-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .calendar-title-row > .button-link {
+    width: 100%;
+  }
+
+  .calendar-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .calendar-view-switch,
+  .calendar-navigation {
+    display: grid;
+  }
+
+  .calendar-view-switch {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .calendar-navigation {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .calendar-view-switch button,
+  .calendar-navigation button {
+    width: 100%;
+  }
+
+  .calendar-card-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .calendar-card-actions a {
+    justify-content: center;
+  }
+}
+
+@media (min-width: 700px) {
+  .calendar-appointment {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .calendar-card-actions {
+    justify-content: flex-end;
+  }
+}
+
+@media (min-width: 1000px) {
+  .calendar-mobile-week {
+    display: none;
+  }
+
+  .calendar-week-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
+    align-items: start;
+  }
+
+  .calendar-week-day {
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface-soft);
+    padding: 8px;
+  }
+
+  .calendar-day-heading {
+    width: 100%;
+    min-height: 42px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--text);
+    padding: 7px 5px;
+    cursor: pointer;
+    font-weight: 800;
+    text-align: left;
+    text-transform: capitalize;
+  }
+
+  .calendar-day-heading:hover {
+    background: var(--surface);
+  }
+
+  .calendar-week-list {
+    display: grid;
+    gap: 7px;
+  }
+
+  .calendar-week-grid .calendar-appointment {
+    grid-template-columns: 1fr;
+    gap: 9px;
+    padding: 10px;
+  }
+
+  .calendar-week-grid .calendar-time-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .calendar-week-grid .calendar-card-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-week-grid .calendar-card-actions a {
+    justify-content: center;
+  }
+}

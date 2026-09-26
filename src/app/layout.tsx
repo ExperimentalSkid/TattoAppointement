@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import "./clients.css";
 import "./designs.css";
+import "./appointments.css";
 import { getLocale } from "@/i18n";
 
 export const metadata: Metadata = {

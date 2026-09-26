@@ -212,20 +212,20 @@ test("Pass 8 workflows A-F, persistence, errors, and ownership boundaries", asyn
 
   // Workflow F: language preference persists through reload and a new login session.
   await page.goto("/calendar");
-  await page.locator(".app-topbar #language-selector").selectOption("es");
+  await page.locator(".app-topbar .language-select").selectOption("es");
   await expect(page.getByRole("heading", { name: "Calendario" })).toBeVisible();
   await page.reload();
-  await expect(page.locator(".app-topbar #language-selector")).toHaveValue("es");
+  await expect(page.locator(".app-topbar .language-select")).toHaveValue("es");
   await expect(page.getByRole("heading", { name: "Calendario" })).toBeVisible();
 
   await page.locator(".app-topbar .signout-button").click();
   await page.waitForURL(/\/sign-in$/);
   await signIn(page, email);
   await expect(page.getByRole("heading", { name: "Calendario" })).toBeVisible();
-  await page.locator(".app-topbar #language-selector").selectOption("en");
+  await page.locator(".app-topbar .language-select").selectOption("en");
   await expect(page.getByRole("heading", { name: "Calendar" })).toBeVisible();
   await page.reload();
-  await expect(page.locator(".app-topbar #language-selector")).toHaveValue("en");
+  await expect(page.locator(".app-topbar .language-select")).toHaveValue("en");
 
   // Implementation-quality requirement: saved data survives login and artist ownership is enforced.
   await page.goto(appointmentPath!);

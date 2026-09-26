@@ -4,6 +4,7 @@ import "./globals.css";
 import "./designs.css";
 import "./appointments.css";
 import "./calendar.css";
+import "./money.css";
 import { getLocale } from "@/i18n";
 
 export const metadata: Metadata = {

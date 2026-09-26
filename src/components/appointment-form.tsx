@@ -256,7 +256,7 @@ export function AppointmentForm({
         <div className="overlap-warning" role="alert">
           <strong>{copy.overlapWarning}</strong>
           <label>
-            <input type="checkbox" name="allowOverlap" value="true" required />
+            <input type="checkbox" name="allowOverlap" value="true" />
             <span>{copy.allowOverlap}</span>
           </label>
         </div>

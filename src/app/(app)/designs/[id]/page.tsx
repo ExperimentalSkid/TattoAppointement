@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DesignImageViewer } from "@/components/design-image-viewer";
+import { LocalDateTime } from "@/components/local-date-time";
 import { prisma } from "@/lib/prisma";
 import { requireArtistId } from "@/lib/session";
 import { getDictionary } from "@/i18n";
@@ -40,10 +41,7 @@ export default async function DesignDetailPage({
   if (!design) notFound();
 
   const localeName = locale === "es" ? "es-ES" : "en-GB";
-  const dateFormatter = new Intl.DateTimeFormat(localeName, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  const dateFormatter = new Intl.DateTimeFormat(localeName, { dateStyle: "medium" });
 
   return (
     <section>
@@ -86,14 +84,20 @@ export default async function DesignDetailPage({
         {design.appointments.length ? (
           <div className="appointment-history">
             {design.appointments.map(({ appointment, isFinal }) => (
-              <div className="history-row" key={appointment.id}>
+              <Link
+                className="history-row"
+                href={`/appointments/${appointment.id}`}
+                key={appointment.id}
+              >
                 <div>
                   <strong>{appointment.client.name}</strong>
-                  <span>{dateFormatter.format(appointment.startsAt)}</span>
+                  <span>
+                    <LocalDateTime iso={appointment.startsAt.toISOString()} locale={locale} />
+                  </span>
                 </div>
                 <span>{dictionary.clients.statuses[appointment.status]}</span>
                 {isFinal ? <strong>✓</strong> : null}
-              </div>
+              </Link>
             ))}
           </div>
         ) : (

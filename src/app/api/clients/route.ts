@@ -1,15 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseClientInput } from "@/lib/clients";
 import { prisma } from "@/lib/prisma";
-import { requireArtistId } from "@/lib/session";
+import { getSession } from "@/lib/session";
+
+async function artistIdOrResponse() {
+  const session = await getSession();
+  if (!session) {
+    return { response: NextResponse.json({ error: "unauthorized" }, { status: 401 }) } as const;
+  }
+  return { artistId: session.user.id } as const;
+}
 
 export async function GET(request: NextRequest) {
-  const artistId = await requireArtistId();
+  const auth = await artistIdOrResponse();
+  if ("response" in auth) return auth.response;
+
   const query = request.nextUrl.searchParams.get("q")?.trim() ?? "";
 
   const clients = await prisma.client.findMany({
     where: {
-      artistId,
+      artistId: auth.artistId,
       ...(query
         ? {
             OR: [
@@ -44,7 +54,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const artistId = await requireArtistId();
+  const auth = await artistIdOrResponse();
+  if ("response" in auth) return auth.response;
+
   const parsed = parseClientInput(await request.json().catch(() => null));
 
   if (!parsed.ok) {
@@ -53,7 +65,7 @@ export async function POST(request: NextRequest) {
 
   const existing = await prisma.client.findFirst({
     where: {
-      artistId,
+      artistId: auth.artistId,
       phone: parsed.data.phone,
     },
     select: {
@@ -85,7 +97,7 @@ export async function POST(request: NextRequest) {
 
   const client = await prisma.client.create({
     data: {
-      artistId,
+      artistId: auth.artistId,
       ...parsed.data,
     },
     select: {

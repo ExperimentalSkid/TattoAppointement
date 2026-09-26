@@ -252,6 +252,16 @@ export function AppointmentForm({
         </div>
       </section>
 
+      {state.error === "overlap" ? (
+        <div className="overlap-warning" role="alert">
+          <strong>{copy.overlapWarning}</strong>
+          <label>
+            <input type="checkbox" name="allowOverlap" value="true" required />
+            <span>{copy.allowOverlap}</span>
+          </label>
+        </div>
+      ) : null}
+
       {errorMessage ? <p className="form-error">{errorMessage}</p> : null}
 
       <div className="form-actions appointment-form-actions">

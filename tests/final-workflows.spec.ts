@@ -214,17 +214,17 @@ test("Pass 8 workflows A-F, persistence, errors, and ownership boundaries", asyn
   // Workflow F: language preference persists through reload and a new login session.
   await page.goto("/calendar");
   await page.locator(".app-topbar .language-select").selectOption("es");
-  await expect(page.getByRole("heading", { name: "Calendario" })).toBeVisible();
+  await expect(page.locator(".mobile-nav a[href='/calendar']")).toHaveText("Calendario");
   await page.reload();
   await expect(page.locator(".app-topbar .language-select")).toHaveValue("es");
-  await expect(page.getByRole("heading", { name: "Calendario" })).toBeVisible();
+  await expect(page.locator(".mobile-nav a[href='/calendar']")).toHaveText("Calendario");
 
   await page.locator(".app-topbar .signout-button").click();
   await page.waitForURL(/\/sign-in$/);
   await signIn(page, email);
-  await expect(page.getByRole("heading", { name: "Calendario" })).toBeVisible();
+  await expect(page.locator(".mobile-nav a[href='/calendar']")).toHaveText("Calendario");
   await page.locator(".app-topbar .language-select").selectOption("en");
-  await expect(page.getByRole("heading", { name: "Calendar" })).toBeVisible();
+  await expect(page.locator(".mobile-nav a[href='/calendar']")).toHaveText("Calendar");
   await page.reload();
   await expect(page.locator(".app-topbar .language-select")).toHaveValue("en");
 

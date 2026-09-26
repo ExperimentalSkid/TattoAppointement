@@ -3,10 +3,7 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
-import {
-  type ClientFormState,
-  initialClientFormState,
-} from "@/app/(app)/clients/actions";
+import type { ClientFormState } from "@/app/(app)/clients/actions";
 
 type ClientAction = (
   state: ClientFormState,
@@ -26,6 +23,8 @@ type ContactsNavigator = Navigator & {
     ): Promise<ContactResult[]>;
   };
 };
+
+const initialClientFormState: ClientFormState = { error: null };
 
 export function ClientForm({
   action,

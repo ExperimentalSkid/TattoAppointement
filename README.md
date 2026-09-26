@@ -2,20 +2,20 @@
 
 A practical tattoo-artist appointment management application for desktop and mobile.
 
-## Current implementation
+## Implemented product scope
 
-Pass 1 establishes the application foundation only:
+- artist-only email/password accounts with persistent sessions
+- artist-owned client records with search, editing, phone-contact picker support where available, and manual fallback
+- private design library with image upload, search, full-screen viewing, metadata editing, preserved originals, and optimized previews
+- artist-created appointments connecting client, schedule, duration, notes, status, multiple designs, and an optional final design
+- day/week calendar with phone and desktop layouts, rescheduling, duration display, and overlap warnings
+- deposit tracking with agreed price, required deposit, manual payments, payment history, deposit remaining, total balance, and payment/deposit states
+- English and Spanish UI with persistent artist language preference
+- responsive navigation and forms designed separately for phone and desktop use
+- installable PWA shell with manifest, standalone display, application icon placeholder, service-worker registration, and conservative static-asset caching
+- server-side artist ownership checks for client, design, appointment, payment, and private image access
 
-- artist email/password authentication with persistent sessions
-- PostgreSQL + Prisma data model
-- artist ownership fields and server-side session helpers
-- responsive desktop sidebar and mobile bottom navigation
-- English and Spanish translation architecture
-- persistent artist language preference
-- route shells for Calendar, Clients, Designs, New Appointment and Settings
-- CI validation against PostgreSQL, lint, TypeScript and production build
-
-The functional Clients, Designs, Appointments, Calendar and Deposits modules are intentionally left for their corresponding implementation passes and are not represented as completed features.
+The application intentionally does not include customer accounts, public booking, payment processing, invoicing/accounting, inventory, marketing, consent/medical workflows, or other features outside the defined artist appointment-management scope.
 
 ## Stack
 
@@ -25,18 +25,20 @@ The functional Clients, Designs, Appointments, Calendar and Deposits modules are
 - PostgreSQL
 - Prisma ORM 7
 - Better Auth
+- Sharp
+- Playwright
 
 ## Local setup
 
 1. Install Node.js 22 and PostgreSQL.
-2. Copy `.env.example` to `.env` and replace the database URL and auth secret.
+2. Copy `.env.example` to `.env` and set the database URL, Better Auth secret/URL, and design storage directory as appropriate.
 3. Install dependencies:
 
 ```bash
 npm install
 ```
 
-4. Apply the database migration and generate Prisma Client:
+4. Apply migrations and generate Prisma Client:
 
 ```bash
 npm run db:deploy
@@ -49,12 +51,18 @@ npm run db:generate
 npm run dev
 ```
 
+Uploaded design originals/previews are stored under `DESIGN_STORAGE_DIR`; use persistent server storage for production deployments.
+
 ## Verification
 
 ```bash
+npm run test:unit
 npm run lint
 npm run typecheck
 npm run build
+npm run test:integration
 ```
 
-GitHub Actions runs the same verification with a clean PostgreSQL service.
+The integration suite exercises responsive layouts and the complete artist workflows against the production build in Chromium, including persistence, overlap warnings, deposits, language persistence, ownership isolation, private image access, and PWA registration.
+
+For browser installation outside local development, serve the application over HTTPS.

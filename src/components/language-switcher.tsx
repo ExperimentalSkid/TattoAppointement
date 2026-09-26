@@ -1,7 +1,7 @@
 "use client";
 
+import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import type { Locale } from "@/i18n";
 
 export function LanguageSwitcher({
@@ -12,6 +12,7 @@ export function LanguageSwitcher({
   label: string;
 }) {
   const router = useRouter();
+  const selectorId = useId();
   const [pending, setPending] = useState(false);
 
   async function changeLanguage(language: Locale) {
@@ -35,9 +36,9 @@ export function LanguageSwitcher({
 
   return (
     <div className="language-row">
-      <label htmlFor="language-selector">{label}</label>
+      <label htmlFor={selectorId}>{label}</label>
       <select
-        id="language-selector"
+        id={selectorId}
         className="language-select"
         value={locale}
         disabled={pending}

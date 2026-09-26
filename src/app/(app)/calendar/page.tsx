@@ -53,6 +53,7 @@ export default async function CalendarPage({
 
   return (
     <CalendarView
+      key={`${mode}-${anchor}`}
       appointments={appointments.map((appointment) => ({
         id: appointment.id,
         startsAtIso: appointment.startsAt.toISOString(),

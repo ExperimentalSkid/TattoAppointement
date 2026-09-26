@@ -18,6 +18,8 @@ type CalendarAppointment = {
 };
 
 type CalendarViewMode = "day" | "week";
+type CalendarCopy = Dictionary["calendar"];
+type StatusCopy = Dictionary["appointments"]["statuses"];
 
 function dateKey(date: Date) {
   const year = date.getFullYear();
@@ -54,6 +56,89 @@ function overlaps(first: CalendarAppointment, second: CalendarAppointment) {
   return firstStart < secondEnd && secondStart < firstEnd;
 }
 
+function CalendarAppointmentCard({
+  appointment,
+  conflicted,
+  timeFormatter,
+  copy,
+  statuses,
+}: {
+  appointment: CalendarAppointment;
+  conflicted: boolean;
+  timeFormatter: Intl.DateTimeFormat;
+  copy: CalendarCopy;
+  statuses: StatusCopy;
+}) {
+  return (
+    <article
+      className="calendar-appointment"
+      data-status={appointment.status}
+      data-conflict={conflicted}
+    >
+      <div className="calendar-appointment-main">
+        <div className="calendar-time-row">
+          <strong>{timeFormatter.format(new Date(appointment.startsAtIso))}</strong>
+          <span>{appointment.durationMinutes} {copy.minutes}</span>
+        </div>
+        <h3>{appointment.client.name}</h3>
+        <p>{statuses[appointment.status]}</p>
+        {conflicted ? (
+          <p className="calendar-conflict" title={copy.overlapHelp}>
+            {copy.overlap}
+          </p>
+        ) : null}
+      </div>
+      <div className="calendar-card-actions">
+        <Link href={`/appointments/${appointment.id}`}>{copy.open}</Link>
+        <Link href={`/appointments/${appointment.id}/edit`}>{copy.reschedule}</Link>
+      </div>
+    </article>
+  );
+}
+
+function CalendarDayAgenda({
+  dayKey,
+  heading,
+  appointmentsByDay,
+  conflictIds,
+  fullDateFormatter,
+  timeFormatter,
+  copy,
+  statuses,
+}: {
+  dayKey: string;
+  heading?: boolean;
+  appointmentsByDay: Map<string, CalendarAppointment[]>;
+  conflictIds: Set<string>;
+  fullDateFormatter: Intl.DateTimeFormat;
+  timeFormatter: Intl.DateTimeFormat;
+  copy: CalendarCopy;
+  statuses: StatusCopy;
+}) {
+  const values = appointmentsByDay.get(dayKey) ?? [];
+  return (
+    <section className="calendar-agenda">
+      {heading ? <h2>{fullDateFormatter.format(dateFromKey(dayKey))}</h2> : null}
+      {values.length ? (
+        <div className="calendar-agenda-list">
+          {values.map((appointment) => (
+            <CalendarAppointmentCard
+              key={appointment.id}
+              appointment={appointment}
+              conflicted={conflictIds.has(appointment.id)}
+              timeFormatter={timeFormatter}
+              copy={copy}
+              statuses={statuses}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="calendar-empty">{copy.noAppointments}</div>
+      )}
+    </section>
+  );
+}
+
 export function CalendarView({
   appointments,
   anchor,
@@ -66,8 +151,8 @@ export function CalendarView({
   anchor: string;
   mode: CalendarViewMode;
   locale: "en" | "es";
-  copy: Dictionary["calendar"];
-  statuses: Dictionary["appointments"]["statuses"];
+  copy: CalendarCopy;
+  statuses: StatusCopy;
 }) {
   const router = useRouter();
   const anchorDate = useMemo(() => dateFromKey(anchor), [anchor]);
@@ -92,18 +177,16 @@ export function CalendarView({
 
   const conflictIds = useMemo(() => {
     const ids = new Set<string>();
-    for (const values of appointmentsByDay.values()) {
-      for (let firstIndex = 0; firstIndex < values.length; firstIndex += 1) {
-        for (let secondIndex = firstIndex + 1; secondIndex < values.length; secondIndex += 1) {
-          if (overlaps(values[firstIndex], values[secondIndex])) {
-            ids.add(values[firstIndex].id);
-            ids.add(values[secondIndex].id);
-          }
+    for (let firstIndex = 0; firstIndex < appointments.length; firstIndex += 1) {
+      for (let secondIndex = firstIndex + 1; secondIndex < appointments.length; secondIndex += 1) {
+        if (overlaps(appointments[firstIndex], appointments[secondIndex])) {
+          ids.add(appointments[firstIndex].id);
+          ids.add(appointments[secondIndex].id);
         }
       }
     }
     return ids;
-  }, [appointmentsByDay]);
+  }, [appointments]);
 
   const start = weekStart(anchorDate);
   const weekDays = Array.from({ length: 7 }, (_, index) => addDays(start, index));
@@ -124,56 +207,10 @@ export function CalendarView({
     hour: "2-digit",
     minute: "2-digit",
   });
+  const weekdayFormatter = new Intl.DateTimeFormat(localeName, { weekday: "short" });
 
   function navigate(nextMode: CalendarViewMode, nextDate: Date) {
     router.push(`/calendar?view=${nextMode}&anchor=${dateKey(nextDate)}`);
-  }
-
-  function AppointmentCard({ appointment }: { appointment: CalendarAppointment }) {
-    const conflicted = conflictIds.has(appointment.id);
-    return (
-      <article
-        className="calendar-appointment"
-        data-status={appointment.status}
-        data-conflict={conflicted}
-      >
-        <div className="calendar-appointment-main">
-          <div className="calendar-time-row">
-            <strong>{timeFormatter.format(new Date(appointment.startsAtIso))}</strong>
-            <span>{appointment.durationMinutes} {copy.minutes}</span>
-          </div>
-          <h3>{appointment.client.name}</h3>
-          <p>{statuses[appointment.status]}</p>
-          {conflicted ? (
-            <p className="calendar-conflict" title={copy.overlapHelp}>
-              {copy.overlap}
-            </p>
-          ) : null}
-        </div>
-        <div className="calendar-card-actions">
-          <Link href={`/appointments/${appointment.id}`}>{copy.open}</Link>
-          <Link href={`/appointments/${appointment.id}/edit`}>{copy.reschedule}</Link>
-        </div>
-      </article>
-    );
-  }
-
-  function DayAgenda({ dayKey, heading }: { dayKey: string; heading?: boolean }) {
-    const values = appointmentsByDay.get(dayKey) ?? [];
-    return (
-      <section className="calendar-agenda">
-        {heading ? <h2>{fullDateFormatter.format(dateFromKey(dayKey))}</h2> : null}
-        {values.length ? (
-          <div className="calendar-agenda-list">
-            {values.map((appointment) => (
-              <AppointmentCard key={appointment.id} appointment={appointment} />
-            ))}
-          </div>
-        ) : (
-          <div className="calendar-empty">{copy.noAppointments}</div>
-        )}
-      </section>
-    );
   }
 
   const periodLabel =
@@ -231,7 +268,17 @@ export function CalendarView({
         </div>
       </div>
 
-      {mode === "day" ? <DayAgenda dayKey={anchor} /> : null}
+      {mode === "day" ? (
+        <CalendarDayAgenda
+          dayKey={anchor}
+          appointmentsByDay={appointmentsByDay}
+          conflictIds={conflictIds}
+          fullDateFormatter={fullDateFormatter}
+          timeFormatter={timeFormatter}
+          copy={copy}
+          statuses={statuses}
+        />
+      ) : null}
 
       {mode === "week" ? (
         <>
@@ -251,7 +298,14 @@ export function CalendarView({
                   <div className="calendar-week-list">
                     {values.length ? (
                       values.map((appointment) => (
-                        <AppointmentCard key={appointment.id} appointment={appointment} />
+                        <CalendarAppointmentCard
+                          key={appointment.id}
+                          appointment={appointment}
+                          conflicted={conflictIds.has(appointment.id)}
+                          timeFormatter={timeFormatter}
+                          copy={copy}
+                          statuses={statuses}
+                        />
                       ))
                     ) : (
                       <div className="calendar-empty compact">—</div>
@@ -275,13 +329,22 @@ export function CalendarView({
                     data-active={mobileSelectedDay === key}
                     onClick={() => setMobileSelectedDay(key)}
                   >
-                    <span>{new Intl.DateTimeFormat(localeName, { weekday: "short" }).format(day)}</span>
+                    <span>{weekdayFormatter.format(day)}</span>
                     <strong>{day.getDate()}</strong>
                   </button>
                 );
               })}
             </div>
-            <DayAgenda dayKey={activeMobileDay} heading />
+            <CalendarDayAgenda
+              dayKey={activeMobileDay}
+              heading
+              appointmentsByDay={appointmentsByDay}
+              conflictIds={conflictIds}
+              fullDateFormatter={fullDateFormatter}
+              timeFormatter={timeFormatter}
+              copy={copy}
+              statuses={statuses}
+            />
           </div>
         </>
       ) : null}

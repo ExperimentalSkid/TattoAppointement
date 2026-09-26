@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "typecheck": "prisma generate && tsc --noEmit",
     "verify:images": "node scripts/verify-image-processing.mjs",
+    "verify:money": "node --experimental-strip-types scripts/verify-money.mjs",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",

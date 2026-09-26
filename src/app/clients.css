@@ -1,0 +1,385 @@
+.clients-page {
+  display: grid;
+  gap: 18px;
+}
+
+.clients-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.clients-toolbar .page-heading {
+  margin-bottom: 6px;
+}
+
+.page-subtitle {
+  margin: 0;
+  max-width: 720px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.clients-workspace {
+  display: grid;
+  gap: 16px;
+}
+
+.clients-list-panel,
+.client-detail-panel {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 4px 16px rgba(31, 26, 20, 0.04);
+}
+
+.clients-list-panel {
+  overflow: hidden;
+}
+
+.client-search {
+  display: grid;
+  gap: 7px;
+  padding: 16px 16px 10px;
+}
+
+.client-search span {
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.client-search input {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 10px 12px;
+}
+
+.client-list-status {
+  min-height: 28px;
+  padding: 0 16px 8px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.client-list {
+  display: grid;
+}
+
+.client-list-item {
+  width: 100%;
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  padding: 12px 16px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.client-list-item:hover,
+.client-list-item[data-active="true"] {
+  background: var(--surface-soft);
+}
+
+.client-list-main {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.client-list-main strong,
+.client-list-main span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.client-list-main span,
+.client-appointment-count {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.client-appointment-count {
+  flex: 0 0 auto;
+  text-align: right;
+}
+
+.client-empty,
+.client-detail-empty {
+  padding: 28px 18px;
+  text-align: center;
+}
+
+.client-empty p,
+.client-detail-empty p,
+.muted-text {
+  margin: 7px 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.client-detail-panel {
+  min-height: 260px;
+  padding: 18px;
+}
+
+.client-detail-content {
+  display: grid;
+  gap: 24px;
+}
+
+.client-detail-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.client-detail-heading h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.client-detail-heading p {
+  margin: 5px 0 0;
+  color: var(--muted);
+}
+
+.client-facts {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+}
+
+.client-facts div {
+  min-width: 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+
+.client-facts dt {
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.client-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.client-history {
+  display: grid;
+  gap: 10px;
+}
+
+.client-history h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.client-history-list {
+  display: grid;
+  gap: 8px;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 11px 12px;
+}
+
+.history-item > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.history-item span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.history-status {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  padding: 5px 8px;
+  color: var(--text) !important;
+  font-weight: 800;
+}
+
+.client-dialog-backdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  align-items: end;
+  background: rgba(0, 0, 0, 0.42);
+}
+
+.client-dialog {
+  width: 100%;
+  max-height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 20px 20px 0 0;
+  background: var(--surface);
+  padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.18);
+}
+
+.client-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.client-dialog-header h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.client-dialog-header p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.dialog-close {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.contact-picker-button {
+  width: 100%;
+  min-height: 46px;
+  margin-bottom: 16px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--text);
+  padding: 10px 14px;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.client-form {
+  display: grid;
+  gap: 15px;
+}
+
+.client-form .field textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 108px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 11px 13px;
+}
+
+.client-form-actions {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 4px -4px -4px;
+  padding: 10px 4px 4px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), var(--surface) 28%);
+}
+
+@media (max-width: 560px) {
+  .clients-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .clients-toolbar > .primary-button {
+    width: 100%;
+  }
+
+  .client-detail-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .client-detail-heading .secondary-button {
+    width: 100%;
+  }
+
+  .history-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (min-width: 800px) {
+  .clients-workspace {
+    grid-template-columns: minmax(300px, 420px) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .clients-list-panel,
+  .client-detail-panel {
+    min-height: 560px;
+  }
+
+  .client-list {
+    max-height: 470px;
+    overflow-y: auto;
+  }
+
+  .client-detail-panel {
+    padding: 26px;
+  }
+
+  .client-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .client-dialog-backdrop {
+    align-items: center;
+    justify-items: center;
+    padding: 28px;
+  }
+
+  .client-dialog {
+    width: min(100%, 620px);
+    max-height: min(820px, calc(100dvh - 56px));
+    border-radius: 20px;
+    padding: 24px;
+  }
+}

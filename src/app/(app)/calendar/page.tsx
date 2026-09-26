@@ -1,12 +1,14 @@
-import { FoundationPage } from "@/components/foundation-page";
+import { CalendarView } from "@/components/calendar-view";
 import { getDictionary } from "@/i18n";
+import { calendarCopy } from "@/i18n/calendar-copy";
 
 export default async function CalendarPage() {
-  const { dictionary } = await getDictionary();
+  const { locale } = await getDictionary();
   return (
-    <FoundationPage
-      title={dictionary.pages.calendarTitle}
-      message={dictionary.pages.foundationMessage}
+    <CalendarView
+      copy={calendarCopy[locale]}
+      locale={locale}
+      initialDate={new Date().toISOString()}
     />
   );
 }

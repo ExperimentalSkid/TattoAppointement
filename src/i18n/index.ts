@@ -1,6 +1,7 @@
 import { cookies, headers } from "next/headers";
 import { dictionaries } from "@/i18n/dictionaries";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 export const locales = ["en", "es"] as const;
 export type Locale = (typeof locales)[number];
@@ -16,10 +17,20 @@ async function getCookieLocale(): Promise<Locale> {
 }
 
 export async function getLocale(): Promise<Locale> {
-  const cookieLocale = await getCookieLocale();
   const session = await auth.api.getSession({ headers: await headers() });
-  const storedLanguage = session?.user.language;
-  return isLocale(storedLanguage) ? storedLanguage : cookieLocale;
+
+  if (session?.user.id) {
+    const artist = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { language: true },
+    });
+
+    if (isLocale(artist?.language)) {
+      return artist.language;
+    }
+  }
+
+  return getCookieLocale();
 }
 
 export async function getDictionary() {

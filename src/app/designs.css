@@ -1,0 +1,363 @@
+.page-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.page-title-row .page-heading {
+  margin-bottom: 0;
+}
+
+.narrow-page {
+  width: min(100%, 760px);
+}
+
+.form-card,
+.detail-card,
+.empty-state {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 20px;
+}
+
+.design-form {
+  display: grid;
+  gap: 18px;
+}
+
+.file-input {
+  padding: 9px !important;
+}
+
+.field-help {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.upload-preview {
+  width: 100%;
+  max-height: 420px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+
+.upload-preview img {
+  display: block;
+  max-width: 100%;
+  max-height: 420px;
+  object-fit: contain;
+}
+
+.search-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.search-bar input {
+  min-width: 0;
+  min-height: 46px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 10px 13px;
+}
+
+.search-bar .button-link {
+  grid-column: 1 / -1;
+}
+
+.design-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.design-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: var(--surface);
+}
+
+.design-card-image {
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: var(--surface-soft);
+}
+
+.design-card-image img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.design-card-body {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+}
+
+.design-card-body strong,
+.design-card-body span,
+.design-card-body p {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.design-card-body strong,
+.design-card-body span {
+  white-space: nowrap;
+}
+
+.design-card-body span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.design-card-body p {
+  display: -webkit-box;
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.empty-state {
+  color: var(--muted);
+}
+
+.empty-state p {
+  margin: 0;
+}
+
+.compact-empty {
+  padding: 16px;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 9px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.design-detail-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.design-preview-button {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 0;
+  color: var(--text);
+  cursor: zoom-in;
+}
+
+.design-preview-button img {
+  width: 100%;
+  max-height: 70dvh;
+  display: block;
+  object-fit: contain;
+  background: var(--surface-soft);
+}
+
+.design-preview-button span {
+  padding: 11px 14px;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.design-dialog {
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  background: #101010;
+  color: #ffffff;
+  padding: 0;
+}
+
+.design-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.88);
+}
+
+.design-dialog[open] {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.design-dialog-close {
+  justify-self: end;
+  min-height: 44px;
+  margin: calc(10px + env(safe-area-inset-top)) 12px 8px;
+  border: 1px solid #454545;
+  border-radius: 10px;
+  background: #232323;
+  color: #ffffff;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.design-dialog-image-wrap {
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 8px 12px calc(12px + env(safe-area-inset-bottom));
+}
+
+.design-dialog-image-wrap img {
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.detail-list {
+  margin: 0;
+  display: grid;
+  gap: 16px;
+}
+
+.detail-list div {
+  display: grid;
+  gap: 4px;
+}
+
+.detail-list dt {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.detail-list dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.detail-notes {
+  margin: 20px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+
+.history-section {
+  margin-top: 28px;
+}
+
+.history-section h2 {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+}
+
+.history-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--surface);
+  padding: 12px 14px;
+}
+
+.history-row > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.history-row > div span,
+.history-row > span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+@media (max-width: 430px) {
+  .page-title-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-title-row > .button-link {
+    width: 100%;
+  }
+
+  .form-card,
+  .detail-card {
+    padding: 16px;
+  }
+
+  .history-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .history-row > strong {
+    grid-column: 2;
+  }
+}
+
+@media (min-width: 640px) {
+  .search-bar {
+    grid-template-columns: minmax(260px, 1fr) auto auto;
+  }
+
+  .search-bar .button-link {
+    grid-column: auto;
+  }
+
+  .design-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (min-width: 980px) {
+  .design-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .design-detail-grid {
+    grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.55fr);
+    align-items: start;
+  }
+}
+
+@media (min-width: 1320px) {
+  .design-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}

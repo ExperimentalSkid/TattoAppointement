@@ -39,7 +39,11 @@ function safeArtistDirectory(artistId: string) {
 }
 
 function assertSafeStorageKey(key: string) {
-  if (!/^[a-zA-Z0-9_-]+\/[a-zA-Z0-9-]+\.(jpg|png|webp|heif|avif|tiff|gif)$/.test(key)) {
+  if (
+    !/^[a-zA-Z0-9_-]+\/[a-zA-Z0-9-]+(?:\.(?:preview|thumb))?\.(jpg|png|webp|heif|avif|tiff|gif)$/.test(
+      key,
+    )
+  ) {
     throw new Error("Invalid design storage key");
   }
 }

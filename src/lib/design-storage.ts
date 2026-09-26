@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
-import sharp from "sharp";
+import sharp, { type Metadata } from "sharp";
 
 export const MAX_DESIGN_IMAGE_BYTES = 25 * 1024 * 1024;
 
@@ -70,7 +70,7 @@ export async function storeDesignImage(artistId: string, bytes: Buffer) {
     throw new Error("image_size_invalid");
   }
 
-  let metadata: sharp.Metadata;
+  let metadata: Metadata;
   try {
     metadata = await sharp(bytes, { failOn: "error" }).metadata();
   } catch {

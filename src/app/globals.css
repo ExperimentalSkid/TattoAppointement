@@ -187,7 +187,7 @@ textarea:focus-visible {
 }
 
 .language-select {
-  min-height: 40px;
+  min-height: 44px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--surface);
@@ -254,7 +254,7 @@ textarea:focus-visible {
 }
 
 .signout-button {
-  min-height: 40px;
+  min-height: 44px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--surface);

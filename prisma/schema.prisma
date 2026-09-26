@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AppointmentStatus {
+  PLANNED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  language      String   @default("en")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions     Session[]
+  accounts     Account[]
+  clients      Client[]
+  designs      Design[]
+  appointments Appointment[]
+  payments     Payment[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  idToken               String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  artistId  String
+  name      String
+  phone     String
+  email     String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  artist       User          @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@index([artistId])
+  @@index([artistId, name])
+}
+
+model Design {
+  id        String   @id @default(cuid())
+  artistId  String
+  imageUrl  String
+  title     String
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  artist       User                @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  appointments AppointmentDesign[]
+
+  @@index([artistId])
+  @@index([artistId, title])
+}
+
+model Appointment {
+  id              String            @id @default(cuid())
+  artistId        String
+  clientId        String
+  startsAt        DateTime
+  durationMinutes Int
+  notes           String?
+  status          AppointmentStatus @default(PLANNED)
+  agreedPrice     Decimal?          @db.Decimal(10, 2)
+  depositRequired Decimal           @default(0) @db.Decimal(10, 2)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  artist   User                @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  client   Client              @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  designs  AppointmentDesign[]
+  payments Payment[]
+
+  @@index([artistId, startsAt])
+  @@index([artistId, clientId])
+}
+
+model AppointmentDesign {
+  appointmentId String
+  designId      String
+  isFinal       Boolean @default(false)
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  design      Design      @relation(fields: [designId], references: [id], onDelete: Cascade)
+
+  @@id([appointmentId, designId])
+  @@index([designId])
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  artistId      String
+  appointmentId String
+  amount        Decimal  @db.Decimal(10, 2)
+  receivedAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  artist      User        @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([artistId, appointmentId])
+  @@index([appointmentId, receivedAt])
+}

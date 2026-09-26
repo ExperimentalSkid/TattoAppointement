@@ -60,6 +60,8 @@ export default async function EditAppointmentPage({
           status: appointment.status as AppointmentStatusValue,
           designIds: appointment.designs.map((item) => item.designId),
           finalDesignId: finalDesign?.designId ?? null,
+          agreedPrice: appointment.agreedPrice?.toString() ?? null,
+          depositRequired: appointment.depositRequired.toString(),
         }}
       />
     </section>

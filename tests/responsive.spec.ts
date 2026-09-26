@@ -9,6 +9,13 @@ const viewports = [
   { name: "wide-desktop", width: 1920, height: 1080 },
 ] as const;
 
+async function waitForDetailRoute(page: Page, section: "clients" | "designs" | "appointments") {
+  await page.waitForURL((url) => {
+    const parts = url.pathname.split("/").filter(Boolean);
+    return parts.length === 2 && parts[0] === section && parts[1] !== "new";
+  });
+}
+
 async function assertNoHorizontalOverflow(page: Page, label: string) {
   const widths = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,
@@ -72,7 +79,7 @@ test("critical screens remain usable from 360px through wide desktop", async ({ 
   await page.locator("#client-email").fill(`client-${unique}@example.com`);
   await page.locator("#client-notes").fill("Responsive QA client notes");
   await page.locator(".client-form button[type='submit']").click();
-  await page.waitForURL(/\/clients\/[A-Za-z0-9_-]+$/);
+  await waitForDetailRoute(page, "clients");
   const clientPath = new URL(page.url()).pathname;
 
   await page.goto("/designs/new");
@@ -88,13 +95,14 @@ test("critical screens remain usable from 360px through wide desktop", async ({ 
   await page.locator("#design-title").fill("Responsive Design");
   await page.locator("#design-notes").fill("Responsive QA design notes");
   await page.locator(".design-form button[type='submit']").click();
-  await page.waitForURL(/\/designs\/[A-Za-z0-9_-]+$/);
+  await waitForDetailRoute(page, "designs");
   const designPath = new URL(page.url()).pathname;
 
   await page.goto("/new-appointment");
   await page.locator("#appointment-client").selectOption({ index: 1 });
   await page.locator("#appointment-start").fill("2026-10-05T10:00");
   await page.locator("#appointment-duration").fill("120");
+  await expect(page.locator("input[name='designIds']").first()).toBeVisible();
   await page.locator("input[name='designIds']").first().check();
   await page.locator("input[name='finalDesignId']").first().check();
   await page.locator("#appointment-notes").fill("Responsive QA appointment notes");
@@ -102,7 +110,7 @@ test("critical screens remain usable from 360px through wide desktop", async ({ 
   await page.locator("#deposit-required").fill("100.00");
   await page.locator("#initial-payment").fill("50.00");
   await page.locator(".appointment-form button[type='submit']").click();
-  await page.waitForURL(/\/appointments\/[A-Za-z0-9_-]+$/);
+  await waitForDetailRoute(page, "appointments");
   const appointmentPath = new URL(page.url()).pathname;
 
   const routes = [

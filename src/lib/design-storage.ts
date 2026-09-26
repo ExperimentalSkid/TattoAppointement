@@ -56,15 +56,15 @@ export async function saveDesignImage(file: File, artistId: string): Promise<Sto
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  let metadata: sharp.Metadata;
+  let detectedFormat: string | undefined;
 
   try {
-    metadata = await sharp(buffer).metadata();
+    detectedFormat = (await sharp(buffer).metadata()).format;
   } catch {
     throw new DesignImageError("unsupported");
   }
 
-  const format = metadata.format as SupportedFormat | undefined;
+  const format = detectedFormat as SupportedFormat | undefined;
   if (!format || !(format in formats)) {
     throw new DesignImageError("unsupported");
   }

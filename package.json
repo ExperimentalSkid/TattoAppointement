@@ -12,7 +12,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "auth:generate": "auth generate --config src/lib/auth.ts"
+    "auth:generate": "npx auth@latest generate --config src/lib/auth.ts"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "1.6.27",
@@ -25,7 +25,6 @@
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "@better-auth/cli": "1.6.27",
     "@types/node": "^24.0.0",
     "@types/pg": "^8.15.5",
     "@types/react": "^19.2.0",

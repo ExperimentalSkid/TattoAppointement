@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { AppointmentFormState } from "@/app/(app)/appointments/actions";
 import { appointmentStatuses, type AppointmentStatusValue } from "@/lib/appointments";
@@ -62,16 +62,11 @@ export function AppointmentForm({
   cancelHref?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, initialFormState);
-  const [startsAtLocal, setStartsAtLocal] = useState("");
+  const [startsAtLocal, setStartsAtLocal] = useState(() =>
+    initial?.startsAtIso ? localInputValue(initial.startsAtIso) : "",
+  );
   const [selectedDesignIds, setSelectedDesignIds] = useState<string[]>(initial?.designIds ?? []);
   const [finalDesignId, setFinalDesignId] = useState(initial?.finalDesignId ?? "");
-
-  useEffect(() => {
-    if (initial?.startsAtIso) {
-      setStartsAtLocal(localInputValue(initial.startsAtIso));
-    }
-  }, [initial?.startsAtIso]);
-
   const timezoneOffset = useMemo(() => offsetForLocalValue(startsAtLocal), [startsAtLocal]);
 
   function toggleDesign(id: string, checked: boolean) {
@@ -142,6 +137,7 @@ export function AppointmentForm({
               type="datetime-local"
               value={startsAtLocal}
               onChange={(event) => setStartsAtLocal(event.target.value)}
+              suppressHydrationWarning
               required
             />
           </div>

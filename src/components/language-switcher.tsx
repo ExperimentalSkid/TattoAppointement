@@ -1,7 +1,6 @@
 "use client";
 
 import { useId, useState } from "react";
-import { useRouter } from "next/navigation";
 import type { Locale } from "@/i18n";
 
 export function LanguageSwitcher({
@@ -11,7 +10,6 @@ export function LanguageSwitcher({
   locale: Locale;
   label: string;
 }) {
-  const router = useRouter();
   const selectorId = useId();
   const [pending, setPending] = useState(false);
 
@@ -28,9 +26,10 @@ export function LanguageSwitcher({
         throw new Error("Could not update language");
       }
 
-      router.refresh();
-    } finally {
+      window.location.reload();
+    } catch (error) {
       setPending(false);
+      throw error;
     }
   }
 

@@ -21,3 +21,18 @@ export function parseLocalDateTime(value: string, timezoneOffsetMinutes: number)
   const date = new Date(pseudoUtc + timezoneOffsetMinutes * 60_000);
   return Number.isNaN(date.getTime()) ? null : date;
 }
+
+export function appointmentEnd(startsAt: Date, durationMinutes: number) {
+  return new Date(startsAt.getTime() + durationMinutes * 60_000);
+}
+
+export function appointmentsOverlap(
+  firstStart: Date,
+  firstDurationMinutes: number,
+  secondStart: Date,
+  secondDurationMinutes: number,
+) {
+  const firstEnd = appointmentEnd(firstStart, firstDurationMinutes);
+  const secondEnd = appointmentEnd(secondStart, secondDurationMinutes);
+  return firstStart < secondEnd && secondStart < firstEnd;
+}

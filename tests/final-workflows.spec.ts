@@ -206,9 +206,10 @@ test("Pass 8 workflows A-F, persistence, errors, and ownership boundaries", asyn
     deposit: "50.00",
     expectOverlap: true,
   });
-  await page.locator("input[name='allowOverlap']").check();
+  await page.locator("#allow-overlap-confirmation").check();
+  await expect(page.locator("input[name='allowOverlap']")).toHaveValue("true");
   await page.locator(".appointment-form button[type='submit']").click();
-  await page.waitForURL(/\/appointments\/[A-Za-z0-9_-]+$/);
+  await page.waitForURL(/\/appointments\/[A-Za-z0-9_-]+$/, { timeout: 15_000 });
 
   // Workflow F: language preference persists through reload and a new login session.
   await page.goto("/calendar");

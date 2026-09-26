@@ -1,0 +1,66 @@
+export const dictionaries = {
+  en: {
+    appName: "Tattoo Appointment",
+    nav: {
+      calendar: "Calendar",
+      clients: "Clients",
+      designs: "Designs",
+      newAppointment: "New appointment",
+      settings: "Settings",
+    },
+    auth: {
+      signIn: "Sign in",
+      signUp: "Create artist account",
+      signOut: "Sign out",
+      name: "Name",
+      email: "Email",
+      password: "Password",
+      noAccount: "No account yet?",
+      hasAccount: "Already have an account?",
+      invalid: "Could not sign in with those details.",
+      signupError: "Could not create the account.",
+    },
+    pages: {
+      calendarTitle: "Calendar",
+      clientsTitle: "Clients",
+      designsTitle: "Designs",
+      newAppointmentTitle: "New appointment",
+      settingsTitle: "Settings",
+      foundationMessage: "Foundation ready. This area is implemented in a later pass.",
+    },
+    language: "Language",
+  },
+  es: {
+    appName: "Citas de tatuaje",
+    nav: {
+      calendar: "Calendario",
+      clients: "Clientes",
+      designs: "Diseños",
+      newAppointment: "Nueva cita",
+      settings: "Ajustes",
+    },
+    auth: {
+      signIn: "Iniciar sesión",
+      signUp: "Crear cuenta de artista",
+      signOut: "Cerrar sesión",
+      name: "Nombre",
+      email: "Correo electrónico",
+      password: "Contraseña",
+      noAccount: "¿Aún no tienes cuenta?",
+      hasAccount: "¿Ya tienes una cuenta?",
+      invalid: "No se pudo iniciar sesión con esos datos.",
+      signupError: "No se pudo crear la cuenta.",
+    },
+    pages: {
+      calendarTitle: "Calendario",
+      clientsTitle: "Clientes",
+      designsTitle: "Diseños",
+      newAppointmentTitle: "Nueva cita",
+      settingsTitle: "Ajustes",
+      foundationMessage: "La base está preparada. Esta sección se implementará en una fase posterior.",
+    },
+    language: "Idioma",
+  },
+} as const;
+
+export type Dictionary = (typeof dictionaries)[keyof typeof dictionaries];

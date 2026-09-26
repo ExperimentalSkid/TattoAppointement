@@ -103,13 +103,17 @@ model Client {
 }
 
 model Design {
-  id        String   @id @default(cuid())
-  artistId  String
-  imageUrl  String
-  title     String
-  notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  artistId     String
+  storageKey   String   @unique
+  previewKey   String?
+  mimeType     String   @default("application/octet-stream")
+  originalName String?
+  fileSize     Int?
+  title        String
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   artist       User                @relation(fields: [artistId], references: [id], onDelete: Cascade)
   appointments AppointmentDesign[]

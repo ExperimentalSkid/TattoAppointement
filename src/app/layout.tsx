@@ -5,6 +5,7 @@ import "./designs.css";
 import "./appointments.css";
 import "./calendar.css";
 import "./money.css";
+import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { getLocale } from "@/i18n";
 
 export const metadata: Metadata = {
@@ -13,12 +14,14 @@ export const metadata: Metadata = {
     template: "%s | Tattoo Appointment",
   },
   description: "Practical appointment management for tattoo artists.",
+  manifest: "/manifest.webmanifest",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: "#171717",
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
@@ -26,7 +29,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
 
   return (
     <html lang={locale}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <ServiceWorkerRegistration />
+      </body>
     </html>
   );
 }

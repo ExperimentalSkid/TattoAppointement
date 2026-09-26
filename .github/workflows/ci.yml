@@ -45,8 +45,8 @@ jobs:
       - name: Verify image processing
         run: npm run verify:images
 
-      - name: Verify money calculations
-        run: npm run verify:money
+      - name: Unit tests
+        run: npm run test:unit
 
       - name: Generate Prisma client
         run: npm run db:generate
@@ -63,5 +63,5 @@ jobs:
       - name: Production build
         run: npm run build
 
-      - name: Responsive browser QA
-        run: npm run test:responsive
+      - name: Browser integration QA
+        run: npm run test:integration

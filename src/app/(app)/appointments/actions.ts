@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireArtistId } from "@/lib/session";
 import {
+  appointmentEnd,
+  appointmentsOverlap,
   isAppointmentStatus,
   parseLocalDateTime,
   type AppointmentStatusValue,
@@ -18,6 +20,7 @@ export type AppointmentFormState = {
     | "client"
     | "designs"
     | "final"
+    | "overlap"
     | "save"
     | null;
 };
@@ -30,6 +33,7 @@ type AppointmentInput = {
   status: AppointmentStatusValue;
   designIds: string[];
   finalDesignId: string | null;
+  allowOverlap: boolean;
 };
 
 function cleanOptional(value: FormDataEntryValue | null) {
@@ -51,6 +55,7 @@ function parseInput(formData: FormData): AppointmentInput | AppointmentFormState
   const designIds = uniqueStrings(formData.getAll("designIds"));
   const finalDesignRaw = String(formData.get("finalDesignId") ?? "").trim();
   const finalDesignId = finalDesignRaw || null;
+  const allowOverlap = formData.get("allowOverlap") === "true";
 
   if (!clientId || !startsAtLocal) {
     return { error: "required" };
@@ -85,6 +90,7 @@ function parseInput(formData: FormData): AppointmentInput | AppointmentFormState
     status: statusRaw,
     designIds,
     finalDesignId,
+    allowOverlap,
   };
 }
 
@@ -108,6 +114,42 @@ async function validateOwnership(
   return null;
 }
 
+async function hasScheduleConflict(
+  artistId: string,
+  input: AppointmentInput,
+  excludeAppointmentId?: string,
+) {
+  if (input.status === "CANCELLED") return false;
+
+  const candidateEnd = appointmentEnd(input.startsAt, input.durationMinutes);
+  const earliestPossibleStart = new Date(input.startsAt.getTime() - 24 * 60 * 60 * 1000);
+
+  const nearby = await prisma.appointment.findMany({
+    where: {
+      artistId,
+      status: { not: "CANCELLED" },
+      id: excludeAppointmentId ? { not: excludeAppointmentId } : undefined,
+      startsAt: {
+        gte: earliestPossibleStart,
+        lt: candidateEnd,
+      },
+    },
+    select: {
+      startsAt: true,
+      durationMinutes: true,
+    },
+  });
+
+  return nearby.some((appointment) =>
+    appointmentsOverlap(
+      input.startsAt,
+      input.durationMinutes,
+      appointment.startsAt,
+      appointment.durationMinutes,
+    ),
+  );
+}
+
 async function revalidateAppointmentRelations(
   appointmentId: string,
   clientId: string,
@@ -117,6 +159,7 @@ async function revalidateAppointmentRelations(
   revalidatePath(`/clients/${clientId}`);
   revalidatePath("/clients");
   revalidatePath("/designs");
+  revalidatePath("/calendar");
   for (const designId of designIds) {
     revalidatePath(`/designs/${designId}`);
   }
@@ -132,6 +175,10 @@ export async function createAppointment(
 
   const ownershipError = await validateOwnership(artistId, parsed);
   if (ownershipError) return ownershipError;
+
+  if (!parsed.allowOverlap && (await hasScheduleConflict(artistId, parsed))) {
+    return { error: "overlap" };
+  }
 
   let appointmentId: string;
   try {
@@ -187,6 +234,10 @@ export async function updateAppointment(
 
   const ownershipError = await validateOwnership(artistId, parsed);
   if (ownershipError) return ownershipError;
+
+  if (!parsed.allowOverlap && (await hasScheduleConflict(artistId, parsed, appointmentId))) {
+    return { error: "overlap" };
+  }
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -261,6 +312,7 @@ export async function deleteAppointment(appointmentId: string) {
   revalidatePath(`/clients/${appointment.clientId}`);
   revalidatePath("/clients");
   revalidatePath("/designs");
+  revalidatePath("/calendar");
   for (const design of appointment.designs) {
     revalidatePath(`/designs/${design.designId}`);
   }

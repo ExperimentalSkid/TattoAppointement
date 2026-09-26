@@ -25,7 +25,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tatto_appointement?schema=public
       BETTER_AUTH_SECRET: ci-only-secret-with-at-least-thirty-two-characters
-      BETTER_AUTH_URL: http://localhost:3000
+      BETTER_AUTH_URL: http://127.0.0.1:3000
 
     steps:
       - name: Checkout
@@ -38,6 +38,9 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
 
       - name: Verify image processing
         run: npm run verify:images
@@ -59,3 +62,6 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+      - name: Responsive browser QA
+        run: npm run test:responsive

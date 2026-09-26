@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { LocalDateTime } from "@/components/local-date-time";
 import { prisma } from "@/lib/prisma";
 import { requireArtistId } from "@/lib/session";
 import { getDictionary } from "@/i18n";
@@ -30,11 +31,6 @@ export default async function ClientDetailsPage({
   });
 
   if (!client) notFound();
-
-  const dateFormatter = new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
 
   return (
     <section className="client-page">
@@ -80,15 +76,21 @@ export default async function ClientDetailsPage({
           {client.appointments.length ? (
             <div className="appointment-history">
               {client.appointments.map((appointment) => (
-                <div className="appointment-history-item" key={appointment.id}>
+                <Link
+                  className="appointment-history-item"
+                  href={`/appointments/${appointment.id}`}
+                  key={appointment.id}
+                >
                   <div>
-                    <strong>{dateFormatter.format(appointment.startsAt)}</strong>
+                    <strong>
+                      <LocalDateTime iso={appointment.startsAt.toISOString()} locale={locale} />
+                    </strong>
                     <span>{appointment.durationMinutes} {dictionary.clients.minutes}</span>
                   </div>
                   <span className="status-pill">
                     {dictionary.clients.statuses[appointment.status]}
                   </span>
-                </div>
+                </Link>
               ))}
             </div>
           ) : (

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { AppointmentCopy } from "@/i18n/appointment-copy";
+import { calendarCopy } from "@/i18n/calendar-copy";
 
 type AppointmentStatus = "PLANNED" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
 
@@ -110,48 +111,63 @@ export function AppointmentForm({
     }
   }
 
+  async function persistAppointment(allowOverlap: boolean): Promise<void> {
+    if (!date || !time) {
+      setError(copy.errors.startRequired);
+      return;
+    }
+
+    const startsAt = new Date(`${date}T${time}`);
+    if (Number.isNaN(startsAt.getTime())) {
+      setError(copy.errors.startInvalid);
+      return;
+    }
+
+    const response = await fetch(
+      appointment ? `/api/appointments/${appointment.id}` : "/api/appointments",
+      {
+        method: appointment ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId,
+          startsAt: startsAt.toISOString(),
+          durationMinutes,
+          notes,
+          status,
+          designIds: selectedDesignIds,
+          finalDesignId: finalDesignId || null,
+          allowOverlap,
+        }),
+      },
+    );
+
+    const data = (await response.json()) as { appointmentId?: string; error?: string };
+    if (response.status === 409 && data.error === "overlap" && !allowOverlap) {
+      const locale = document.documentElement.lang === "es" ? "es" : "en";
+      const warning = calendarCopy[locale];
+      if (window.confirm(`${warning.overlapTitle}\n\n${warning.overlapMessage}`)) {
+        await persistAppointment(true);
+      } else {
+        setError(warning.overlapMessage);
+      }
+      return;
+    }
+
+    if (!response.ok || !data.appointmentId) {
+      setError(errorMessage(data.error));
+      return;
+    }
+
+    router.push(`/appointments/${data.appointmentId}`);
+    router.refresh();
+  }
+
   async function submitAppointment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
     setError(null);
-
     try {
-      if (!date || !time) {
-        setError(copy.errors.startRequired);
-        return;
-      }
-
-      const startsAt = new Date(`${date}T${time}`);
-      if (Number.isNaN(startsAt.getTime())) {
-        setError(copy.errors.startInvalid);
-        return;
-      }
-
-      const response = await fetch(
-        appointment ? `/api/appointments/${appointment.id}` : "/api/appointments",
-        {
-          method: appointment ? "PATCH" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            clientId,
-            startsAt: startsAt.toISOString(),
-            durationMinutes,
-            notes,
-            status,
-            designIds: selectedDesignIds,
-            finalDesignId: finalDesignId || null,
-          }),
-        },
-      );
-
-      const data = (await response.json()) as { appointmentId?: string; error?: string };
-      if (!response.ok || !data.appointmentId) {
-        setError(errorMessage(data.error));
-        return;
-      }
-
-      router.push(`/appointments/${data.appointmentId}`);
-      router.refresh();
+      await persistAppointment(false);
     } catch {
       setError(copy.errors.generic);
     } finally {
@@ -257,16 +273,16 @@ export function AppointmentForm({
             </label>
             <label className="field">
               <span>{copy.duration}</span>
-              <select
+              <input
+                type="number"
+                min={15}
+                max={1440}
+                step={15}
+                inputMode="numeric"
                 value={durationMinutes}
                 onChange={(event) => setDurationMinutes(Number(event.target.value))}
-              >
-                {[30, 60, 90, 120, 180, 240, 300, 360, 480].map((minutes) => (
-                  <option value={minutes} key={minutes}>
-                    {copy.durationMinutes.replace("{minutes}", String(minutes))}
-                  </option>
-                ))}
-              </select>
+                required
+              />
             </label>
           </div>
         </section>

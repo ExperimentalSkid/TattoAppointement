@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n";
 
@@ -59,6 +59,12 @@ const emptyForm: ClientFormState = {
   notes: "",
 };
 
+const subscribeToContactPickerCapability = () => () => undefined;
+
+function hasContactPicker() {
+  return typeof navigator !== "undefined" && typeof navigator.contacts?.select === "function";
+}
+
 function sortClients(clients: ClientListItem[]) {
   return [...clients].sort((a, b) =>
     a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
@@ -84,7 +90,11 @@ export function ClientManager({
   const [form, setForm] = useState<ClientFormState>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [supportsContactPicker, setSupportsContactPicker] = useState(false);
+  const supportsContactPicker = useSyncExternalStore(
+    subscribeToContactPickerCapability,
+    hasContactPicker,
+    () => false,
+  );
 
   const dateFormatter = useMemo(
     () =>
@@ -94,12 +104,6 @@ export function ClientManager({
       }),
     [locale],
   );
-
-  useEffect(() => {
-    setSupportsContactPicker(
-      typeof navigator !== "undefined" && typeof navigator.contacts?.select === "function",
-    );
-  }, []);
 
   useEffect(() => {
     const controller = new AbortController();

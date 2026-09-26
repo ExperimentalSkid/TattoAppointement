@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { findAppointmentConflicts } from "@/lib/appointment-conflicts";
 import { parseAppointmentInput } from "@/lib/appointments";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
@@ -55,7 +56,8 @@ export async function PATCH(
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  const parsed = parseAppointmentInput(await request.json().catch(() => null));
+  const body = await request.json().catch(() => null);
+  const parsed = parseAppointmentInput(body);
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
 
   const client = await prisma.client.findFirst({
@@ -71,6 +73,19 @@ export async function PATCH(
     if (designCount !== parsed.data.designIds.length) {
       return NextResponse.json({ error: "design_not_found" }, { status: 400 });
     }
+  }
+
+  const allowOverlap = Boolean(
+    body && typeof body === "object" && (body as Record<string, unknown>).allowOverlap === true,
+  );
+  const conflicts = await findAppointmentConflicts({
+    artistId,
+    startsAt: parsed.data.startsAt,
+    durationMinutes: parsed.data.durationMinutes,
+    excludeAppointmentId: id,
+  });
+  if (conflicts.length > 0 && !allowOverlap) {
+    return NextResponse.json({ error: "overlap", conflicts }, { status: 409 });
   }
 
   await prisma.$transaction(async (tx) => {

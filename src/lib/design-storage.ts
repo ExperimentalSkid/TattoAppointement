@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 
@@ -114,6 +114,26 @@ export async function storeDesignImage(artistId: string, bytes: Buffer) {
   ]);
 
   return { key, width: metadata.width, height: metadata.height };
+}
+
+export async function removeDesignImage(key: string) {
+  const paths = [
+    absolutePath(key),
+    absolutePath(variantKey(key, "preview")),
+    absolutePath(variantKey(key, "thumb")),
+  ];
+
+  await Promise.all(
+    paths.map(async (filePath) => {
+      try {
+        await unlink(filePath);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+          throw error;
+        }
+      }
+    }),
+  );
 }
 
 export async function readDesignImage(

@@ -9,8 +9,6 @@ export type ClientFormState = {
   error: "required" | "duplicate" | "save" | null;
 };
 
-export const initialClientFormState: ClientFormState = { error: null };
-
 function cleanOptional(value: FormDataEntryValue | null) {
   const text = String(value ?? "").trim();
   return text.length ? text : null;

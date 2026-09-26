@@ -59,7 +59,12 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
   const [agreedPrice, setAgreedPrice] = useState(initial?.agreedPrice ?? "");
   const [depositRequired, setDepositRequired] = useState(initial?.depositRequired ?? "0.00");
   const [initialPayment, setInitialPayment] = useState("0.00");
+  const [allowOverlap, setAllowOverlap] = useState(false);
   const timezoneOffset = useMemo(() => offsetForLocalValue(startsAtLocal), [startsAtLocal]);
+
+  function scheduleChanged() {
+    setAllowOverlap(false);
+  }
 
   function toggleDesign(id: string, checked: boolean) {
     setSelectedDesignIds((current) => checked ? (current.includes(id) ? current : [...current, id]) : current.filter((item) => item !== id));
@@ -81,6 +86,7 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
   return (
     <form action={formAction} className="appointment-form">
       <input type="hidden" name="timezoneOffset" value={timezoneOffset} />
+      <input type="hidden" name="allowOverlap" value={allowOverlap ? "true" : "false"} />
 
       <section className="appointment-form-section">
         <div className="section-heading-row">
@@ -101,16 +107,49 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
         <div className="appointment-form-grid">
           <div className="field">
             <label htmlFor="appointment-start">{copy.start}</label>
-            <input id="appointment-start" name="startsAtLocal" type="datetime-local" value={startsAtLocal} onChange={(event) => setStartsAtLocal(event.target.value)} suppressHydrationWarning required />
+            <input
+              id="appointment-start"
+              name="startsAtLocal"
+              type="datetime-local"
+              value={startsAtLocal}
+              onChange={(event) => {
+                setStartsAtLocal(event.target.value);
+                scheduleChanged();
+              }}
+              suppressHydrationWarning
+              required
+            />
           </div>
           <div className="field">
             <label htmlFor="appointment-duration">{copy.duration}</label>
-            <input id="appointment-duration" name="durationMinutes" type="number" inputMode="numeric" min={15} max={1440} step={15} value={durationMinutes} onChange={(event) => setDurationMinutes(event.target.value)} required />
+            <input
+              id="appointment-duration"
+              name="durationMinutes"
+              type="number"
+              inputMode="numeric"
+              min={15}
+              max={1440}
+              step={15}
+              value={durationMinutes}
+              onChange={(event) => {
+                setDurationMinutes(event.target.value);
+                scheduleChanged();
+              }}
+              required
+            />
             <span className="field-help">{copy.durationHelp}</span>
           </div>
           <div className="field appointment-form-wide">
             <label htmlFor="appointment-status">{copy.status}</label>
-            <select id="appointment-status" name="status" value={status} onChange={(event) => setStatus(event.target.value as AppointmentStatusValue)}>
+            <select
+              id="appointment-status"
+              name="status"
+              value={status}
+              onChange={(event) => {
+                setStatus(event.target.value as AppointmentStatusValue);
+                scheduleChanged();
+              }}
+            >
               {appointmentStatuses.map((appointmentStatus) => <option key={appointmentStatus} value={appointmentStatus}>{copy.statuses[appointmentStatus]}</option>)}
             </select>
           </div>
@@ -180,7 +219,15 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
       {state.error === "overlap" ? (
         <div className="overlap-warning" role="alert">
           <strong>{copy.overlapWarning}</strong>
-          <label><input type="checkbox" name="allowOverlap" value="true" /><span>{copy.allowOverlap}</span></label>
+          <label htmlFor="allow-overlap-confirmation">
+            <input
+              id="allow-overlap-confirmation"
+              type="checkbox"
+              checked={allowOverlap}
+              onChange={(event) => setAllowOverlap(event.target.checked)}
+            />
+            <span>{copy.allowOverlap}</span>
+          </label>
         </div>
       ) : null}
 

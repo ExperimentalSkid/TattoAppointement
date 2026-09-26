@@ -49,9 +49,16 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
   cancelHref?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, initialFormState);
+  const [clientId, setClientId] = useState(initial?.clientId ?? "");
   const [startsAtLocal, setStartsAtLocal] = useState(() => initial?.startsAtIso ? localInputValue(initial.startsAtIso) : "");
+  const [durationMinutes, setDurationMinutes] = useState(String(initial?.durationMinutes ?? 120));
+  const [status, setStatus] = useState<AppointmentStatusValue>(initial?.status ?? "PLANNED");
   const [selectedDesignIds, setSelectedDesignIds] = useState<string[]>(initial?.designIds ?? []);
   const [finalDesignId, setFinalDesignId] = useState(initial?.finalDesignId ?? "");
+  const [notes, setNotes] = useState(initial?.notes ?? "");
+  const [agreedPrice, setAgreedPrice] = useState(initial?.agreedPrice ?? "");
+  const [depositRequired, setDepositRequired] = useState(initial?.depositRequired ?? "0.00");
+  const [initialPayment, setInitialPayment] = useState("0.00");
   const timezoneOffset = useMemo(() => offsetForLocalValue(startsAtLocal), [startsAtLocal]);
 
   function toggleDesign(id: string, checked: boolean) {
@@ -82,7 +89,7 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
         </div>
         <div className="field">
           <label htmlFor="appointment-client">{copy.client}</label>
-          <select id="appointment-client" name="clientId" defaultValue={initial?.clientId ?? ""} required>
+          <select id="appointment-client" name="clientId" value={clientId} onChange={(event) => setClientId(event.target.value)} required>
             <option value="">{copy.selectClient}</option>
             {clients.map((client) => <option key={client.id} value={client.id}>{client.name} · {client.phone}</option>)}
           </select>
@@ -98,13 +105,13 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
           </div>
           <div className="field">
             <label htmlFor="appointment-duration">{copy.duration}</label>
-            <input id="appointment-duration" name="durationMinutes" type="number" inputMode="numeric" min={15} max={1440} step={15} defaultValue={initial?.durationMinutes ?? 120} required />
+            <input id="appointment-duration" name="durationMinutes" type="number" inputMode="numeric" min={15} max={1440} step={15} value={durationMinutes} onChange={(event) => setDurationMinutes(event.target.value)} required />
             <span className="field-help">{copy.durationHelp}</span>
           </div>
           <div className="field appointment-form-wide">
             <label htmlFor="appointment-status">{copy.status}</label>
-            <select id="appointment-status" name="status" defaultValue={initial?.status ?? "PLANNED"}>
-              {appointmentStatuses.map((status) => <option key={status} value={status}>{copy.statuses[status]}</option>)}
+            <select id="appointment-status" name="status" value={status} onChange={(event) => setStatus(event.target.value as AppointmentStatusValue)}>
+              {appointmentStatuses.map((appointmentStatus) => <option key={appointmentStatus} value={appointmentStatus}>{copy.statuses[appointmentStatus]}</option>)}
             </select>
           </div>
         </div>
@@ -145,7 +152,7 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
         <h2>{copy.notesSection}</h2>
         <div className="field">
           <label htmlFor="appointment-notes">{copy.notes} <span className="field-optional">({copy.optional})</span></label>
-          <textarea id="appointment-notes" name="notes" rows={6} maxLength={5000} defaultValue={initial?.notes ?? ""} />
+          <textarea id="appointment-notes" name="notes" rows={6} maxLength={5000} value={notes} onChange={(event) => setNotes(event.target.value)} />
         </div>
       </section>
 
@@ -154,16 +161,16 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
         <div className="appointment-form-grid">
           <div className="field">
             <label htmlFor="agreed-price">{copy.agreedPrice}</label>
-            <input id="agreed-price" name="agreedPrice" type="text" inputMode="decimal" placeholder="0.00" defaultValue={initial?.agreedPrice ?? ""} />
+            <input id="agreed-price" name="agreedPrice" type="text" inputMode="decimal" placeholder="0.00" value={agreedPrice} onChange={(event) => setAgreedPrice(event.target.value)} />
           </div>
           <div className="field">
             <label htmlFor="deposit-required">{copy.depositRequired}</label>
-            <input id="deposit-required" name="depositRequired" type="text" inputMode="decimal" placeholder="0.00" defaultValue={initial?.depositRequired ?? "0.00"} />
+            <input id="deposit-required" name="depositRequired" type="text" inputMode="decimal" placeholder="0.00" value={depositRequired} onChange={(event) => setDepositRequired(event.target.value)} />
           </div>
           {!initial ? (
             <div className="field appointment-form-wide">
               <label htmlFor="initial-payment">{copy.initialPayment}</label>
-              <input id="initial-payment" name="initialPayment" type="text" inputMode="decimal" placeholder="0.00" defaultValue="0.00" />
+              <input id="initial-payment" name="initialPayment" type="text" inputMode="decimal" placeholder="0.00" value={initialPayment} onChange={(event) => setInitialPayment(event.target.value)} />
               <span className="field-help">{copy.initialPaymentHelp}</span>
             </div>
           ) : null}

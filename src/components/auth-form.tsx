@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@/i18n";
 import type { Dictionary } from "@/i18n/dictionaries";
@@ -19,11 +20,11 @@ export function AuthForm({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function persistSignupLanguage() {
+  async function persistLanguage(language: Locale) {
     await fetch("/api/preferences/language", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ language: locale }),
+      body: JSON.stringify({ language }),
     });
   }
 
@@ -43,6 +44,12 @@ export function AuthForm({
           setError(copy.invalid);
           return;
         }
+
+        const preferredLanguage = (result.data?.user as { language?: unknown } | undefined)
+          ?.language;
+        if (preferredLanguage === "en" || preferredLanguage === "es") {
+          await persistLanguage(preferredLanguage);
+        }
       } else {
         const name = String(formData.get("name") ?? "").trim();
         const result = await authClient.signUp.email({ name, email, password });
@@ -50,7 +57,7 @@ export function AuthForm({
           setError(copy.signupError);
           return;
         }
-        await persistSignupLanguage();
+        await persistLanguage(locale);
       }
 
       router.push("/calendar");

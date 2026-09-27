@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import type { Locale } from "@/i18n";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { authClient } from "@/lib/auth-client";
@@ -16,7 +15,6 @@ export function AuthForm({
   copy: Dictionary["auth"];
   locale: Locale;
 }) {
-  const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,8 +58,7 @@ export function AuthForm({
         await persistLanguage(locale);
       }
 
-      router.push("/calendar");
-      router.refresh();
+      window.location.replace("/calendar");
     } finally {
       setPending(false);
     }

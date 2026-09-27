@@ -39,9 +39,14 @@ export default async function ClientDetailsPage({
           <Link className="text-link" href="/clients">← {dictionary.clients.back}</Link>
           <h1 className="page-heading">{client.name}</h1>
         </div>
-        <Link className="secondary-button button-link" href={`/clients/${client.id}/edit`}>
-          {dictionary.clients.edit}
-        </Link>
+        <div className="form-actions">
+          <Link className="primary-button button-link" href={`/new-appointment?clientId=${encodeURIComponent(client.id)}`}>
+            {dictionary.nav.newAppointment}
+          </Link>
+          <Link className="secondary-button button-link" href={`/clients/${client.id}/edit`}>
+            {dictionary.clients.edit}
+          </Link>
+        </div>
       </div>
 
       <div className="client-detail-grid">

@@ -42,3 +42,20 @@ export async function recordPayment(
   revalidatePath(`/appointments/${appointment.id}`);
   return { error: null, success: true };
 }
+
+export async function deletePayment(paymentId: string, appointmentId: string) {
+  const artistId = await requireArtistId();
+  const payment = await prisma.payment.findFirst({
+    where: {
+      id: paymentId,
+      appointmentId,
+      artistId,
+    },
+    select: { id: true, appointmentId: true },
+  });
+
+  if (!payment) return;
+
+  await prisma.payment.delete({ where: { id: payment.id } });
+  revalidatePath(`/appointments/${payment.appointmentId}`);
+}

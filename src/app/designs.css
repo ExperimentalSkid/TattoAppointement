@@ -2,8 +2,8 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 18px;
+  gap: 16px;
+  margin-bottom: 22px;
 }
 
 .page-title-row .page-heading {
@@ -20,7 +20,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
-  padding: 20px;
+  padding: 22px;
 }
 
 .design-form {
@@ -35,8 +35,8 @@
 .field-help {
   margin: 0;
   color: var(--muted);
-  font-size: 0.82rem;
-  line-height: 1.4;
+  font-size: 0.84rem;
+  line-height: 1.45;
 }
 
 .upload-preview {
@@ -46,8 +46,8 @@
   place-items: center;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface-soft);
+  border-radius: var(--radius);
+  background: #e5e0d8;
 }
 
 .upload-preview img {
@@ -67,11 +67,11 @@
 .search-bar input {
   min-width: 0;
   min-height: 46px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  border: 1px solid #bcb2a5;
+  border-radius: var(--radius-small);
   background: var(--surface);
   color: var(--text);
-  padding: 10px 13px;
+  padding: 10px 12px;
 }
 
 .search-bar .button-link {
@@ -81,21 +81,26 @@
 .design-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .design-card {
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 15px;
+  border-radius: var(--radius);
   background: var(--surface);
+  transition: border-color 140ms ease;
+}
+
+.design-card:hover {
+  border-color: #978779;
 }
 
 .design-card-image {
   aspect-ratio: 1 / 1;
   overflow: hidden;
-  background: var(--surface-soft);
+  background: #e5e0d8;
 }
 
 .design-card-image img {
@@ -109,7 +114,7 @@
   min-width: 0;
   display: grid;
   gap: 4px;
-  padding: 12px;
+  padding: 11px 12px 12px;
 }
 
 .design-card-body strong,
@@ -173,7 +178,7 @@
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: var(--surface);
+  background: #e5e0d8;
   padding: 0;
   color: var(--text);
   cursor: zoom-in;
@@ -254,8 +259,8 @@
 
 .detail-list dt {
   color: var(--muted);
-  font-size: 0.75rem;
-  font-weight: 800;
+  font-size: 0.78rem;
+  font-weight: 650;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -288,10 +293,11 @@
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 12px;
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  background: var(--surface);
-  padding: 12px 14px;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  padding: 13px 4px;
 }
 
 .history-row > div {
@@ -331,6 +337,10 @@
 }
 
 @media (min-width: 640px) {
+  .design-grid {
+    gap: 14px;
+  }
+
   .search-bar {
     grid-template-columns: minmax(260px, 1fr) auto auto;
   }

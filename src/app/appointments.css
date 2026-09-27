@@ -4,7 +4,7 @@
 
 .appointment-form {
   display: grid;
-  gap: 18px;
+  gap: 0;
   max-width: 980px;
 }
 
@@ -14,13 +14,28 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
-  padding: 18px;
+  padding: 20px;
+}
+
+.appointment-form-section {
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  padding: 22px 0;
+}
+
+.appointment-form-section:first-of-type {
+  border-top: 0;
+  padding-top: 4px;
 }
 
 .appointment-form-section h2,
 .appointment-detail-card h2 {
   margin: 0 0 14px;
-  font-size: 1.05rem;
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
 }
 
 .section-heading-row {
@@ -47,17 +62,12 @@
 
 .appointment-form .field select {
   width: 100%;
-  min-height: 48px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  min-height: 46px;
+  border: 1px solid #bcb2a5;
+  border-radius: var(--radius-small);
   background: var(--surface);
   color: var(--text);
-  padding: 11px 13px;
-}
-
-.field-help {
-  color: var(--muted);
-  font-size: 0.8rem;
+  padding: 10px 12px;
 }
 
 .appointment-design-picker {
@@ -70,12 +80,13 @@
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius);
   background: var(--surface);
 }
 
 .appointment-design-option[data-selected="true"] {
-  border-color: var(--text);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
 .appointment-design-select {
@@ -145,11 +156,9 @@
   position: sticky;
   bottom: calc(72px + env(safe-area-inset-bottom));
   z-index: 10;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: rgba(245, 243, 239, 0.96);
-  padding: 10px;
-  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  padding: 12px 0;
 }
 
 .appointment-detail-grid {
@@ -159,7 +168,7 @@
 }
 
 .appointment-detail-card {
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .appointment-detail-card .detail-list {
@@ -199,8 +208,13 @@
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 13px;
+  border-radius: var(--radius);
   background: var(--surface);
+  transition: border-color 140ms ease;
+}
+
+.appointment-design-card:hover {
+  border-color: #978779;
 }
 
 .appointment-design-image-wrap {
@@ -228,12 +242,12 @@
   position: absolute;
   right: 8px;
   bottom: 8px;
-  border-radius: 999px;
-  background: rgba(23, 23, 23, 0.92);
-  color: #fff;
-  padding: 6px 9px;
-  font-size: 0.7rem;
-  font-weight: 800;
+  border-radius: 4px;
+  background: #25211f;
+  color: #fffdf9;
+  padding: 5px 8px;
+  font-size: 0.72rem;
+  font-weight: 650;
 }
 
 .appointment-notes {
@@ -253,14 +267,18 @@
 }
 
 .danger-button {
-  min-height: 46px;
+  min-height: 44px;
   border: 1px solid var(--danger);
-  border-radius: 12px;
+  border-radius: var(--radius-small);
   background: transparent;
   color: var(--danger);
-  padding: 10px 16px;
+  padding: 9px 15px;
   cursor: pointer;
-  font-weight: 800;
+  font-weight: 650;
+}
+
+.danger-button:hover:not(:disabled) {
+  background: #f7e9e6;
 }
 
 @media (max-width: 430px) {
@@ -293,9 +311,12 @@
 }
 
 @media (min-width: 700px) {
-  .appointment-form-section,
   .appointment-detail-card {
     padding: 22px;
+  }
+
+  .appointment-form-section {
+    padding: 24px 0;
   }
 
   .appointment-form-grid,

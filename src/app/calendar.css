@@ -1079,31 +1079,40 @@
   }
 
   .calendar-week-grid .calendar-client-avatar {
-    width: 23px;
-    height: 23px;
-    font-size: 0.55rem;
+    width: 20px;
+    height: 20px;
+    font-size: 0.52rem;
   }
 
   .calendar-week-grid .calendar-client-row h3 {
-    font-size: 0.72rem;
+    font-size: 0.68rem;
   }
 
   .calendar-week-grid .calendar-status {
-    margin: 7px 0 0 29px;
-    padding: 3px 6px;
-    font-size: 0.57rem;
+    max-width: 100%;
+    margin: 7px 0 0;
+    padding: 3px 5px;
+    font-size: 0.56rem;
+    white-space: normal;
+  }
+
+  .calendar-week-grid .calendar-appointment-main .calendar-conflict {
+    margin: 7px 0 0;
   }
 
   .calendar-week-grid .calendar-card-actions {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 4px;
   }
 
   .calendar-week-grid .calendar-card-actions a {
-    min-height: 29px;
+    min-width: 0;
+    min-height: 27px;
     padding: 4px 5px;
-    font-size: 0.59rem;
+    font-size: 0.58rem;
+    line-height: 1.1;
+    text-align: center;
   }
 }
 

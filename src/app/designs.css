@@ -21,6 +21,7 @@
   border-radius: var(--radius);
   background: var(--surface);
   padding: 20px;
+  box-shadow: var(--shadow-soft);
 }
 
 .design-form {
@@ -90,6 +91,20 @@
   border: 1px solid var(--border);
   border-radius: 15px;
   background: var(--surface);
+  box-shadow: var(--shadow-soft);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+@media (hover: hover) {
+  .design-card:hover {
+    border-color: var(--border-strong);
+    box-shadow: 0 10px 26px rgba(52, 40, 30, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .design-card:hover img {
+    transform: scale(1.025);
+  }
 }
 
 .design-card-image {
@@ -103,13 +118,14 @@
   height: 100%;
   display: block;
   object-fit: cover;
+  transition: transform 240ms ease;
 }
 
 .design-card-body {
   min-width: 0;
   display: grid;
   gap: 4px;
-  padding: 12px;
+  padding: 13px 14px 14px;
 }
 
 .design-card-body strong,

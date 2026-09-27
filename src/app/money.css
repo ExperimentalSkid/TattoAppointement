@@ -7,29 +7,28 @@
   margin: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  column-gap: 18px;
+  row-gap: 0;
 }
 
 .money-summary-grid > div {
   min-width: 0;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface-soft);
-  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  padding: 12px 0;
 }
 
 .money-summary-grid dt {
   color: var(--muted);
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 0.78rem;
+  font-weight: 550;
+  line-height: 1.35;
 }
 
 .money-summary-grid dd {
-  margin: 5px 0 0;
-  font-size: 1rem;
-  font-weight: 800;
+  margin: 4px 0 0;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
 }
 
 .payment-entry-form {
@@ -45,8 +44,8 @@
 
 .form-success {
   margin: 0;
-  color: var(--text);
-  font-weight: 700;
+  color: var(--success);
+  font-weight: 650;
 }
 
 .payment-history {
@@ -73,7 +72,7 @@
   justify-content: space-between;
   gap: 12px;
   border-bottom: 1px solid var(--border);
-  padding: 9px 0;
+  padding: 12px 0;
 }
 
 .payment-history-entry {
@@ -103,7 +102,8 @@
 
 @media (min-width: 700px) {
   .money-summary-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    column-gap: 24px;
   }
 
   .payment-entry-form {

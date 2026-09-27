@@ -363,7 +363,10 @@ export function CalendarView({
                         />
                       ))
                     ) : (
-                      <div className="calendar-empty compact">—</div>
+                      <div className="calendar-empty compact">
+                        <span aria-hidden="true">·</span>
+                        <span>{copy.clearDay}</span>
+                      </div>
                     )}
                   </div>
                 </section>

@@ -1,15 +1,15 @@
 :root {
-  --bg: #f5f3ef;
-  --surface: #ffffff;
-  --surface-soft: #ebe7e0;
-  --text: #171717;
-  --muted: #68635c;
-  --border: #d9d4cc;
-  --accent: #171717;
+  --bg: #f2efe8;
+  --surface: #fffdf9;
+  --surface-soft: #ebe5da;
+  --text: #28231f;
+  --muted: #746b62;
+  --border: #ded6ca;
+  --accent: #873f36;
   --accent-text: #ffffff;
   --danger: #a32121;
-  --radius: 16px;
-  --shadow: 0 12px 34px rgba(31, 26, 20, 0.08);
+  --radius: 18px;
+  --shadow: 0 16px 38px rgba(49, 37, 26, 0.08);
 }
 
 * {
@@ -53,7 +53,7 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid rgba(23, 23, 23, 0.24);
+  outline: 3px solid rgba(135, 63, 54, 0.3);
   outline-offset: 2px;
 }
 
@@ -224,7 +224,7 @@ textarea:focus-visible {
   gap: 12px;
   padding: 12px 16px;
   border-bottom: 1px solid var(--border);
-  background: rgba(245, 243, 239, 0.96);
+  background: rgba(242, 239, 232, 0.96);
   backdrop-filter: blur(14px);
 }
 
@@ -317,8 +317,8 @@ textarea:focus-visible {
 }
 
 .mobile-nav a[data-active="true"] {
-  background: var(--surface-soft);
-  color: var(--text);
+  background: #f2e5de;
+  color: var(--accent);
 }
 
 .desktop-nav {
@@ -337,14 +337,50 @@ textarea:focus-visible {
 }
 
 .desktop-nav a[data-active="true"] {
-  background: #2b2b2b;
-  color: #ffffff;
+  background: #442b28;
+  color: #fff8f0;
 }
 
 .desktop-brand {
-  padding: 4px 12px 22px;
-  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 4px 12px 28px;
+}
+
+.desktop-brand-mark {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px 12px 12px 4px;
+  background: #873f36;
+  color: #fff8f0;
+  font-family: Georgia, serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.desktop-brand-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.desktop-brand-copy small {
+  color: #cbaea2;
+  font-size: 0.62rem;
   font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+.desktop-brand-copy strong {
+  overflow: hidden;
+  color: #fff8f0;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .desktop-sidebar-footer {

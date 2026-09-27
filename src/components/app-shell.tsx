@@ -19,7 +19,13 @@ export function AppShell({
   return (
     <div className="app-shell">
       <aside className="desktop-sidebar">
-        <div className="desktop-brand">{dictionary.appName}</div>
+        <div className="desktop-brand">
+          <span className="desktop-brand-mark" aria-hidden="true">T</span>
+          <span className="desktop-brand-copy">
+            <small>STUDIO</small>
+            <strong>{dictionary.appName}</strong>
+          </span>
+        </div>
         <NavLinks copy={dictionary.nav} variant="desktop" />
         <div className="desktop-sidebar-footer">
           <div className="desktop-user" title={userName}>

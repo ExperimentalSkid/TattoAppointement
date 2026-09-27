@@ -1,11 +1,10 @@
-.app-topbar .language-select,
-.app-topbar .signout-button {
-  min-height: 44px;
-}
-
-@media (max-width: 699px) {
-  .calendar-new-button,
-  .calendar-empty-featured .secondary-button {
-    min-height: 44px;
+@media (max-width: 799px) {
+  .mobile-nav a,
+  .primary-button,
+  .secondary-button,
+  .danger-button,
+  .signout-button,
+  .language-select {
+    min-height: 44px !important;
   }
 }

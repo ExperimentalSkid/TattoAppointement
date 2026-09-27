@@ -1,0 +1,4 @@
+.app-topbar .language-select,
+.app-topbar .signout-button {
+  min-height: 44px;
+}

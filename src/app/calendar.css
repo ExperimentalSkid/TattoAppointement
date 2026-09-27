@@ -97,7 +97,7 @@
 
 .calendar-mini-weekday {
   color: #655d55;
-  font-size: 0.58rem;
+  font-size: 0.68rem;
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -226,7 +226,7 @@
   background: #f2e9e4;
   padding: 3px 4px;
   color: #3e332f;
-  font-size: 0.67rem;
+  font-size: 0.75rem;
   line-height: 1.25;
 }
 
@@ -256,11 +256,11 @@
   justify-self: start;
   border: 0;
   background: transparent;
-  color: #873f36;
+  color: var(--accent);
   padding: 2px 4px;
   cursor: pointer;
-  font-size: 0.6rem;
-  font-weight: 800;
+  font-size: 0.72rem;
+  font-weight: 650;
 }
 
 .calendar-workspace-header {
@@ -598,7 +598,7 @@
   gap: 5px;
   border-color: transparent;
   background: rgba(255, 253, 249, 0.45);
-  font-size: 0.67rem;
+  font-size: 0.72rem;
 }
 
 .calendar-empty.compact > span:first-child {
@@ -690,7 +690,7 @@
 .calendar-mobile-days span:not(.calendar-tab-count) {
   max-width: 100%;
   overflow: hidden;
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
   white-space: nowrap;
@@ -706,14 +706,14 @@
   position: absolute;
   top: 3px;
   right: 4px;
-  min-width: 15px;
-  height: 15px;
+  min-width: 18px;
+  height: 18px;
   display: grid;
   place-items: center;
-  border-radius: 50%;
-  background: #81916f;
+  border-radius: 4px;
+  background: #426248;
   color: #fff;
-  font-size: 0.56rem;
+  font-size: 0.68rem;
   line-height: 1;
 }
 
@@ -767,7 +767,7 @@
 
   .calendar-month-weekday {
     min-height: 34px;
-    font-size: 0.62rem;
+    font-size: 0.68rem;
   }
 
   .calendar-month-events {
@@ -869,7 +869,7 @@
 @media (max-width: 380px) {
   .calendar-session-count {
     gap: 5px;
-    font-size: 0.66rem;
+    font-size: 0.7rem;
   }
 
   .calendar-workspace-actions {
@@ -936,7 +936,7 @@
   }
 
   .calendar-mini-weekday {
-    font-size: 0.64rem;
+    font-size: 0.72rem;
   }
 
   .calendar-month-day {
@@ -1016,7 +1016,7 @@
 
   .calendar-day-heading-top > span {
     color: var(--calendar-muted);
-    font-size: 0.69rem;
+    font-size: 0.72rem;
     font-weight: 800;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -1031,20 +1031,19 @@
 
   .calendar-day-booking-count {
     color: var(--calendar-muted);
-    font-size: 0.62rem;
+    font-size: 0.7rem;
   }
 
   .calendar-today-label {
     position: absolute;
     top: 8px;
     right: 7px;
-    border-radius: 999px;
-    background: #873f36;
-    color: #fff8f0;
+    border-radius: 4px;
+    background: var(--calendar-clay);
+    color: #fffdf9;
     padding: 4px 6px;
-    font-size: 0.53rem;
-    font-weight: 800;
-    letter-spacing: 0.04em;
+    font-size: 0.68rem;
+    font-weight: 650;
     text-transform: uppercase;
   }
 
@@ -1078,7 +1077,7 @@
   }
 
   .calendar-week-grid .calendar-time-row span {
-    font-size: 0.62rem;
+    font-size: 0.7rem;
   }
 
   .calendar-week-grid .calendar-client-row {
@@ -1086,20 +1085,20 @@
   }
 
   .calendar-week-grid .calendar-client-avatar {
-    width: 20px;
-    height: 20px;
-    font-size: 0.52rem;
+    width: 24px;
+    height: 24px;
+    font-size: 0.62rem;
   }
 
   .calendar-week-grid .calendar-client-row h3 {
-    font-size: 0.68rem;
+    font-size: 0.72rem;
   }
 
   .calendar-week-grid .calendar-status {
     max-width: 100%;
     margin: 7px 0 0;
-    padding: 3px 5px;
-    font-size: 0.56rem;
+    padding: 4px 5px;
+    font-size: 0.68rem;
     white-space: normal;
   }
 
@@ -1115,9 +1114,9 @@
 
   .calendar-week-grid .calendar-card-actions a {
     min-width: 0;
-    min-height: 36px;
+    min-height: 40px;
     padding: 5px 6px;
-    font-size: 0.68rem;
+    font-size: 0.72rem;
     line-height: 1.15;
     text-align: center;
   }

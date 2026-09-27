@@ -337,10 +337,6 @@
 }
 
 @media (min-width: 640px) {
-  .design-grid {
-    gap: 14px;
-  }
-
   .search-bar {
     grid-template-columns: minmax(260px, 1fr) auto auto;
   }

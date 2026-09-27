@@ -958,12 +958,12 @@
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 8px;
-    align-items: stretch;
+    align-items: start;
   }
 
   .calendar-week-day {
     min-width: 0;
-    min-height: 300px;
+    min-height: 0;
     overflow: hidden;
     border: 1px solid var(--calendar-line);
     border-radius: 16px;
@@ -980,7 +980,7 @@
   .calendar-day-heading {
     position: relative;
     width: 100%;
-    min-height: 75px;
+    min-height: 54px;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -1045,6 +1045,10 @@
     display: grid;
     align-content: start;
     gap: 7px;
+  }
+
+  .calendar-week-grid .calendar-empty.compact {
+    min-height: 62px;
   }
 
   .calendar-week-grid .calendar-appointment {
@@ -1113,8 +1117,7 @@
   }
 
   .calendar-week-day {
-    min-height: 340px;
-    padding: 10px;
+    padding: 8px;
   }
 
   .calendar-week-grid .calendar-appointment {

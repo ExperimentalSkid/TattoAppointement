@@ -275,7 +275,7 @@ export function CalendarView({
 
   return (
     <section className="calendar-page">
-      <div className={`calendar-layout${mode === "week" ? " calendar-layout-week" : ""}`}>
+      <div className="calendar-layout">
         <aside className="calendar-date-panel">
           <div className="calendar-date-feature">
             <span>{weekdayFormatter.format(anchorDate)}</span>

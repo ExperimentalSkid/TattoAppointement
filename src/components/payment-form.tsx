@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { PaymentFormState } from "@/app/(app)/appointments/payment-actions";
 
@@ -19,9 +19,14 @@ export function PaymentForm({
   copy: Dictionary["appointments"];
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (state.success) formRef.current?.reset();
+  }, [state]);
 
   return (
-    <form action={formAction} className="payment-entry-form">
+    <form ref={formRef} action={formAction} className="payment-entry-form">
       <div className="field">
         <label htmlFor="payment-amount">{copy.recordPayment}</label>
         <input

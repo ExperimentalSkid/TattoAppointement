@@ -2,3 +2,9 @@
 .app-topbar .signout-button {
   min-height: 44px;
 }
+
+@media (max-width: 699px) {
+  .calendar-new-button {
+    min-height: 44px;
+  }
+}

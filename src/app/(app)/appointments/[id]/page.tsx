@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { LocalDateTime } from "@/components/local-date-time";
 import { PaymentForm } from "@/components/payment-form";
 import { prisma } from "@/lib/prisma";
 import { requireArtistId } from "@/lib/session";
 import { getDictionary } from "@/i18n";
 import { cancelAppointment, deleteAppointment } from "@/app/(app)/appointments/actions";
-import { recordPayment } from "@/app/(app)/appointments/payment-actions";
+import { deletePayment, recordPayment } from "@/app/(app)/appointments/payment-actions";
 import { calculateMoneySummary, centsToDecimal, decimalToCents } from "@/lib/money";
 
 export default async function AppointmentDetailPage({
@@ -41,6 +42,10 @@ export default async function AppointmentDetailPage({
   const money = calculateMoneySummary({ agreedPriceCents, depositRequiredCents, paymentsCents: paymentCents });
 
   const formatMoney = (cents: number | null) => cents === null ? "—" : centsToDecimal(cents);
+  const removePaymentLabel = locale === "es" ? "Eliminar pago" : "Remove payment";
+  const deleteAppointmentConfirmation = locale === "es"
+    ? "¿Eliminar esta cita y su historial de pagos?"
+    : "Delete this appointment and its payment history?";
 
   return (
     <section className="appointment-page">
@@ -115,12 +120,30 @@ export default async function AppointmentDetailPage({
           <h3>{dictionary.appointments.paymentHistory}</h3>
           {appointment.payments.length ? (
             <ul className="payment-history-list">
-              {appointment.payments.map((payment) => (
-                <li key={payment.id}>
-                  <strong>{formatMoney(decimalToCents(payment.amount))}</strong>
-                  <LocalDateTime iso={payment.receivedAt.toISOString()} locale={locale} />
-                </li>
-              ))}
+              {appointment.payments.map((payment) => {
+                const paymentAmount = formatMoney(decimalToCents(payment.amount));
+                const deletePaymentAction = deletePayment.bind(null, payment.id, appointment.id);
+                const removePaymentConfirmation = locale === "es"
+                  ? `¿Eliminar el pago registrado de ${paymentAmount}?`
+                  : `Remove the recorded payment of ${paymentAmount}?`;
+
+                return (
+                  <li key={payment.id}>
+                    <div className="payment-history-entry">
+                      <strong>{paymentAmount}</strong>
+                      <LocalDateTime iso={payment.receivedAt.toISOString()} locale={locale} />
+                    </div>
+                    <form action={deletePaymentAction}>
+                      <ConfirmSubmitButton
+                        className="secondary-button payment-remove-button"
+                        message={removePaymentConfirmation}
+                      >
+                        {removePaymentLabel}
+                      </ConfirmSubmitButton>
+                    </form>
+                  </li>
+                );
+              })}
             </ul>
           ) : <p className="muted-copy">{dictionary.appointments.noPayments}</p>}
         </div>
@@ -128,7 +151,11 @@ export default async function AppointmentDetailPage({
 
       <section className="appointment-actions-section">
         {appointment.status !== "CANCELLED" ? <form action={cancelAction}><button className="secondary-button" type="submit">{dictionary.appointments.cancelAppointment}</button></form> : null}
-        <form action={deleteAction}><button className="danger-button" type="submit">{dictionary.appointments.deleteAppointment}</button></form>
+        <form action={deleteAction}>
+          <ConfirmSubmitButton className="danger-button" message={deleteAppointmentConfirmation}>
+            {dictionary.appointments.deleteAppointment}
+          </ConfirmSubmitButton>
+        </form>
       </section>
     </section>
   );

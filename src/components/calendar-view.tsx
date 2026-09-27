@@ -56,6 +56,16 @@ function overlaps(first: CalendarAppointment, second: CalendarAppointment) {
   return firstStart < secondEnd && secondStart < firstEnd;
 }
 
+function clientInitials(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
 function CalendarAppointmentCard({
   appointment,
   conflicted,
@@ -80,8 +90,15 @@ function CalendarAppointmentCard({
           <strong>{timeFormatter.format(new Date(appointment.startsAtIso))}</strong>
           <span>{appointment.durationMinutes} {copy.minutes}</span>
         </div>
-        <h3>{appointment.client.name}</h3>
-        <p>{statuses[appointment.status]}</p>
+        <div className="calendar-client-row">
+          <span className="calendar-client-avatar" aria-hidden="true">
+            {clientInitials(appointment.client.name)}
+          </span>
+          <h3>{appointment.client.name}</h3>
+        </div>
+        <span className="status-pill calendar-status" data-status={appointment.status}>
+          {statuses[appointment.status]}
+        </span>
         {conflicted ? (
           <p className="calendar-conflict" title={copy.overlapHelp}>
             {copy.overlap}
@@ -133,7 +150,14 @@ function CalendarDayAgenda({
           ))}
         </div>
       ) : (
-        <div className="calendar-empty">{copy.noAppointments}</div>
+        <div className="calendar-empty calendar-empty-featured">
+          <span className="calendar-empty-icon" aria-hidden="true">+</span>
+          <strong>{copy.emptyDayTitle}</strong>
+          <p>{copy.emptyDayHint}</p>
+          <Link href="/new-appointment" className="secondary-button button-link">
+            {copy.newAppointment}
+          </Link>
+        </div>
       )}
     </section>
   );
@@ -224,16 +248,31 @@ export function CalendarView({
     mode === "day"
       ? fullDateFormatter.format(anchorDate)
       : `${dateFormatter.format(weekDays[0])} – ${dateFormatter.format(weekDays[6])}`;
+  const visibleAppointments =
+    mode === "day"
+      ? appointmentsByDay.get(anchor) ?? []
+      : weekDays.flatMap((day) => appointmentsByDay.get(dateKey(day)) ?? []);
+  const todayKey = dateKey(new Date());
 
   return (
     <section className="calendar-page">
       <div className="calendar-title-row">
-        <div>
+        <div className="calendar-title-copy">
+          <p className="calendar-eyebrow">{copy.scheduleLabel}</p>
           <h1 className="page-heading">{periodLabel}</h1>
+          <p className="calendar-subtitle">{copy.scheduleDescription}</p>
         </div>
-        <Link className="primary-button button-link" href="/new-appointment">
-          {copy.newAppointment}
-        </Link>
+        <div className="calendar-title-actions">
+          <div className="calendar-session-count">
+            <span className="calendar-session-dot" aria-hidden="true" />
+            <strong>{visibleAppointments.length}</strong>
+            <span>{copy.sessions}</span>
+          </div>
+          <Link className="primary-button button-link calendar-new-button" href="/new-appointment">
+            <span aria-hidden="true">+</span>
+            {copy.newAppointment}
+          </Link>
+        </div>
       </div>
 
       <div className="calendar-toolbar">
@@ -298,9 +337,18 @@ export function CalendarView({
                   <button
                     type="button"
                     className="calendar-day-heading"
+                    data-today={key === todayKey}
+                    aria-label={fullDateFormatter.format(day)}
                     onClick={() => navigate("day", day)}
                   >
-                    {dateFormatter.format(day)}
+                    <span className="calendar-day-heading-top">
+                      <span>{weekdayFormatter.format(day)}</span>
+                      <strong>{day.getDate()}</strong>
+                    </span>
+                    <span className="calendar-day-booking-count">
+                      {values.length ? `${values.length} ${copy.sessions}` : copy.clearDay}
+                    </span>
+                    {key === todayKey ? <span className="calendar-today-label">{copy.today}</span> : null}
                   </button>
                   <div className="calendar-week-list">
                     {values.length ? (
@@ -338,6 +386,9 @@ export function CalendarView({
                   >
                     <span>{weekdayFormatter.format(day)}</span>
                     <strong>{day.getDate()}</strong>
+                    {appointmentsByDay.get(key)?.length ? (
+                      <span className="calendar-tab-count">{appointmentsByDay.get(key)?.length}</span>
+                    ) : null}
                   </button>
                 );
               })}

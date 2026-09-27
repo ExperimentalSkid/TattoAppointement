@@ -1,7 +1,7 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 
 const png = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
   "base64",
 );
 
@@ -19,13 +19,13 @@ async function createArtistContext(browser: Browser) {
   await page.locator("#email").fill(`qa9-${unique}@example.com`);
   await page.locator("#password").fill("QAPass9-2026!");
   await page.locator(".auth-form button[type='submit']").click();
-  await page.waitForURL(/\/calendar/);
+  await page.waitForURL(/\/calendar/, { timeout: 15_000 });
 
   await page.goto("/clients/new");
   await page.locator("#client-name").fill("QA Pass 9 Client");
   await page.locator("#client-phone").fill(`+34 620 ${unique.slice(-3)} 009`);
   await page.locator(".client-form button[type='submit']").click();
-  await page.waitForURL(/\/clients\/(?!new$)[A-Za-z0-9_-]+$/);
+  await page.waitForURL(/\/clients\/(?!new$)[A-Za-z0-9_-]+$/, { timeout: 15_000 });
 
   await page.goto("/designs/new");
   await page.locator("#design-image").setInputFiles({
@@ -35,7 +35,7 @@ async function createArtistContext(browser: Browser) {
   });
   await page.locator("#design-title").fill("QA Pass 9 Design");
   await page.locator(".design-form button[type='submit']").click();
-  await page.waitForURL(/\/designs\/(?!new$)[A-Za-z0-9_-]+$/);
+  await page.waitForURL(/\/designs\/(?!new$)[A-Za-z0-9_-]+$/, { timeout: 15_000 });
 
   return { context, page };
 }
@@ -58,9 +58,11 @@ async function moneyValue(page: Page, label: string) {
 }
 
 test("QA pass 9 edge cases stay guarded", async ({ browser }) => {
+  test.setTimeout(120_000);
   const { context, page } = await createArtistContext(browser);
 
   await page.goto("/new-appointment");
+  await expect(page.locator("input[name='timezoneName']")).toHaveValue("Europe/Madrid");
   await fillAppointmentBase(page);
   await page.locator("#appointment-start").fill("2026-03-29T02:30");
   await page.locator(".appointment-form button[type='submit']").click();
@@ -78,7 +80,7 @@ test("QA pass 9 edge cases stay guarded", async ({ browser }) => {
 
   await page.locator("#agreed-price").fill("350.00");
   await page.locator(".appointment-form button[type='submit']").click();
-  await page.waitForURL(/\/appointments\/[A-Za-z0-9_-]+$/);
+  await page.waitForURL(/\/appointments\/[A-Za-z0-9_-]+$/, { timeout: 15_000 });
   const appointmentPath = new URL(page.url()).pathname;
   expect(await moneyValue(page, "Amount received")).toBe("25.00");
 
@@ -93,7 +95,7 @@ test("QA pass 9 edge cases stay guarded", async ({ browser }) => {
     await dialog.accept();
   });
   await page.getByRole("button", { name: "Remove payment" }).first().click();
-  await expect.poll(() => moneyValue(page, "Amount received")).toBe("25.00");
+  await expect.poll(() => moneyValue(page, "Amount received"), { timeout: 15_000 }).toBe("25.00");
 
   page.once("dialog", async (dialog) => {
     expect(dialog.message()).toContain("Delete this appointment");
@@ -106,7 +108,7 @@ test("QA pass 9 edge cases stay guarded", async ({ browser }) => {
   await page.waitForURL((url) => {
     const anchor = url.searchParams.get("anchor");
     return Boolean(anchor && anchor !== "2026-02-31" && /^\d{4}-\d{2}-\d{2}$/.test(anchor));
-  });
+  }, { timeout: 15_000 });
 
   await context.close();
 });

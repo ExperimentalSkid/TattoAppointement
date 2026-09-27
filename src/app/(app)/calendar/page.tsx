@@ -31,12 +31,19 @@ export default async function CalendarPage({
   const artistId = await requireArtistId();
   const { locale, dictionary } = await getDictionary();
   const params = await searchParams;
-  const mode = params.view === "day" ? "day" : "week";
+  const mode = params.view === "day" || params.view === "month" ? params.view : "week";
   const requestedAnchor = validDateKey(params.anchor);
   const anchor = requestedAnchor ?? utcDateKey(new Date());
   const anchorUtc = new Date(`${anchor}T12:00:00.000Z`);
-  const rangeStart = new Date(anchorUtc.getTime() - 8 * 24 * 60 * 60 * 1000);
-  const rangeEnd = new Date(anchorUtc.getTime() + 9 * 24 * 60 * 60 * 1000);
+  const monthStart = new Date(Date.UTC(anchorUtc.getUTCFullYear(), anchorUtc.getUTCMonth(), 1, 12));
+  const monthOffset = (monthStart.getUTCDay() + 6) % 7;
+  const monthRangeStart = new Date(monthStart.getTime() - monthOffset * 24 * 60 * 60 * 1000);
+  const rangeStart = mode === "month"
+    ? monthRangeStart
+    : new Date(anchorUtc.getTime() - 8 * 24 * 60 * 60 * 1000);
+  const rangeEnd = mode === "month"
+    ? new Date(monthRangeStart.getTime() + 42 * 24 * 60 * 60 * 1000)
+    : new Date(anchorUtc.getTime() + 9 * 24 * 60 * 60 * 1000);
 
   const appointments = await prisma.appointment.findMany({
     where: {

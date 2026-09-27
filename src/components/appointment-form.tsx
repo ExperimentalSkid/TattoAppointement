@@ -40,16 +40,17 @@ function offsetForLocalValue(value: string) {
   return Number.isNaN(date.getTime()) ? new Date().getTimezoneOffset() : date.getTimezoneOffset();
 }
 
-export function AppointmentForm({ action, clients, designs, copy, initial, cancelHref }: {
+export function AppointmentForm({ action, clients, designs, copy, initial, cancelHref, defaultClientId }: {
   action: AppointmentAction;
   clients: ClientOption[];
   designs: DesignOption[];
   copy: Dictionary["appointments"];
   initial?: InitialAppointment;
   cancelHref?: string;
+  defaultClientId?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, initialFormState);
-  const [clientId, setClientId] = useState(initial?.clientId ?? "");
+  const [clientId, setClientId] = useState(initial?.clientId ?? defaultClientId ?? "");
   const [startsAtLocal, setStartsAtLocal] = useState(() => initial?.startsAtIso ? localInputValue(initial.startsAtIso) : "");
   const [durationMinutes, setDurationMinutes] = useState(String(initial?.durationMinutes ?? 120));
   const [status, setStatus] = useState<AppointmentStatusValue>(initial?.status ?? "PLANNED");

@@ -4,9 +4,15 @@ import { requireArtistId } from "@/lib/session";
 import { getDictionary } from "@/i18n";
 import { createAppointment } from "@/app/(app)/appointments/actions";
 
-export default async function NewAppointmentPage() {
+export default async function NewAppointmentPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ clientId?: string | string[] }>;
+}) {
   const artistId = await requireArtistId();
   const { dictionary } = await getDictionary();
+  const params = await searchParams;
+  const requestedClientId = typeof params.clientId === "string" ? params.clientId : "";
 
   const [clients, designs] = await Promise.all([
     prisma.client.findMany({
@@ -20,6 +26,10 @@ export default async function NewAppointmentPage() {
       select: { id: true, title: true },
     }),
   ]);
+
+  const defaultClientId = clients.some((client) => client.id === requestedClientId)
+    ? requestedClientId
+    : undefined;
 
   return (
     <section className="appointment-page">
@@ -35,6 +45,7 @@ export default async function NewAppointmentPage() {
         clients={clients}
         designs={designs}
         copy={dictionary.appointments}
+        defaultClientId={defaultClientId}
       />
     </section>
   );

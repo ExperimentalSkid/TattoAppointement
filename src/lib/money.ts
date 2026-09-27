@@ -1,6 +1,8 @@
 export type DepositState = "NOT_REQUIRED" | "PENDING" | "PARTIAL" | "PAID";
 export type PaymentState = "NO_PRICE" | "UNPAID" | "PARTIAL" | "PAID" | "OVERPAID";
 
+export const MAX_MONEY_CENTS = 9_999_999_999;
+
 export type MoneySummary = {
   totalReceivedCents: number;
   depositPendingCents: number;
@@ -16,7 +18,7 @@ export function parseMoneyInput(value: string, { optional = false }: { optional?
 
   const [whole, fraction = ""] = normalized.split(".");
   const cents = Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
-  if (!Number.isSafeInteger(cents) || cents < 0) return undefined;
+  if (!Number.isSafeInteger(cents) || cents < 0 || cents > MAX_MONEY_CENTS) return undefined;
   return cents;
 }
 

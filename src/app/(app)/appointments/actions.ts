@@ -55,6 +55,7 @@ function parseInput(formData: FormData): AppointmentInput | AppointmentFormState
   const clientId = String(formData.get("clientId") ?? "").trim();
   const startsAtLocal = String(formData.get("startsAtLocal") ?? "").trim();
   const timezoneOffset = Number(formData.get("timezoneOffset"));
+  const timezoneName = String(formData.get("timezoneName") ?? "").trim() || null;
   const durationMinutes = Number(formData.get("durationMinutes"));
   const notes = cleanOptional(formData.get("notes"));
   const statusRaw = String(formData.get("status") ?? "PLANNED");
@@ -67,7 +68,7 @@ function parseInput(formData: FormData): AppointmentInput | AppointmentFormState
   const initialPaymentParsed = parseMoneyInput(String(formData.get("initialPayment") ?? "0"));
 
   if (!clientId || !startsAtLocal) return { error: "required" };
-  const startsAt = parseLocalDateTime(startsAtLocal, timezoneOffset);
+  const startsAt = parseLocalDateTime(startsAtLocal, timezoneOffset, timezoneName);
   if (!startsAt) return { error: "schedule" };
   if (!Number.isInteger(durationMinutes) || durationMinutes < 15 || durationMinutes > 1440) return { error: "duration" };
   if (!isAppointmentStatus(statusRaw)) return { error: "save" };

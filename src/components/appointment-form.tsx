@@ -62,6 +62,10 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
   const [allowOverlap, setAllowOverlap] = useState(false);
   const timezoneOffset = useMemo(() => offsetForLocalValue(startsAtLocal), [startsAtLocal]);
 
+  function populateTimezoneName(node: HTMLInputElement | null) {
+    if (node) node.value = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "";
+  }
+
   function scheduleChanged() {
     setAllowOverlap(false);
   }
@@ -86,6 +90,7 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
   return (
     <form action={formAction} className="appointment-form">
       <input type="hidden" name="timezoneOffset" value={timezoneOffset} />
+      <input ref={populateTimezoneName} type="hidden" name="timezoneName" defaultValue="" />
       <input type="hidden" name="allowOverlap" value={allowOverlap ? "true" : "false"} />
 
       <section className="appointment-form-section">

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { AppointmentStatusValue } from "@/lib/appointments";
@@ -142,6 +142,7 @@ function CalendarDayAgenda({
 export function CalendarView({
   appointments,
   anchor,
+  anchorProvided,
   mode,
   locale,
   copy,
@@ -149,6 +150,7 @@ export function CalendarView({
 }: {
   appointments: CalendarAppointment[];
   anchor: string;
+  anchorProvided: boolean;
   mode: CalendarViewMode;
   locale: "en" | "es";
   copy: CalendarCopy;
@@ -158,6 +160,11 @@ export function CalendarView({
   const anchorDate = useMemo(() => dateFromKey(anchor), [anchor]);
   const [mobileSelectedDay, setMobileSelectedDay] = useState(anchor);
   const localeName = locale === "es" ? "es-ES" : "en-GB";
+
+  useEffect(() => {
+    if (anchorProvided) return;
+    router.replace(`/calendar?view=${mode}&anchor=${dateKey(new Date())}`);
+  }, [anchorProvided, mode, router]);
 
   const appointmentsByDay = useMemo(() => {
     const grouped = new Map<string, CalendarAppointment[]>();

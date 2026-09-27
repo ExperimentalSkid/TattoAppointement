@@ -69,14 +69,36 @@
 
 .payment-history-list li {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   border-bottom: 1px solid var(--border);
   padding: 9px 0;
 }
 
+.payment-history-entry {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.payment-remove-button {
+  white-space: nowrap;
+}
+
 .payment-history-list li:last-child {
   border-bottom: 0;
+}
+
+@media (max-width: 520px) {
+  .payment-history-list li {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .payment-remove-button {
+    width: 100%;
+  }
 }
 
 @media (min-width: 700px) {

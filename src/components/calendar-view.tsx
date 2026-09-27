@@ -163,11 +163,8 @@ export function CalendarView({
 
   useEffect(() => {
     if (anchorProvided) return;
-    const localToday = dateKey(new Date());
-    if (localToday !== anchor) {
-      router.replace(`/calendar?view=${mode}&anchor=${localToday}`);
-    }
-  }, [anchor, anchorProvided, mode, router]);
+    router.replace(`/calendar?view=${mode}&anchor=${dateKey(new Date())}`);
+  }, [anchorProvided, mode, router]);
 
   const appointmentsByDay = useMemo(() => {
     const grouped = new Map<string, CalendarAppointment[]>();

@@ -5,6 +5,7 @@ import "./designs.css";
 import "./appointments.css";
 import "./calendar.css";
 import "./money.css";
+import "./qa-fixes.css";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { getLocale } from "@/i18n";
 

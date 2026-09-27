@@ -4,7 +4,8 @@
 }
 
 @media (max-width: 699px) {
-  .calendar-new-button {
+  .calendar-new-button,
+  .calendar-empty-featured .secondary-button {
     min-height: 44px;
   }
 }

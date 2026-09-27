@@ -911,6 +911,11 @@
     gap: 16px;
   }
 
+  .calendar-layout-week {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
   .calendar-date-panel {
     position: sticky;
     top: 20px;
@@ -926,14 +931,42 @@
     font-size: 4.5rem;
   }
 
-  .calendar-date-panel-footer {
-    flex-direction: column;
-    align-items: stretch;
-    padding-top: 5px;
+  .calendar-layout-week .calendar-date-panel {
+    position: static;
+    grid-template-columns: 88px minmax(260px, 320px) minmax(0, 1fr);
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+  }
+
+  .calendar-layout-week .calendar-date-feature {
+    min-height: 96px;
+  }
+
+  .calendar-layout-week .calendar-date-feature > strong {
+    font-size: 3rem;
+  }
+
+  .calendar-layout-week .calendar-mini-month {
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .calendar-layout-week .calendar-date-panel-footer {
+    grid-column: auto;
+    flex-direction: row;
+    align-items: center;
+    justify-self: end;
+    gap: 18px;
+    padding-top: 0;
   }
 
   .calendar-date-panel-footer .calendar-new-button {
     width: 100%;
+  }
+
+  .calendar-layout-week .calendar-date-panel-footer .calendar-new-button {
+    width: auto;
   }
 
   .calendar-mini-month h1 {
@@ -1128,7 +1161,7 @@
 }
 
 @media (min-width: 1280px) {
-  .calendar-layout {
+  .calendar-layout:not(.calendar-layout-week) {
     grid-template-columns: 270px minmax(0, 1fr);
   }
 

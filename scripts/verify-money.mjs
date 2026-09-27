@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   calculateMoneySummary,
   centsToDecimal,
+  MAX_MONEY_CENTS,
   parseMoneyInput,
 } from "../src/lib/money.ts";
 
@@ -12,6 +13,8 @@ assert.equal(parseMoneyInput("0.01"), 1);
 assert.equal(parseMoneyInput("", { optional: true }), null);
 assert.equal(parseMoneyInput("12.345"), undefined);
 assert.equal(parseMoneyInput("-1"), undefined);
+assert.equal(parseMoneyInput("99999999.99"), MAX_MONEY_CENTS);
+assert.equal(parseMoneyInput("100000000.00"), undefined);
 assert.equal(centsToDecimal(10050), "100.50");
 
 assert.deepEqual(

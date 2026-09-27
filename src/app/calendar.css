@@ -956,20 +956,33 @@
 
   .calendar-week-grid {
     display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 8px;
-    align-items: start;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 10px;
+    align-items: stretch;
   }
 
   .calendar-week-day {
     min-width: 0;
-    min-height: 0;
+    min-height: 180px;
+    grid-column: span 2;
     overflow: hidden;
     border: 1px solid var(--calendar-line);
     border-radius: 16px;
     background: rgba(255, 253, 249, 0.72);
     padding: 8px;
     transition: border-color 160ms ease, background 160ms ease;
+  }
+
+  .calendar-week-day:nth-child(5) {
+    grid-column: 2 / span 2;
+  }
+
+  .calendar-week-day:nth-child(6) {
+    grid-column: 4 / span 2;
+  }
+
+  .calendar-week-day:nth-child(7) {
+    grid-column: 6 / span 2;
   }
 
   .calendar-week-day:has(.calendar-day-heading[data-today="true"]) {

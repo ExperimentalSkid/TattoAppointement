@@ -1,0 +1,10 @@
+@media (max-width: 799px) {
+  .mobile-nav a,
+  .primary-button,
+  .secondary-button,
+  .danger-button,
+  .signout-button,
+  .language-select {
+    min-height: 44px !important;
+  }
+}

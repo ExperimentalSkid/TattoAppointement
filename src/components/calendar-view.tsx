@@ -17,7 +17,7 @@ type CalendarAppointment = {
   };
 };
 
-type CalendarViewMode = "day" | "week";
+type CalendarViewMode = "day" | "week" | "month";
 type CalendarCopy = Dictionary["calendar"];
 type StatusCopy = Dictionary["appointments"]["statuses"];
 
@@ -56,6 +56,16 @@ function overlaps(first: CalendarAppointment, second: CalendarAppointment) {
   return firstStart < secondEnd && secondStart < firstEnd;
 }
 
+function clientInitials(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
 function CalendarAppointmentCard({
   appointment,
   conflicted,
@@ -80,8 +90,15 @@ function CalendarAppointmentCard({
           <strong>{timeFormatter.format(new Date(appointment.startsAtIso))}</strong>
           <span>{appointment.durationMinutes} {copy.minutes}</span>
         </div>
-        <h3>{appointment.client.name}</h3>
-        <p>{statuses[appointment.status]}</p>
+        <div className="calendar-client-row">
+          <span className="calendar-client-avatar" aria-hidden="true">
+            {clientInitials(appointment.client.name)}
+          </span>
+          <h3>{appointment.client.name}</h3>
+        </div>
+        <span className="status-pill calendar-status" data-status={appointment.status}>
+          {statuses[appointment.status]}
+        </span>
         {conflicted ? (
           <p className="calendar-conflict" title={copy.overlapHelp}>
             {copy.overlap}
@@ -133,7 +150,14 @@ function CalendarDayAgenda({
           ))}
         </div>
       ) : (
-        <div className="calendar-empty">{copy.noAppointments}</div>
+        <div className="calendar-empty calendar-empty-featured">
+          <span className="calendar-empty-icon" aria-hidden="true">+</span>
+          <strong>{copy.emptyDayTitle}</strong>
+          <p>{copy.emptyDayHint}</p>
+          <Link href="/new-appointment" className="secondary-button button-link">
+            {copy.newAppointment}
+          </Link>
+        </div>
       )}
     </section>
   );
@@ -215,32 +239,93 @@ export function CalendarView({
     minute: "2-digit",
   });
   const weekdayFormatter = new Intl.DateTimeFormat(localeName, { weekday: "short" });
+  const monthFormatter = new Intl.DateTimeFormat(localeName, { month: "long", year: "numeric" });
 
   function navigate(nextMode: CalendarViewMode, nextDate: Date) {
     router.push(`/calendar?view=${nextMode}&anchor=${dateKey(nextDate)}`);
   }
 
+  function navigatePeriod(direction: -1 | 1) {
+    if (mode === "month") {
+      navigate("month", new Date(anchorDate.getFullYear(), anchorDate.getMonth() + direction, 1, 12));
+      return;
+    }
+    navigate(mode, addDays(anchorDate, direction * (mode === "week" ? 7 : 1)));
+  }
+
   const periodLabel =
     mode === "day"
       ? fullDateFormatter.format(anchorDate)
-      : `${dateFormatter.format(weekDays[0])} – ${dateFormatter.format(weekDays[6])}`;
+      : mode === "month"
+        ? monthFormatter.format(anchorDate)
+        : `${dateFormatter.format(weekDays[0])} – ${dateFormatter.format(weekDays[6])}`;
+  const visibleAppointments =
+    mode === "day"
+      ? appointmentsByDay.get(anchor) ?? []
+      : mode === "month"
+        ? appointments.filter((appointment) => {
+            const date = new Date(appointment.startsAtIso);
+            return date.getMonth() === anchorDate.getMonth() && date.getFullYear() === anchorDate.getFullYear();
+          })
+        : weekDays.flatMap((day) => appointmentsByDay.get(dateKey(day)) ?? []);
+  const todayKey = dateKey(new Date());
+  const monthGridStart = weekStart(new Date(anchorDate.getFullYear(), anchorDate.getMonth(), 1, 12));
+  const monthDays = Array.from({ length: 42 }, (_, index) => addDays(monthGridStart, index));
+  const monthWeekdays = weekDays.map((day) => weekdayFormatter.format(day));
 
   return (
     <section className="calendar-page">
-      <div className="calendar-title-row">
-        <div>
-          <h1 className="page-heading">{periodLabel}</h1>
-        </div>
-        <Link className="primary-button button-link" href="/new-appointment">
-          {copy.newAppointment}
-        </Link>
-      </div>
+      <div className="calendar-layout">
+        <aside className="calendar-date-panel">
+          <div className="calendar-date-feature">
+            <span>{weekdayFormatter.format(anchorDate)}</span>
+            <strong>{anchorDate.getDate()}</strong>
+            <span>{monthFormatter.format(anchorDate)}</span>
+          </div>
+          <section className="calendar-mini-month" aria-label={monthFormatter.format(anchorDate)}>
+            <h1>{monthFormatter.format(anchorDate)}</h1>
+            <div className="calendar-mini-grid" role="group">
+              {monthWeekdays.map((weekday, index) => (
+                <span className="calendar-mini-weekday" key={`${weekday}-${index}`}>{weekday}</span>
+              ))}
+              {monthDays.map((day) => {
+                const key = dateKey(day);
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    aria-label={fullDateFormatter.format(day)}
+                    aria-pressed={key === anchor}
+                    data-outside-month={day.getMonth() !== anchorDate.getMonth()}
+                    data-today={key === todayKey}
+                    onClick={() => navigate(mode, day)}
+                  >
+                    {day.getDate()}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+          <div className="calendar-date-panel-footer">
+            <div className="calendar-session-count">
+              <strong>{visibleAppointments.length}</strong>
+              <span>{copy.sessions}</span>
+            </div>
+            <Link className="primary-button button-link calendar-new-button" href="/new-appointment">
+              <span aria-hidden="true">+</span>
+              {copy.newAppointment}
+            </Link>
+          </div>
+        </aside>
 
-      <div className="calendar-toolbar">
+        <section className="calendar-planner">
+          <div className="calendar-toolbar">
+            <p className="calendar-range-label">{periodLabel}</p>
         <div className="calendar-view-switch" role="group">
           <button
             type="button"
             data-active={mode === "day"}
+            aria-pressed={mode === "day"}
             onClick={() => navigate("day", anchorDate)}
           >
             {copy.day}
@@ -248,9 +333,18 @@ export function CalendarView({
           <button
             type="button"
             data-active={mode === "week"}
+            aria-pressed={mode === "week"}
             onClick={() => navigate("week", anchorDate)}
           >
             {copy.week}
+          </button>
+          <button
+            type="button"
+            data-active={mode === "month"}
+            aria-pressed={mode === "month"}
+            onClick={() => navigate("month", anchorDate)}
+          >
+            {copy.month}
           </button>
         </div>
 
@@ -258,7 +352,7 @@ export function CalendarView({
           <button
             type="button"
             aria-label={copy.previous}
-            onClick={() => navigate(mode, addDays(anchorDate, mode === "week" ? -7 : -1))}
+            onClick={() => navigatePeriod(-1)}
           >
             ←
           </button>
@@ -268,7 +362,7 @@ export function CalendarView({
           <button
             type="button"
             aria-label={copy.next}
-            onClick={() => navigate(mode, addDays(anchorDate, mode === "week" ? 7 : 1))}
+            onClick={() => navigatePeriod(1)}
           >
             →
           </button>
@@ -298,9 +392,18 @@ export function CalendarView({
                   <button
                     type="button"
                     className="calendar-day-heading"
+                    data-today={key === todayKey}
+                    aria-label={fullDateFormatter.format(day)}
                     onClick={() => navigate("day", day)}
                   >
-                    {dateFormatter.format(day)}
+                    <span className="calendar-day-heading-top">
+                      <span>{weekdayFormatter.format(day)}</span>
+                      <strong>{day.getDate()}</strong>
+                    </span>
+                    <span className="calendar-day-booking-count">
+                      {values.length ? `${values.length} ${copy.sessions}` : copy.clearDay}
+                    </span>
+                    {key === todayKey ? <span className="calendar-today-label">{copy.today}</span> : null}
                   </button>
                   <div className="calendar-week-list">
                     {values.length ? (
@@ -315,7 +418,10 @@ export function CalendarView({
                         />
                       ))
                     ) : (
-                      <div className="calendar-empty compact">—</div>
+                      <div className="calendar-empty compact">
+                        <span aria-hidden="true">·</span>
+                        <span>{copy.clearDay}</span>
+                      </div>
                     )}
                   </div>
                 </section>
@@ -338,6 +444,9 @@ export function CalendarView({
                   >
                     <span>{weekdayFormatter.format(day)}</span>
                     <strong>{day.getDate()}</strong>
+                    {appointmentsByDay.get(key)?.length ? (
+                      <span className="calendar-tab-count">{appointmentsByDay.get(key)?.length}</span>
+                    ) : null}
                   </button>
                 );
               })}
@@ -355,6 +464,56 @@ export function CalendarView({
           </div>
         </>
       ) : null}
+
+      {mode === "month" ? (
+        <div className="calendar-month-grid">
+          {monthWeekdays.map((weekday, index) => (
+            <span className="calendar-month-weekday" key={`${weekday}-${index}`}>{weekday}</span>
+          ))}
+          {monthDays.map((day) => {
+            const key = dateKey(day);
+            const values = appointmentsByDay.get(key) ?? [];
+            return (
+              <section
+                className="calendar-month-day"
+                key={key}
+                data-outside-month={day.getMonth() !== anchorDate.getMonth()}
+                data-today={key === todayKey}
+              >
+                <button
+                  type="button"
+                  className="calendar-month-date"
+                  aria-label={fullDateFormatter.format(day)}
+                  onClick={() => navigate("day", day)}
+                >
+                  {day.getDate()}
+                </button>
+                <div className="calendar-month-events">
+                  {values.slice(0, 3).map((appointment) => (
+                    <Link
+                      className="calendar-month-event"
+                      data-status={appointment.status}
+                      key={appointment.id}
+                      href={`/appointments/${appointment.id}`}
+                      aria-label={`${timeFormatter.format(new Date(appointment.startsAtIso))} ${appointment.client.name}`}
+                    >
+                      <time>{timeFormatter.format(new Date(appointment.startsAtIso))}</time>
+                      <span>{appointment.client.name}</span>
+                    </Link>
+                  ))}
+                  {values.length > 3 ? (
+                    <button className="calendar-month-more" type="button" onClick={() => navigate("day", day)}>
+                      +{values.length - 3} {copy.more}
+                    </button>
+                  ) : null}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      ) : null}
+        </section>
+      </div>
     </section>
   );
 }

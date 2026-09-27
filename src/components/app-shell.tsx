@@ -22,7 +22,6 @@ export function AppShell({
         <div className="desktop-brand">
           <span className="desktop-brand-mark" aria-hidden="true">T</span>
           <span className="desktop-brand-copy">
-            <small>STUDIO</small>
             <strong>{dictionary.appName}</strong>
           </span>
         </div>

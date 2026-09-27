@@ -239,6 +239,7 @@ export function CalendarView({
     minute: "2-digit",
   });
   const weekdayFormatter = new Intl.DateTimeFormat(localeName, { weekday: "short" });
+  const monthFormatter = new Intl.DateTimeFormat(localeName, { month: "long", year: "numeric" });
 
   function navigate(nextMode: CalendarViewMode, nextDate: Date) {
     router.push(`/calendar?view=${nextMode}&anchor=${dateKey(nextDate)}`);
@@ -253,41 +254,58 @@ export function CalendarView({
       ? appointmentsByDay.get(anchor) ?? []
       : weekDays.flatMap((day) => appointmentsByDay.get(dateKey(day)) ?? []);
   const todayKey = dateKey(new Date());
+  const monthGridStart = weekStart(new Date(anchorDate.getFullYear(), anchorDate.getMonth(), 1, 12));
+  const monthDays = Array.from({ length: 42 }, (_, index) => addDays(monthGridStart, index));
+  const monthWeekdays = weekDays.map((day) => weekdayFormatter.format(day));
 
   return (
     <section className="calendar-page">
-      <header className="calendar-hero">
-        <div className="calendar-hero-art" aria-hidden="true" />
-        <div className="calendar-hero-content">
-          <p className="calendar-eyebrow">{copy.scheduleLabel}</p>
-          <h1>{copy.heroTitle}</h1>
-          <p className="calendar-hero-period">{periodLabel}</p>
-          <div className="calendar-title-actions">
-            <Link className="primary-button button-link calendar-new-button" href="/new-appointment">
-              <span aria-hidden="true">+</span>
-              {copy.newAppointment}
-            </Link>
+      <div className="calendar-layout">
+        <aside className="calendar-date-panel">
+          <div className="calendar-date-feature">
+            <span>{weekdayFormatter.format(anchorDate)}</span>
+            <strong>{anchorDate.getDate()}</strong>
+            <span>{monthFormatter.format(anchorDate)}</span>
+          </div>
+          <section className="calendar-mini-month" aria-label={monthFormatter.format(anchorDate)}>
+            <h1>{monthFormatter.format(anchorDate)}</h1>
+            <div className="calendar-mini-grid" role="group">
+              {monthWeekdays.map((weekday, index) => (
+                <span className="calendar-mini-weekday" key={`${weekday}-${index}`}>{weekday}</span>
+              ))}
+              {monthDays.map((day) => {
+                const key = dateKey(day);
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    aria-label={fullDateFormatter.format(day)}
+                    aria-pressed={key === anchor}
+                    data-outside-month={day.getMonth() !== anchorDate.getMonth()}
+                    data-today={key === todayKey}
+                    onClick={() => navigate(mode, day)}
+                  >
+                    {day.getDate()}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+          <div className="calendar-date-panel-footer">
             <div className="calendar-session-count">
               <strong>{visibleAppointments.length}</strong>
               <span>{copy.sessions}</span>
             </div>
+            <Link className="primary-button button-link calendar-new-button" href="/new-appointment">
+              <span aria-hidden="true">+</span>
+              {copy.newAppointment}
+            </Link>
           </div>
-        </div>
-        <div className="calendar-hero-stamp" aria-hidden="true">
-          <span>EST.</span>
-          <strong>INK<br />& FORM</strong>
-          <span>STUDIO No. 01</span>
-        </div>
-      </header>
+        </aside>
 
-      <section className="calendar-planner">
-        <div className="calendar-planner-heading">
-          <div>
-            <p className="calendar-eyebrow">{copy.plannerLabel}</p>
-            <h2>{periodLabel}</h2>
-          </div>
-        </div>
-        <div className="calendar-toolbar">
+        <section className="calendar-planner">
+          <div className="calendar-toolbar">
+            <p className="calendar-range-label">{periodLabel}</p>
         <div className="calendar-view-switch" role="group">
           <button
             type="button"
@@ -421,7 +439,8 @@ export function CalendarView({
           </div>
         </>
       ) : null}
-      </section>
+        </section>
+      </div>
     </section>
   );
 }

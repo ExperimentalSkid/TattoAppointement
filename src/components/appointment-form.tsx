@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { AppointmentFormState } from "@/app/(app)/appointments/actions";
 import { appointmentStatuses, type AppointmentStatusValue } from "@/lib/appointments";
@@ -60,7 +60,12 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
   const [depositRequired, setDepositRequired] = useState(initial?.depositRequired ?? "0.00");
   const [initialPayment, setInitialPayment] = useState("0.00");
   const [allowOverlap, setAllowOverlap] = useState(false);
+  const [timezoneName, setTimezoneName] = useState("");
   const timezoneOffset = useMemo(() => offsetForLocalValue(startsAtLocal), [startsAtLocal]);
+
+  useEffect(() => {
+    setTimezoneName(Intl.DateTimeFormat().resolvedOptions().timeZone ?? "");
+  }, []);
 
   function scheduleChanged() {
     setAllowOverlap(false);
@@ -86,6 +91,7 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
   return (
     <form action={formAction} className="appointment-form">
       <input type="hidden" name="timezoneOffset" value={timezoneOffset} />
+      <input type="hidden" name="timezoneName" value={timezoneName} />
       <input type="hidden" name="allowOverlap" value={allowOverlap ? "true" : "false"} />
 
       <section className="appointment-form-section">

@@ -17,7 +17,7 @@
     "test:final": "playwright test tests/final-workflows.spec.ts",
     "test:pwa": "playwright test tests/pwa.spec.ts",
     "test:qa9": "playwright test tests/qa-pass-9.spec.ts",
-    "test:integration": "playwright test tests/responsive.spec.ts tests/final-workflows.spec.ts tests/pwa.spec.ts tests/qa-pass-9.spec.ts",
+    "test:integration": "playwright test tests/responsive.spec.ts tests/final-workflows.spec.ts tests/pwa.spec.ts && playwright test tests/qa-pass-9.spec.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",

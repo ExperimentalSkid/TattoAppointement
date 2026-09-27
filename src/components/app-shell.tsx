@@ -39,8 +39,11 @@ export function AppShell({
       <div className="app-main-wrap">
         <header className="app-topbar">
           <div className="topbar-identity">
-            <p className="topbar-app-name">{dictionary.appName}</p>
-            <p className="topbar-user">{userName}</p>
+            <span className="topbar-brand-mark" aria-hidden="true">T</span>
+            <span className="topbar-identity-copy">
+              <p className="topbar-app-name">{dictionary.appName}</p>
+              <p className="topbar-user">{userName}</p>
+            </span>
           </div>
           <div className="topbar-actions">
             <LanguageSwitcher locale={locale} label={dictionary.language} />

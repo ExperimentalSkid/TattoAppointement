@@ -190,7 +190,9 @@ export const dictionaries = {
       },
     },
     calendar: {
-      scheduleLabel: "Your studio",
+      scheduleLabel: "A working artist’s book",
+      heroTitle: "Make room for your next masterpiece.",
+      plannerLabel: "The appointment book",
       scheduleDescription: "A little space for the work you love.",
       sessions: "sessions",
       clearDay: "Open",
@@ -404,7 +406,9 @@ export const dictionaries = {
       },
     },
     calendar: {
-      scheduleLabel: "Tu estudio",
+      scheduleLabel: "La agenda del artista",
+      heroTitle: "Haz espacio para tu próxima obra.",
+      plannerLabel: "El libro de citas",
       scheduleDescription: "Un espacio para el trabajo que te encanta.",
       sessions: "sesiones",
       clearDay: "Libre",

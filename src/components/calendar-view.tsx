@@ -256,26 +256,38 @@ export function CalendarView({
 
   return (
     <section className="calendar-page">
-      <div className="calendar-title-row">
-        <div className="calendar-title-copy">
+      <header className="calendar-hero">
+        <div className="calendar-hero-art" aria-hidden="true" />
+        <div className="calendar-hero-content">
           <p className="calendar-eyebrow">{copy.scheduleLabel}</p>
-          <h1 className="page-heading">{periodLabel}</h1>
-          <p className="calendar-subtitle">{copy.scheduleDescription}</p>
-        </div>
-        <div className="calendar-title-actions">
-          <div className="calendar-session-count">
-            <span className="calendar-session-dot" aria-hidden="true" />
-            <strong>{visibleAppointments.length}</strong>
-            <span>{copy.sessions}</span>
+          <h1>{copy.heroTitle}</h1>
+          <p className="calendar-hero-period">{periodLabel}</p>
+          <div className="calendar-title-actions">
+            <Link className="primary-button button-link calendar-new-button" href="/new-appointment">
+              <span aria-hidden="true">+</span>
+              {copy.newAppointment}
+            </Link>
+            <div className="calendar-session-count">
+              <strong>{visibleAppointments.length}</strong>
+              <span>{copy.sessions}</span>
+            </div>
           </div>
-          <Link className="primary-button button-link calendar-new-button" href="/new-appointment">
-            <span aria-hidden="true">+</span>
-            {copy.newAppointment}
-          </Link>
         </div>
-      </div>
+        <div className="calendar-hero-stamp" aria-hidden="true">
+          <span>EST.</span>
+          <strong>INK<br />& FORM</strong>
+          <span>STUDIO No. 01</span>
+        </div>
+      </header>
 
-      <div className="calendar-toolbar">
+      <section className="calendar-planner">
+        <div className="calendar-planner-heading">
+          <div>
+            <p className="calendar-eyebrow">{copy.plannerLabel}</p>
+            <h2>{periodLabel}</h2>
+          </div>
+        </div>
+        <div className="calendar-toolbar">
         <div className="calendar-view-switch" role="group">
           <button
             type="button"
@@ -409,6 +421,7 @@ export function CalendarView({
           </div>
         </>
       ) : null}
+      </section>
     </section>
   );
 }

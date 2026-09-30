@@ -54,6 +54,7 @@ export default async function CalendarPage({
   const appointments = await prisma.appointment.findMany({
     where: {
       artistId,
+      status: { not: "CANCELLED" },
       startsAt: {
         gte: rangeStart,
         lt: rangeEnd,

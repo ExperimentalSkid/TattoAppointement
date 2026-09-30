@@ -338,7 +338,7 @@ export function CalendarView({
           })}
         </div> : null}
 
-        <div className="calendar-legend" aria-label={text.legend}>{(["PLANNED", "CONFIRMED", "COMPLETED", "CANCELLED"] as const).map((status) => <span key={status} data-status={status}><i aria-hidden="true" />{statuses[status]}</span>)}</div>
+        <div className="calendar-legend" aria-label={text.legend}>{(["PLANNED", "CONFIRMED", "COMPLETED"] as const).map((status) => <span key={status} data-status={status}><i aria-hidden="true" />{statuses[status]}</span>)}</div>
       </section>
     </section>
   );

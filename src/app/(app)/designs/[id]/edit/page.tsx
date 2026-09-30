@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
 import { DesignMetadataForm } from "@/components/design-metadata-form";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { prisma } from "@/lib/prisma";
 import { requireArtistId } from "@/lib/session";
 import { getDictionary } from "@/i18n";
-import { updateDesign } from "@/app/(app)/designs/actions";
+import { deleteDesign, updateDesign } from "@/app/(app)/designs/actions";
 
 export default async function EditDesignPage({
   params,
@@ -24,12 +25,17 @@ export default async function EditDesignPage({
   return (
     <section className="narrow-page">
       <h1 className="page-heading">{dictionary.designs.editDesign}</h1>
-      <div className="form-card">
+      <div className="form-card design-form">
         <DesignMetadataForm
           action={updateDesign.bind(null, design.id)}
           copy={dictionary.designs}
           design={design}
         />
+        <form action={deleteDesign.bind(null, design.id)} className="form-actions">
+          <ConfirmSubmitButton className="danger-button" message={dictionary.designs.deleteConfirmation}>
+            {dictionary.designs.deleteDesign}
+          </ConfirmSubmitButton>
+        </form>
       </div>
     </section>
   );

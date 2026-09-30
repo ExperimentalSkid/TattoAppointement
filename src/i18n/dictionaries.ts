@@ -69,6 +69,8 @@ export const dictionaries = {
     designs: {
       uploadDesign: "Import design",
       editDesign: "Edit design",
+      deleteDesign: "Delete design",
+      deleteConfirmation: "Delete this design permanently? Its image will also be removed from linked appointments. Appointments and payments will be kept.",
       searchPlaceholder: "Search designs",
       search: "Search",
       clearSearch: "Clear",
@@ -276,6 +278,8 @@ export const dictionaries = {
     designs: {
       uploadDesign: "Importar diseño",
       editDesign: "Editar diseño",
+      deleteDesign: "Eliminar diseño",
+      deleteConfirmation: "¿Eliminar este diseño definitivamente? Su imagen también se quitará de las citas vinculadas. Las citas y los pagos se conservarán.",
       searchPlaceholder: "Buscar diseños",
       search: "Buscar",
       clearSearch: "Limpiar",

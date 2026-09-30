@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireArtistId } from "@/lib/session";
+import { removeDesignFiles } from "@/lib/design-storage";
 
 export type DesignFormState = {
   error: "title" | "notes" | "save" | null;
@@ -50,4 +51,26 @@ export async function updateDesign(
   revalidatePath("/designs");
   revalidatePath(`/designs/${designId}`);
   redirect(`/designs/${designId}`);
+}
+
+export async function deleteDesign(designId: string) {
+  const artistId = await requireArtistId();
+  const design = await prisma.design.findFirst({
+    where: { id: designId, artistId },
+    select: { storageKey: true, previewKey: true },
+  });
+
+  if (!design) redirect("/designs");
+
+  await prisma.design.deleteMany({ where: { id: designId, artistId } });
+  await removeDesignFiles([design.storageKey, design.previewKey]);
+
+  revalidatePath("/designs");
+  revalidatePath(`/designs/${designId}`);
+  revalidatePath(`/designs/${designId}/edit`);
+  revalidatePath("/new-appointment");
+  revalidatePath("/appointments/[id]", "page");
+  revalidatePath("/appointments/[id]/edit", "page");
+  revalidatePath("/clients/[id]", "page");
+  redirect("/designs");
 }

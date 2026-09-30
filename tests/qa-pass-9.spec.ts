@@ -62,6 +62,16 @@ async function moneyValue(page: Page, label: string) {
   return formatted.replace("€", "").trim();
 }
 
+async function submitValidationAttempt(page: Page) {
+  const submit = page.locator(".appointment-form button[type='submit']");
+  const [response] = await Promise.all([
+    page.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === "/new-appointment"),
+    submit.click(),
+  ]);
+  await response.finished();
+  await expect(submit).toBeEnabled();
+}
+
 test("QA pass 9 edge cases stay guarded", async ({ browser }) => {
   test.setTimeout(120_000);
   const { context, page } = await createArtistContext(browser);
@@ -70,17 +80,17 @@ test("QA pass 9 edge cases stay guarded", async ({ browser }) => {
   await expect(page.locator("input[name='timezoneName']")).toHaveValue("Europe/Madrid");
   await fillAppointmentBase(page);
   await page.locator("#appointment-start").fill("2026-03-29T02:30");
-  await page.locator(".appointment-form button[type='submit']").click();
+  await submitValidationAttempt(page);
   await expect(page.locator(".form-error")).toContainText("valid appointment date and time");
   await expect(page).toHaveURL(/\/new-appointment$/);
 
   await page.locator("#appointment-start").fill("2026-10-25T02:30");
-  await page.locator(".appointment-form button[type='submit']").click();
+  await submitValidationAttempt(page);
   await expect(page.locator(".form-error")).toContainText("valid appointment date and time");
 
   await page.locator("#appointment-start").fill("2026-10-05T10:00");
   await page.locator("#agreed-price").fill("100000000.00");
-  await page.locator(".appointment-form button[type='submit']").click();
+  await submitValidationAttempt(page);
   await expect(page.locator(".form-error")).toContainText("valid non-negative money amounts");
 
   await page.locator("#agreed-price").fill("350.00");

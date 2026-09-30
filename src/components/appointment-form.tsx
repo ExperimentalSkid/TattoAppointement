@@ -18,7 +18,6 @@ type DesignOption = { id: string; title: string };
 type InitialAppointment = {
   clientId: string;
   startsAtIso: string;
-  durationMinutes: number;
   notes: string | null;
   status: AppointmentStatusValue;
   designIds: string[];
@@ -40,7 +39,6 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
   const [state, formAction, pending] = useActionState(action, initialFormState);
   const [clientId, setClientId] = useState(initial?.clientId ?? "");
   const [startsAtLocal, setStartsAtLocal] = useState(() => initial?.startsAtIso ? studioLocalInputValue(initial.startsAtIso) : "");
-  const [durationMinutes, setDurationMinutes] = useState(String(initial?.durationMinutes ?? 120));
   const [status, setStatus] = useState<AppointmentStatusValue>(initial?.status ?? "PLANNED");
   const [selectedDesignIds, setSelectedDesignIds] = useState<string[]>(initial?.designIds ?? []);
   const [finalDesignId, setFinalDesignId] = useState(initial?.finalDesignId ?? "");
@@ -63,8 +61,7 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
   const errorMessage =
     state.error === "required" ? copy.requiredError
       : state.error === "schedule" ? copy.scheduleError
-        : state.error === "duration" ? copy.durationError
-          : state.error === "client" ? copy.clientError
+        : state.error === "client" ? copy.clientError
             : state.error === "designs" ? copy.designsError
               : state.error === "final" ? copy.finalError
                 : state.error === "money" ? copy.moneyError
@@ -112,25 +109,6 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
             <span className="field-help">{copy.client === "Cliente" ? "Hora de Madrid (Europe/Madrid)" : "Madrid time (Europe/Madrid)"}</span>
           </div>
           <div className="field">
-            <label htmlFor="appointment-duration">{copy.duration}</label>
-            <input
-              id="appointment-duration"
-              name="durationMinutes"
-              type="number"
-              inputMode="numeric"
-              min={15}
-              max={1440}
-              step={15}
-              value={durationMinutes}
-              onChange={(event) => {
-                setDurationMinutes(event.target.value);
-                scheduleChanged();
-              }}
-              required
-            />
-            <span className="field-help">{copy.durationHelp}</span>
-          </div>
-          <div className="field appointment-form-wide">
             <label htmlFor="appointment-status">{copy.status}</label>
             <select
               id="appointment-status"

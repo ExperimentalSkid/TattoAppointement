@@ -10,7 +10,7 @@ The dark editorial interface uses six shared layout primitives, open sections an
 
 - One private artist account per installation, with email/password and optional Google sign-in.
 - Optional password recovery by email through Resend, with single-use reset links and session revocation.
-- Day, week and month calendars with client details, session duration, appointment status and overlap confirmation.
+- Day, week and month calendars with client details, appointment status and overlap confirmation.
 - Clients with search, contact details, notes and appointment history.
 - Private artwork library with original files, optimized previews and reusable design selections.
 - Appointments with multiple designs, a final design, price, deposit and payment history.

@@ -46,7 +46,6 @@ async function createArtistContext(browser: Browser) {
 
 async function fillAppointmentBase(page: Page) {
   await page.locator("#appointment-client").selectOption({ index: 1 });
-  await page.locator("#appointment-duration").fill("120");
   await page.locator("input[name='designIds']").first().check();
   await page.locator("input[name='finalDesignId']").first().check();
   await page.locator("#agreed-price").fill("350.00");

@@ -23,7 +23,6 @@ export default async function ClientDetailsPage({
         select: {
           id: true,
           startsAt: true,
-          durationMinutes: true,
           status: true,
         },
       },
@@ -85,7 +84,6 @@ export default async function ClientDetailsPage({
                     <strong>
                       <LocalDateTime iso={appointment.startsAt.toISOString()} locale={locale} />
                     </strong>
-                    <span>{appointment.durationMinutes} {dictionary.clients.minutes}</span>
                   </div>
                   <span className="status-pill" data-status={appointment.status}>
                     {dictionary.clients.statuses[appointment.status]}

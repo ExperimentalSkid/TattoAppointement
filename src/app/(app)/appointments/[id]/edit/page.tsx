@@ -55,7 +55,6 @@ export default async function EditAppointmentPage({
         initial={{
           clientId: appointment.clientId,
           startsAtIso: appointment.startsAt.toISOString(),
-          durationMinutes: appointment.durationMinutes,
           notes: appointment.notes,
           status: appointment.status as AppointmentStatusValue,
           designIds: appointment.designs.map((item) => item.designId),

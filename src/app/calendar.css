@@ -8,8 +8,7 @@
 .calendar-summary-stat { display: grid; gap: 8px; padding-right: 40px; border-right: 1px solid var(--border); }
 .calendar-summary-stat > span { color: var(--muted); font-size: 11px; }
 .calendar-summary-stat > strong { font: 400 29px/1 Georgia, serif; color: var(--text); font-variant-numeric: tabular-nums; }
-.calendar-summary-stat small { font: 400 13px/1 "Segoe UI", sans-serif; color: var(--muted); }
-.calendar-summary-stat:nth-child(3) { border-right: 0; }
+.calendar-summary-stat:nth-child(2) { border-right: 0; }
 .calendar-timezone { margin-left: auto; color: var(--muted); font-size: 11px; display: flex; gap: 8px; align-items: center; }
 .calendar-timezone > span { font-size: 19px; }
 .calendar-planner { min-width: 0; border: 1px solid var(--border); border-radius: 12px; background: #fff; overflow: hidden; }
@@ -52,13 +51,12 @@
 .calendar-time-event[data-conflict="true"] { border-left-color: #c45145; }
 .calendar-event-details { height: 100%; display: flex; flex-direction: column; gap: 8px; padding: 11px 9px; color: #435938; }
 .calendar-event-details time { font-size: 10px; font-weight: 600; white-space: nowrap; }
-.calendar-event-details time span { font-weight: 400; }
 .calendar-event-details h3 { margin: 0; font-size: 11px; font-weight: 600; overflow-wrap: anywhere; }
 .calendar-event-status { font-size: 9px; margin-top: auto; }
 .calendar-event-edit { position: absolute; right: 4px; bottom: 4px; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 4px; background: #ffffff91; color: var(--accent); }
 .calendar-event-edit svg { width: 12px; height: 12px; stroke: currentColor; stroke-width: 1.4; }
 .calendar-time-event[data-compact="true"] .calendar-event-details { padding: 5px 7px; gap: 3px; }
-.calendar-time-event[data-compact="true"] .calendar-event-status, .calendar-time-event[data-compact="true"] .calendar-event-edit, .calendar-time-event[data-compact="true"] time span { display: none; }
+.calendar-time-event[data-compact="true"] .calendar-event-status, .calendar-time-event[data-compact="true"] .calendar-event-edit { display: none; }
 .calendar-week-empty { position: absolute; top: 80px; left: 30%; right: 20%; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 30px; border: 1px solid var(--border); border-radius: 12px; background: #ffffffee; text-align: center; box-shadow: 0 4px 20px #1f292506; }
 .calendar-week-empty svg { width: 28px; height: 28px; stroke: #739064; stroke-width: 1.2; }
 .calendar-week-empty strong { font: 400 24px Georgia, serif; }
@@ -75,13 +73,11 @@
 .calendar-agenda-list { display: grid; gap: 12px; }
 .calendar-appointment:not(.calendar-time-event) { display: flex; align-items: center; gap: 20px; padding: 18px; border: 1px solid var(--border); border-radius: 9px; background: #fff; }
 .calendar-session-time { flex: 0 0 auto; display: grid; gap: 4px; font-size: 12px; font-variant-numeric: tabular-nums; }
-.calendar-session-time span { color: var(--muted); font-size: 10px; }
 .calendar-appointment-main { flex: 1; min-width: 0; }
 .calendar-client-row { display: flex; gap: 10px; align-items: center; }
 .calendar-client-row > div { min-width: 0; }
 .calendar-client-row h3 { margin: 0 0 3px; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
 .calendar-client-avatar { display: grid; place-items: center; width: 35px; height: 35px; flex: 0 0 auto; border-radius: 50%; background: #edf2e6; color: #587047; font-size: 10px; }
-.calendar-duration { color: var(--muted); font-size: 10px; }
 .calendar-conflict { color: var(--danger); font-size: 11px; margin: 8px 0 0; }
 .calendar-card-actions { display: flex; align-items: center; gap: 15px; font-size: 11px; }
 .calendar-card-actions a { min-height: 44px; display: inline-flex; align-items: center; color: var(--accent); }

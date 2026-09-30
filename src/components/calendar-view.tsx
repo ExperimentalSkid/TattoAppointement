@@ -115,14 +115,13 @@ function CalendarAppointmentCard({
 }) {
   const startsAt = new Date(appointment.startsAtIso);
   const time = timeFormatter.format(startsAt);
-  const endTime = timeFormatter.format(new Date(startsAt.getTime() + appointment.durationMinutes * 60_000));
-  const label = `${time}–${endTime} · ${appointment.client.name} · ${statuses[appointment.status]}${conflicted ? ` · ${copy.overlap}` : ""}`;
+  const label = `${time} · ${appointment.client.name} · ${statuses[appointment.status]}${conflicted ? ` · ${copy.overlap}` : ""}`;
 
   if (timelineStyle) {
     return (
       <article className="calendar-appointment calendar-time-event" data-status={appointment.status} data-conflict={conflicted} data-compact={compact} style={timelineStyle} title={label}>
         <Link className="calendar-event-details" href={`/appointments/${appointment.id}`} aria-label={label}>
-          <time dateTime={appointment.startsAtIso}>{time}<span> – {endTime}</span></time>
+          <time dateTime={appointment.startsAtIso}>{time}</time>
           <h3>{appointment.client.name}</h3>
           <span className="calendar-event-status">{conflicted ? copy.overlap : statuses[appointment.status]}</span>
         </Link>
@@ -135,11 +134,11 @@ function CalendarAppointmentCard({
 
   return (
     <article className="calendar-appointment" data-status={appointment.status} data-conflict={conflicted}>
-      <div className="calendar-session-time"><strong>{time}</strong><span>{endTime}</span></div>
+      <div className="calendar-session-time"><strong>{time}</strong></div>
       <div className="calendar-appointment-main">
         <div className="calendar-client-row">
           <span className="calendar-client-avatar" aria-hidden="true">{clientInitials(appointment.client.name)}</span>
-          <div><h3>{appointment.client.name}</h3><span className="calendar-duration">{appointment.durationMinutes} {copy.minutes}</span></div>
+          <div><h3>{appointment.client.name}</h3></div>
         </div>
         {conflicted ? <p className="calendar-conflict" title={copy.overlapHelp}>{copy.overlap}</p> : null}
       </div>
@@ -198,10 +197,10 @@ export function CalendarView({
   const localeName = locale === "es" ? "es-ES" : "en-GB";
   const text = locale === "es" ? {
     subtitle: "Tu tiempo, tus sesiones. Todo en su sitio.",
-    bookedTime: "Tiempo reservado", confirmed: "Confirmadas", pickDate: "Ir a una fecha", views: "Vista del calendario", navigation: "Navegar por fechas", studioTime: "Hora de Madrid", weekEmpty: "Una semana por crear", weekEmptyHint: "Añade tu próxima sesión y dale forma a tu agenda.", legend: "Estados de las citas", hours: "h",
+    confirmed: "Confirmadas", pickDate: "Ir a una fecha", views: "Vista del calendario", navigation: "Navegar por fechas", studioTime: "Hora de Madrid", weekEmpty: "Una semana por crear", weekEmptyHint: "Añade tu próxima sesión y dale forma a tu agenda.", legend: "Estados de las citas",
   } : {
     subtitle: "Your time, your sessions. Everything in place.",
-    bookedTime: "Booked time", confirmed: "Confirmed", pickDate: "Go to a date", views: "Calendar view", navigation: "Navigate dates", studioTime: "Madrid time", weekEmpty: "A week to make your own", weekEmptyHint: "Add your next session and shape your schedule.", legend: "Appointment statuses", hours: "h",
+    confirmed: "Confirmed", pickDate: "Go to a date", views: "Calendar view", navigation: "Navigate dates", studioTime: "Madrid time", weekEmpty: "A week to make your own", weekEmptyHint: "Add your next session and shape your schedule.", legend: "Appointment statuses",
   };
 
   useEffect(() => {
@@ -242,8 +241,6 @@ export function CalendarView({
   const monthGridStart = weekStart(new Date(Date.UTC(anchorDate.getUTCFullYear(), anchorDate.getUTCMonth(), 1, 12)));
   const monthDays = Array.from({ length: 42 }, (_, index) => addDays(monthGridStart, index));
   const visibleAppointments = mode === "day" ? appointmentsByDay.get(anchor) ?? [] : mode === "month" ? appointments.filter((appointment) => studioDateKey(new Date(appointment.startsAtIso)).startsWith(anchor.slice(0, 7))) : weekDays.flatMap((day) => appointmentsByDay.get(dateKey(day)) ?? []);
-  const bookedMinutes = visibleAppointments.filter((appointment) => appointment.status !== "CANCELLED" && appointment.status !== "NO_SHOW").reduce((sum, appointment) => sum + appointment.durationMinutes, 0);
-  const bookedHours = new Intl.NumberFormat(localeName, { maximumFractionDigits: 1 }).format(bookedMinutes / 60);
   const periodLabel = mode === "day" ? fullDateFormatter.format(anchorDate) : mode === "month" ? monthFormatter.format(anchorDate) : `${dateFormatter.format(weekDays[0])} – ${dateFormatter.format(weekDays[6])}, ${weekDays[6].getUTCFullYear()}`;
   const firstHour = Math.max(0, Math.min(9, ...visibleAppointments.map((appointment) => Math.floor(appointmentMinute(appointment) / 60))));
   const lastHour = Math.min(24, Math.max(20, ...visibleAppointments.map((appointment) => Math.ceil((appointmentMinute(appointment) + appointment.durationMinutes) / 60))));
@@ -277,7 +274,6 @@ export function CalendarView({
 
       <div className="calendar-summary">
         <div className="calendar-summary-stat calendar-session-count"><span>{copy.sessions}</span><strong>{visibleAppointments.length.toString().padStart(2, "0")}</strong></div>
-        <div className="calendar-summary-stat"><span>{text.bookedTime}</span><strong>{bookedHours}<small> {text.hours}</small></strong></div>
         <div className="calendar-summary-stat"><span>{text.confirmed}</span><strong>{visibleAppointments.filter((appointment) => appointment.status === "CONFIRMED").length.toString().padStart(2, "0")}</strong></div>
         <div className="calendar-timezone"><span aria-hidden="true">◷</span>{text.studioTime}</div>
       </div>

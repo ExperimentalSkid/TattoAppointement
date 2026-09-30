@@ -95,7 +95,6 @@ export default async function AppointmentDetailPage({
           <h2>{dictionary.appointments.scheduleSection}</h2>
           <dl className="detail-list">
             <div><dt>{dictionary.appointments.start}</dt><dd><LocalDateTime iso={appointment.startsAt.toISOString()} locale={locale} /></dd></div>
-            <div><dt>{dictionary.appointments.duration}</dt><dd>{appointment.durationMinutes} {dictionary.appointments.minutes}</dd></div>
             <div><dt>{dictionary.appointments.status}</dt><dd><span className="status-pill" data-status={appointment.status}>{dictionary.appointments.statuses[appointment.status]}</span></dd></div>
           </dl>
         </article>

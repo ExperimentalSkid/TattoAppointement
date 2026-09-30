@@ -105,7 +105,6 @@ test("critical screens remain usable from 360px through wide desktop", async ({ 
   await page.goto("/new-appointment");
   await page.locator("#appointment-client").selectOption({ index: 1 });
   await page.locator("#appointment-start").fill("2026-10-05T10:00");
-  await page.locator("#appointment-duration").fill("120");
   await expect(page.locator("input[name='designIds']").first()).toBeVisible();
   await page.locator("input[name='designIds']").first().check();
   await page.locator("input[name='finalDesignId']").first().check();

@@ -17,7 +17,6 @@ export type AppointmentFormState = {
   error:
     | "required"
     | "schedule"
-    | "duration"
     | "client"
     | "designs"
     | "final"
@@ -51,12 +50,11 @@ function uniqueStrings(values: FormDataEntryValue[]) {
   return Array.from(new Set(values.map((value) => String(value).trim()).filter(Boolean)));
 }
 
-function parseInput(formData: FormData): AppointmentInput | AppointmentFormState {
+function parseInput(formData: FormData, durationMinutes = 120): AppointmentInput | AppointmentFormState {
   const clientId = String(formData.get("clientId") ?? "").trim();
   const startsAtLocal = String(formData.get("startsAtLocal") ?? "").trim();
   const timezoneOffset = Number(formData.get("timezoneOffset"));
   const timezoneName = String(formData.get("timezoneName") ?? "").trim() || null;
-  const durationMinutes = Number(formData.get("durationMinutes"));
   const notes = cleanOptional(formData.get("notes"));
   const statusRaw = String(formData.get("status") ?? "PLANNED");
   const designIds = uniqueStrings(formData.getAll("designIds"));
@@ -71,7 +69,7 @@ function parseInput(formData: FormData): AppointmentInput | AppointmentFormState
   if (!formData.has("timezoneOffset") || !timezoneName) return { error: "schedule" };
   const startsAt = parseLocalDateTime(startsAtLocal, timezoneOffset, timezoneName);
   if (!startsAt) return { error: "schedule" };
-  if (!Number.isInteger(durationMinutes) || durationMinutes < 15 || durationMinutes > 1440) return { error: "duration" };
+  if (!Number.isInteger(durationMinutes) || durationMinutes < 15 || durationMinutes > 1440) return { error: "save" };
   if (!isAppointmentStatus(statusRaw)) return { error: "save" };
   if (notes && notes.length > 4000) return { error: "save" };
   if (!designIds.length) return { error: "designs" };
@@ -183,7 +181,7 @@ export async function updateAppointment(appointmentId: string, _previousState: A
   const artistId = await requireArtistId();
   const existing = await prisma.appointment.findFirst({ where: { id: appointmentId, artistId }, include: { designs: { select: { designId: true } } } });
   if (!existing) return { error: "save" };
-  const parsed = parseInput(formData);
+  const parsed = parseInput(formData, existing.durationMinutes);
   if ("error" in parsed) return parsed;
   const ownershipError = await validateOwnership(artistId, parsed);
   if (ownershipError) return ownershipError;

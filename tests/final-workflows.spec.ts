@@ -55,7 +55,6 @@ async function createAppointment(
   page: Page,
   options: {
     start: string;
-    duration?: string;
     notes?: string;
     agreedPrice?: string;
     deposit?: string;
@@ -66,7 +65,8 @@ async function createAppointment(
   await page.goto("/new-appointment");
   await page.locator("#appointment-client").selectOption({ index: 1 });
   await page.locator("#appointment-start").fill(options.start);
-  await page.locator("#appointment-duration").fill(options.duration ?? "120");
+  await expect(page.locator("input[name='durationMinutes']")).toHaveCount(0);
+  await expect(page.locator("main")).not.toContainText(/\b(?:duraci[oó]n|duration)\b/i);
   await page.locator("input[name='designIds']").first().check();
   await page.locator("input[name='finalDesignId']").first().check();
   await page.locator("#appointment-notes").fill(options.notes ?? "Final QA appointment notes");
@@ -148,7 +148,6 @@ test("Pass 8 workflows A-F, persistence, errors, and ownership boundaries", asyn
   // Workflow A: create and reopen a connected appointment with a deposit/payment.
   const appointmentPath = await createAppointment(page, {
     start: "2026-10-05T10:00",
-    duration: "120",
     notes: "Workflow A connected appointment",
     agreedPrice: "350.00",
     deposit: "100.00",
@@ -157,6 +156,7 @@ test("Pass 8 workflows A-F, persistence, errors, and ownership boundaries", asyn
   expect(appointmentPath).not.toBeNull();
   await expect(page.getByText("Final QA Client", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Final QA Design", { exact: true }).first()).toBeVisible();
+  await expect(page.locator("main")).not.toContainText(/\b(?:duraci[oó]n|duration)\b/i);
   expect(await moneyValue(page, "Amount received")).toBe("25.00");
   expect(await moneyValue(page, "Deposit remaining")).toBe("75.00");
   expect(await moneyValue(page, "Remaining balance")).toBe("325.00");
@@ -170,7 +170,6 @@ test("Pass 8 workflows A-F, persistence, errors, and ownership boundaries", asyn
   await expect(page.locator(".design-card").filter({ hasText: "Final QA Design" })).toBeVisible();
   const laterAppointmentPath = await createAppointment(page, {
     start: "2026-10-06T14:00",
-    duration: "90",
     notes: "Workflow B later appointment",
     agreedPrice: "220.00",
     deposit: "80.00",
@@ -181,7 +180,6 @@ test("Pass 8 workflows A-F, persistence, errors, and ownership boundaries", asyn
   // Workflow C: create on phone, edit/reschedule, verify desktop sees the same persisted data.
   const phoneAppointmentPath = await createAppointment(page, {
     start: "2026-10-07T09:00",
-    duration: "90",
     notes: "Workflow C phone appointment",
     agreedPrice: "300.00",
     deposit: "100.00",
@@ -189,7 +187,6 @@ test("Pass 8 workflows A-F, persistence, errors, and ownership boundaries", asyn
   expect(phoneAppointmentPath).not.toBeNull();
   await page.goto(`${phoneAppointmentPath}/edit`);
   await page.locator("#appointment-start").fill("2026-10-07T13:15");
-  await page.locator("#appointment-duration").fill("180");
   await page.locator("#appointment-notes").fill("Workflow C rescheduled on phone");
   await page.locator(".appointment-form button[type='submit']").click();
   await page.waitForURL(new RegExp(`${phoneAppointmentPath}$`));
@@ -197,7 +194,7 @@ test("Pass 8 workflows A-F, persistence, errors, and ownership boundaries", asyn
   await page.setViewportSize({ width: 1366, height: 768 });
   await page.goto(`${phoneAppointmentPath}/edit`);
   await expect(page.locator("#appointment-start")).toHaveValue("2026-10-07T13:15");
-  await expect(page.locator("#appointment-duration")).toHaveValue("180");
+  await expect(page.locator("input[name='durationMinutes']")).toHaveCount(0);
   await expect(page.locator("#appointment-notes")).toHaveValue("Workflow C rescheduled on phone");
 
   // Workflow D: partial deposit math plus a visible invalid-payment error state.
@@ -218,7 +215,6 @@ test("Pass 8 workflows A-F, persistence, errors, and ownership boundaries", asyn
   await page.setViewportSize({ width: 390, height: 844 });
   await createAppointment(page, {
     start: "2026-10-05T11:00",
-    duration: "60",
     notes: "Workflow E overlap candidate",
     agreedPrice: "150.00",
     deposit: "50.00",
@@ -233,6 +229,7 @@ test("Pass 8 workflows A-F, persistence, errors, and ownership boundaries", asyn
   await page.goto("/calendar");
   await page.locator(".app-topbar .language-select").selectOption("es");
   await expect(page.locator(".mobile-nav a[href='/calendar']")).toHaveText("Calendario");
+  await expect(page.locator("main")).not.toContainText(/\b(?:duraci[oó]n|duration)\b/i);
   await page.reload();
   await expect(page.locator(".app-topbar .language-select")).toHaveValue("es");
   await expect(page.locator(".mobile-nav a[href='/calendar']")).toHaveText("Calendario");

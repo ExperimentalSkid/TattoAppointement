@@ -46,7 +46,6 @@ test("private uploads and concurrent appointment saves remain guarded", async ({
     await target.goto("/new-appointment");
     await target.locator("#appointment-client").selectOption({ index: 1 });
     await target.locator("#appointment-start").fill("2027-10-05T10:00");
-    await target.locator("#appointment-duration").fill("120");
     await target.locator("input[name='designIds']").first().check();
     await target.locator("#agreed-price").fill("350.00");
     await target.locator("#deposit-required").fill("100.00");

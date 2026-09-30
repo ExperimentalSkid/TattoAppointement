@@ -3,21 +3,32 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "overrides": {
+    "@prisma/config": {
+      "deepmerge-ts": "8.0.0"
+    },
+    "prisma": {
+      "mysql2": "3.23.1"
+    }
+  },
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
-    "start": "next start",
+    "start": "node scripts/start.mjs",
     "lint": "eslint .",
     "typecheck": "prisma generate && tsc --noEmit",
     "verify:images": "node scripts/verify-image-processing.mjs",
     "verify:money": "node scripts/verify-money.mjs",
     "verify:appointments": "node scripts/verify-appointments.mjs",
-    "test:unit": "node scripts/verify-money.mjs && node scripts/verify-appointments.mjs",
+    "test:unit": "node scripts/verify-money.mjs && node scripts/verify-appointments.mjs && node scripts/verify-uploads.mjs && node scripts/verify-studio-time.mjs && node scripts/verify-email.mjs && node scripts/verify-settings.mjs && node scripts/verify-studio-access.mjs",
     "test:responsive": "playwright test tests/responsive.spec.ts",
     "test:final": "playwright test tests/final-workflows.spec.ts",
     "test:pwa": "playwright test tests/pwa.spec.ts",
     "test:qa9": "playwright test tests/qa-pass-9.spec.ts",
-    "test:integration": "playwright test tests/responsive.spec.ts tests/final-workflows.spec.ts tests/pwa.spec.ts && playwright test tests/qa-pass-9.spec.ts",
+    "test:integration": "playwright test",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",

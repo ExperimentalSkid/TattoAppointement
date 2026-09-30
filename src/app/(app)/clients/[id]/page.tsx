@@ -33,7 +33,7 @@ export default async function ClientDetailsPage({
   if (!client) notFound();
 
   return (
-    <section className="client-page">
+    <section className="client-page workspace-stack">
       <div className="page-header-row">
         <div>
           <Link className="text-link" href="/clients">← {dictionary.clients.back}</Link>
@@ -44,8 +44,8 @@ export default async function ClientDetailsPage({
         </Link>
       </div>
 
-      <div className="client-detail-grid">
-        <article className="client-panel">
+      <div className="client-detail-grid workspace-split">
+        <article className="client-panel workspace-section section-intro">
           <h2>{dictionary.clients.details}</h2>
           <dl className="client-details-list">
             <div>
@@ -71,13 +71,13 @@ export default async function ClientDetailsPage({
           </dl>
         </article>
 
-        <article className="client-panel">
+        <article className="client-panel workspace-section section-intro">
           <h2>{dictionary.clients.appointments}</h2>
           {client.appointments.length ? (
             <div className="appointment-history">
               {client.appointments.map((appointment) => (
                 <Link
-                  className="appointment-history-item"
+                  className="appointment-history-item data-row"
                   href={`/appointments/${appointment.id}`}
                   key={appointment.id}
                 >
@@ -87,7 +87,7 @@ export default async function ClientDetailsPage({
                     </strong>
                     <span>{appointment.durationMinutes} {dictionary.clients.minutes}</span>
                   </div>
-                  <span className="status-pill">
+                  <span className="status-pill" data-status={appointment.status}>
                     {dictionary.clients.statuses[appointment.status]}
                   </span>
                 </Link>

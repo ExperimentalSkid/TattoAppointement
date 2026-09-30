@@ -19,9 +19,11 @@ model User {
   id            String   @id @default(cuid())
   name          String
   email         String   @unique
+  ownerSlot     String   @unique @default("studio-owner")
   emailVerified Boolean  @default(false)
   image         String?
-  language      String   @default("en")
+  studioName    String?
+  language      String   @default("es")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

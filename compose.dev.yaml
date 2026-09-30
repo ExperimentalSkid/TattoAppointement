@@ -1,0 +1,19 @@
+services:
+  db:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tatto_appointement
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - development-database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tatto_appointement"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  development-database:

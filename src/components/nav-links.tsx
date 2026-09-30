@@ -29,11 +29,11 @@ export function NavLinks({
   const pathname = usePathname();
 
   return (
-    <nav className={variant === "desktop" ? "desktop-nav" : "mobile-nav"}>
+    <nav className={variant === "desktop" ? "desktop-nav" : "mobile-nav"} aria-label={copy.calendar === "Calendar" ? "Main navigation" : "Navegación principal"}>
       {items.map(([href, key, icon]) => {
         const active = pathname === href || pathname.startsWith(`${href}/`);
         return (
-          <Link key={href} href={href} data-active={active ? "true" : "false"}>
+          <Link key={href} href={href} data-active={active ? "true" : "false"} aria-current={active ? "page" : undefined}>
             <span className="nav-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <path d={icon} />

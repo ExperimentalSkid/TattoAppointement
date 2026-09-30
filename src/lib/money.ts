@@ -38,6 +38,14 @@ export function centsToDecimal(cents: number) {
   return `${Math.floor(cents / 100)}.${String(cents % 100).padStart(2, "0")}`;
 }
 
+export function formatEuro(cents: number | null, locale: "en" | "es") {
+  if (cents === null) return "—";
+  return new Intl.NumberFormat(locale === "es" ? "es-ES" : "en-GB", {
+    style: "currency",
+    currency: "EUR",
+  }).format(Number(centsToDecimal(cents)));
+}
+
 export function calculateMoneySummary({
   agreedPriceCents,
   depositRequiredCents,
@@ -81,12 +89,12 @@ export function calculateMoneySummary({
   const paymentState: PaymentState =
     agreedPriceCents === null
       ? "NO_PRICE"
-      : totalReceivedCents === 0
-        ? "UNPAID"
-        : totalReceivedCents < agreedPriceCents
-          ? "PARTIAL"
-          : totalReceivedCents === agreedPriceCents
-            ? "PAID"
+      : totalReceivedCents === agreedPriceCents
+        ? "PAID"
+        : totalReceivedCents === 0
+          ? "UNPAID"
+          : totalReceivedCents < agreedPriceCents
+            ? "PARTIAL"
             : "OVERPAID";
 
   return {

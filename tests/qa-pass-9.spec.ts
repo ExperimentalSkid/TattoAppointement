@@ -1,4 +1,5 @@
-import { expect, test, type Browser, type Page } from "@playwright/test";
+import { expect, test } from "./fixtures";
+import { type Browser, type Page } from "@playwright/test";
 
 const png = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
@@ -15,8 +16,11 @@ async function createArtistContext(browser: Browser) {
   const unique = Date.now().toString(36);
 
   await page.goto("/sign-up");
+  if (await page.locator(".auth-language .language-select").inputValue() !== "en") {
+    await Promise.all([page.waitForEvent("load"), page.locator(".auth-language .language-select").selectOption("en")]);
+  }
   await page.locator("#name").fill("QA Pass 9 Artist");
-  await page.locator("#email").fill(`qa9-${unique}@example.com`);
+  await page.locator("#email").fill("owner@example.com");
   await page.locator("#password").fill("QAPass9-2026!");
   await page.locator(".auth-form button[type='submit']").click();
   await page.waitForURL(/\/calendar/, { timeout: 15_000 });
@@ -54,7 +58,9 @@ async function moneyValue(page: Page, label: string) {
   const item = page.locator(".money-summary-grid > div").filter({
     has: page.locator("dt", { hasText: label }),
   });
-  return (await item.locator("dd").innerText()).trim();
+  const formatted = (await item.locator("dd").innerText()).trim();
+  expect(formatted).toContain("€");
+  return formatted.replace("€", "").trim();
 }
 
 test("QA pass 9 edge cases stay guarded", async ({ browser }) => {

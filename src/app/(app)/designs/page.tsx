@@ -40,9 +40,9 @@ export default async function DesignsPage({
   return (
     <section>
       <div className="page-title-row">
-        <h1 className="page-heading">{dictionary.pages.designsTitle}</h1>
+        <div><p className="eyebrow">{locale === "es" ? "DEL BOCETO A LA PIEL" : "FROM SKETCH TO SKIN"}</p><h1 className="page-heading">{dictionary.pages.designsTitle}</h1><p className="page-subtitle">{locale === "es" ? "Tu archivo creativo, listo para la próxima sesión." : "Your creative archive, ready for the next session."}</p></div>
         <Link className="primary-button button-link" href="/designs/new">
-          {dictionary.designs.uploadDesign}
+          <span aria-hidden="true">＋</span>{dictionary.designs.uploadDesign}
         </Link>
       </div>
 
@@ -67,7 +67,7 @@ export default async function DesignsPage({
       {designs.length ? (
         <div className="design-grid">
           {designs.map((design) => (
-            <Link className="design-card" href={`/designs/${design.id}`} key={design.id}>
+            <Link className="design-card artwork-object" href={`/designs/${design.id}`} key={design.id}>
               <div className="design-card-image">
                 {/* Authenticated image routes cannot use the public Next image optimizer. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -83,7 +83,10 @@ export default async function DesignsPage({
         </div>
       ) : (
         <div className="empty-state">
-          <p>{query ? dictionary.designs.noResults : dictionary.designs.empty}</p>
+          <svg className="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><path d="M4 3h16v18H4zM7 16l4-4 3 3 3-6M8 7h.01" /></svg>
+          <h2>{query ? dictionary.designs.noResults : locale === "es" ? "Dale espacio a tus ideas" : "Make room for your ideas"}</h2>
+          <p>{query ? (locale === "es" ? "Prueba otro título o una palabra de tus notas." : "Try another title or a word from your notes.") : locale === "es" ? "Importa un boceto o una referencia y vincúlalo a cualquier cita." : "Import a sketch or a reference and connect it to any appointment."}</p>
+          <Link href={query ? "/designs" : "/designs/new"} className="secondary-button button-link">{query ? dictionary.designs.clearSearch : dictionary.designs.uploadDesign}</Link>
         </div>
       )}
     </section>

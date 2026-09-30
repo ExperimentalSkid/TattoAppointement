@@ -12,9 +12,11 @@ export function LanguageSwitcher({
 }) {
   const selectorId = useId();
   const [pending, setPending] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   async function changeLanguage(language: Locale) {
     setPending(true);
+    setFailed(false);
     try {
       const response = await fetch("/api/preferences/language", {
         method: "POST",
@@ -27,9 +29,9 @@ export function LanguageSwitcher({
       }
 
       window.location.reload();
-    } catch (error) {
+    } catch {
       setPending(false);
-      throw error;
+      setFailed(true);
     }
   }
 
@@ -46,6 +48,7 @@ export function LanguageSwitcher({
         <option value="en">EN</option>
         <option value="es">ES</option>
       </select>
+      {failed ? <span className="form-error" role="alert">{locale === "es" ? "No se pudo cambiar el idioma. Inténtalo de nuevo." : "Language could not be changed. Please try again."}</span> : null}
     </div>
   );
 }

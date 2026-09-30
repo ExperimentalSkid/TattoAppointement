@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 test("installable PWA metadata and asset service worker are available", async ({ page }) => {
   await page.goto("/sign-in");
@@ -15,8 +15,8 @@ test("installable PWA metadata and asset service worker are available", async ({
     icons?: Array<{ src?: string; sizes?: string; type?: string; purpose?: string }>;
   };
 
-  expect(manifest.name).toBe("Tattoo Appointment");
-  expect(manifest.short_name).toBe("Tattoo");
+  expect(manifest.name).toBe("Tinta · Tattoo Appointment");
+  expect(manifest.short_name).toBe("Tinta");
   expect(manifest.start_url).toBe("/");
   expect(manifest.display).toBe("standalone");
   expect(manifest.icons?.some((icon) => icon.sizes === "192x192")).toBe(true);

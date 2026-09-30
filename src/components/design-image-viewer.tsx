@@ -17,7 +17,7 @@ export function DesignImageViewer({
   return (
     <>
       <button
-        className="design-preview-button"
+        className="design-preview-button artwork-object"
         type="button"
         onClick={() => dialogRef.current?.showModal()}
         aria-label={copy.openFullscreen}

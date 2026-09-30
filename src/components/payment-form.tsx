@@ -28,7 +28,7 @@ export function PaymentForm({
   return (
     <form ref={formRef} action={formAction} className="payment-entry-form">
       <div className="field">
-        <label htmlFor="payment-amount">{copy.recordPayment}</label>
+        <label htmlFor="payment-amount">{copy.recordPayment} (€)</label>
         <input
           id="payment-amount"
           name="amount"

@@ -3,19 +3,32 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import {
   DesignImageError,
+  MAX_DESIGN_FILE_SIZE,
   removeDesignFiles,
   saveDesignImage,
 } from "@/lib/design-storage";
+import { readUploadFormData, UploadBodyError } from "@/lib/uploads";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const expectedOrigin = new URL(process.env.BETTER_AUTH_URL ?? request.url).origin;
+  const origin = request.headers.get("origin");
+  if ((origin && origin !== expectedOrigin) || request.headers.get("sec-fetch-site") === "cross-site") {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const formData = await request.formData();
+  let formData: FormData;
+  try {
+    formData = await readUploadFormData(request, MAX_DESIGN_FILE_SIZE + 64 * 1024);
+  } catch (error) {
+    const code = error instanceof UploadBodyError ? error.code : "invalid_body";
+    return NextResponse.json({ error: code }, { status: code === "too_large" ? 413 : 400 });
+  }
   const title = String(formData.get("title") ?? "").trim();
   const notesText = String(formData.get("notes") ?? "").trim();
   const image = formData.get("image");

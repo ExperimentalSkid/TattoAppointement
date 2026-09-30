@@ -1,4 +1,5 @@
-import { expect, test, type Browser, type Page } from "@playwright/test";
+import { expect, test } from "./fixtures";
+import { type Browser, type Page } from "@playwright/test";
 
 const png = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
@@ -7,11 +8,14 @@ const png = Buffer.from(
 
 async function signUp(page: Page, email: string, name = "Final QA Artist") {
   await page.goto("/sign-up");
+  if (await page.locator(".auth-language .language-select").inputValue() !== "en") {
+    await Promise.all([page.waitForEvent("load"), page.locator(".auth-language .language-select").selectOption("en")]);
+  }
   await page.locator("#name").fill(name);
   await page.locator("#email").fill(email);
   await page.locator("#password").fill("FinalQA-2026!");
   await page.locator(".auth-form button[type='submit']").click();
-  await page.waitForURL(/\/calendar$/);
+  await page.waitForURL((url) => url.pathname === "/calendar");
 }
 
 async function signIn(page: Page, email: string) {
@@ -19,7 +23,7 @@ async function signIn(page: Page, email: string) {
   await page.locator("#email").fill(email);
   await page.locator("#password").fill("FinalQA-2026!");
   await page.locator(".auth-form button[type='submit']").click();
-  await page.waitForURL(/\/calendar$/);
+  await page.waitForURL((url) => url.pathname === "/calendar");
 }
 
 async function createClient(page: Page, unique: string) {
@@ -86,15 +90,17 @@ async function moneyValue(page: Page, label: string) {
     has: page.locator("dt", { hasText: label }),
   });
   await expect(item).toHaveCount(1);
-  return (await item.locator("dd").innerText()).trim();
+  const formatted = (await item.locator("dd").innerText()).trim();
+  expect(formatted).toContain("€");
+  return formatted.replace("€", "").trim();
 }
 
 async function expectPrivateRoute404(page: Page, path: string) {
   const response = await page.goto(path);
-  expect(response?.status(), `${path} must be unavailable to another artist`).toBe(404);
+  expect(response?.status(), `${path} must be unavailable when the record does not exist`).toBe(404);
 }
 
-async function verifyOwnershipIsolation(browser: Browser, paths: {
+async function verifySingleArtistAccess(browser: Browser, ownerPage: Page, paths: {
   clientPath: string;
   designPath: string;
   appointmentPath: string;
@@ -104,22 +110,34 @@ async function verifyOwnershipIsolation(browser: Browser, paths: {
     viewport: { width: 390, height: 844 },
   });
   const page = await context.newPage();
-  await signUp(page, `second-${unique}@example.com`, "Second QA Artist");
+  const deniedRegistration = await context.request.post("/api/auth/sign-up/email", {
+    data: { name: "Second account", email: `second-${unique}@example.com`, password: "SecondAccount-2026!" },
+  });
+  expect(deniedRegistration.ok()).toBe(false);
+  await page.goto("/sign-up");
+  await expect(page).toHaveURL(/\/sign-in/);
+  await expect(page.locator("a[href='/sign-up']")).toHaveCount(0);
 
-  await expectPrivateRoute404(page, paths.clientPath);
-  await expectPrivateRoute404(page, paths.designPath);
-  await expectPrivateRoute404(page, paths.appointmentPath);
+  for (const path of [paths.clientPath, paths.designPath, paths.appointmentPath]) {
+    await page.goto(path);
+    await expect(page).toHaveURL(/\/sign-in/);
+  }
 
   const designId = paths.designPath.split("/").at(-1)!;
   const imageResponse = await context.request.get(`/api/designs/${designId}/image`);
-  expect(imageResponse.status()).toBe(404);
+  expect(imageResponse.status()).toBe(401);
+  expect((await context.request.get("/api/account/export")).status()).toBe(401);
+  await expectPrivateRoute404(ownerPage, "/clients/unknown-client");
+  await expectPrivateRoute404(ownerPage, "/designs/unknown-design");
+  await expectPrivateRoute404(ownerPage, "/appointments/unknown-appointment");
+  expect((await ownerPage.request.get("/api/designs/unknown-design/image")).status()).toBe(404);
 
   await context.close();
 }
 
 test("Pass 8 workflows A-F, persistence, errors, and ownership boundaries", async ({ page, browser }) => {
   const unique = Date.now().toString(36);
-  const email = `final-${unique}@example.com`;
+  const email = "owner@example.com";
 
   await page.setViewportSize({ width: 390, height: 844 });
   await signUp(page, email);
@@ -228,13 +246,14 @@ test("Pass 8 workflows A-F, persistence, errors, and ownership boundaries", asyn
   await page.reload();
   await expect(page.locator(".app-topbar .language-select")).toHaveValue("en");
 
-  // Implementation-quality requirement: saved data survives login and artist ownership is enforced.
+  // Saved data survives login; registration stays closed after the single owner exists.
   await page.goto(appointmentPath!);
   await expect(page.getByText("Workflow A connected appointment", { exact: true })).toBeVisible();
   await expect(page.getByText("Final QA Design", { exact: true }).first()).toBeVisible();
 
-  await verifyOwnershipIsolation(
+  await verifySingleArtistAccess(
     browser,
+    page,
     { clientPath, designPath, appointmentPath: appointmentPath! },
     unique,
   );

@@ -68,10 +68,12 @@ function parseInput(formData: FormData): AppointmentInput | AppointmentFormState
   const initialPaymentParsed = parseMoneyInput(String(formData.get("initialPayment") ?? "0"));
 
   if (!clientId || !startsAtLocal) return { error: "required" };
+  if (!formData.has("timezoneOffset") || !timezoneName) return { error: "schedule" };
   const startsAt = parseLocalDateTime(startsAtLocal, timezoneOffset, timezoneName);
   if (!startsAt) return { error: "schedule" };
   if (!Number.isInteger(durationMinutes) || durationMinutes < 15 || durationMinutes > 1440) return { error: "duration" };
   if (!isAppointmentStatus(statusRaw)) return { error: "save" };
+  if (notes && notes.length > 4000) return { error: "save" };
   if (!designIds.length) return { error: "designs" };
   if (finalDesignId && !designIds.includes(finalDesignId)) return { error: "final" };
   if (agreedPriceCents === undefined || depositRequiredParsed === undefined || depositRequiredParsed === null || initialPaymentParsed === undefined || initialPaymentParsed === null) return { error: "money" };
@@ -102,11 +104,13 @@ async function validateOwnership(artistId: string, input: AppointmentInput): Pro
   return null;
 }
 
-async function hasScheduleConflict(artistId: string, input: AppointmentInput, excludeAppointmentId?: string) {
+class ScheduleConflictError extends Error {}
+
+async function hasScheduleConflict(database: Pick<typeof prisma, "appointment">, artistId: string, input: AppointmentInput, excludeAppointmentId?: string) {
   if (input.status === "CANCELLED") return false;
   const candidateEnd = appointmentEnd(input.startsAt, input.durationMinutes);
   const earliestPossibleStart = new Date(input.startsAt.getTime() - 24 * 60 * 60 * 1000);
-  const nearby = await prisma.appointment.findMany({
+  const nearby = await database.appointment.findMany({
     where: {
       artistId,
       status: { not: "CANCELLED" },
@@ -133,11 +137,16 @@ export async function createAppointment(_previousState: AppointmentFormState, fo
   if ("error" in parsed) return parsed;
   const ownershipError = await validateOwnership(artistId, parsed);
   if (ownershipError) return ownershipError;
-  if (!parsed.allowOverlap && (await hasScheduleConflict(artistId, parsed))) return { error: "overlap" };
 
   let appointmentId: string;
   try {
     const appointment = await prisma.$transaction(async (tx) => {
+      // Serialize schedule writes for this artist so concurrent saves both check
+      // the latest committed calendar before allowing an overlap.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${artistId}, 0))`;
+      if (!parsed.allowOverlap && await hasScheduleConflict(tx, artistId, parsed)) {
+        throw new ScheduleConflictError();
+      }
       const created = await tx.appointment.create({
         data: {
           artistId,
@@ -162,7 +171,8 @@ export async function createAppointment(_previousState: AppointmentFormState, fo
       return created;
     });
     appointmentId = appointment.id;
-  } catch {
+  } catch (error) {
+    if (error instanceof ScheduleConflictError) return { error: "overlap" };
     return { error: "save" };
   }
   await revalidateAppointmentRelations(appointmentId, parsed.clientId, parsed.designIds);
@@ -177,10 +187,13 @@ export async function updateAppointment(appointmentId: string, _previousState: A
   if ("error" in parsed) return parsed;
   const ownershipError = await validateOwnership(artistId, parsed);
   if (ownershipError) return ownershipError;
-  if (!parsed.allowOverlap && (await hasScheduleConflict(artistId, parsed, appointmentId))) return { error: "overlap" };
 
   try {
     await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${artistId}, 0))`;
+      if (!parsed.allowOverlap && await hasScheduleConflict(tx, artistId, parsed, appointmentId)) {
+        throw new ScheduleConflictError();
+      }
       await tx.appointment.update({
         where: { id: appointmentId },
         data: {
@@ -198,7 +211,8 @@ export async function updateAppointment(appointmentId: string, _previousState: A
         data: parsed.designIds.map((designId) => ({ appointmentId, designId, isFinal: designId === parsed.finalDesignId })),
       });
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof ScheduleConflictError) return { error: "overlap" };
     return { error: "save" };
   }
 

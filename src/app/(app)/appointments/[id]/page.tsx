@@ -8,7 +8,7 @@ import { requireArtistId } from "@/lib/session";
 import { getDictionary } from "@/i18n";
 import { cancelAppointment, deleteAppointment } from "@/app/(app)/appointments/actions";
 import { deletePayment, recordPayment } from "@/app/(app)/appointments/payment-actions";
-import { calculateMoneySummary, centsToDecimal, decimalToCents } from "@/lib/money";
+import { calculateMoneySummary, decimalToCents, formatEuro } from "@/lib/money";
 
 export default async function AppointmentDetailPage({
   params,
@@ -41,25 +41,49 @@ export default async function AppointmentDetailPage({
   const paymentCents = appointment.payments.map((payment) => decimalToCents(payment.amount) ?? 0);
   const money = calculateMoneySummary({ agreedPriceCents, depositRequiredCents, paymentsCents: paymentCents });
 
-  const formatMoney = (cents: number | null) => cents === null ? "—" : centsToDecimal(cents);
+  const formatMoney = (cents: number | null) => formatEuro(cents, locale);
   const removePaymentLabel = locale === "es" ? "Eliminar pago" : "Remove payment";
   const deleteAppointmentConfirmation = locale === "es"
     ? "¿Eliminar esta cita y su historial de pagos?"
     : "Delete this appointment and its payment history?";
 
   return (
-    <section className="appointment-page">
+    <section className="appointment-page workspace-stack">
       <div className="page-title-row appointment-detail-header">
         <div>
           <Link className="back-link" href={`/clients/${appointment.clientId}`}>← {dictionary.appointments.backToClient}</Link>
-          <h1 className="page-heading">{dictionary.appointments.detailsTitle}</h1>
-          <p className="muted-copy">{appointment.client.name}</p>
+          <p className="eyebrow">{dictionary.appointments.detailsTitle}</p>
+          <h1 className="page-heading">{appointment.client.name}</h1>
+          <p className="muted-copy"><LocalDateTime iso={appointment.startsAt.toISOString()} locale={locale} /></p>
         </div>
         <Link className="secondary-button button-link" href={`/appointments/${appointment.id}/edit`}>{dictionary.appointments.edit}</Link>
       </div>
 
-      <div className="appointment-detail-grid">
-        <article className="appointment-detail-card">
+      <div className="workspace-split" data-lead="artwork">
+        <div className="workspace-stack">
+          <section className="appointment-detail-card appointment-designs-section workspace-section section-intro">
+            <h2>{dictionary.appointments.designsSection}</h2>
+            <div className="appointment-design-gallery">
+              {appointment.designs.map(({ design, isFinal }) => (
+                <Link className="appointment-design-card artwork-object" href={`/designs/${design.id}`} key={design.id}>
+                  <div className="appointment-design-image-wrap">
+                    {/* Authenticated previews are already optimized by Sharp. */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={`/api/designs/${design.id}/image?variant=preview`} alt={design.title} loading="lazy" />
+                  </div>
+                  <strong>{design.title}</strong>
+                  {isFinal ? <span className="final-design-badge">✓ {dictionary.appointments.finalDesign}</span> : null}
+                </Link>
+              ))}
+            </div>
+          </section>
+          <section className="appointment-detail-card workspace-section section-intro">
+            <h2>{dictionary.appointments.notesSection}</h2>
+            {appointment.notes ? <p className="prewrap appointment-notes">{appointment.notes}</p> : <p className="muted-copy">{dictionary.appointments.noNotes}</p>}
+          </section>
+        </div>
+        <aside className="workspace-stack">
+        <article className="appointment-detail-card workspace-section section-intro">
           <h2>{dictionary.appointments.clientSection}</h2>
           <dl className="detail-list">
             <div><dt>{dictionary.appointments.client}</dt><dd><Link className="detail-link" href={`/clients/${appointment.client.id}`}>{appointment.client.name}</Link></dd></div>
@@ -67,37 +91,18 @@ export default async function AppointmentDetailPage({
           </dl>
         </article>
 
-        <article className="appointment-detail-card">
+        <article className="appointment-detail-card workspace-section section-intro">
           <h2>{dictionary.appointments.scheduleSection}</h2>
           <dl className="detail-list">
             <div><dt>{dictionary.appointments.start}</dt><dd><LocalDateTime iso={appointment.startsAt.toISOString()} locale={locale} /></dd></div>
             <div><dt>{dictionary.appointments.duration}</dt><dd>{appointment.durationMinutes} {dictionary.appointments.minutes}</dd></div>
-            <div><dt>{dictionary.appointments.status}</dt><dd><span className="status-pill">{dictionary.appointments.statuses[appointment.status]}</span></dd></div>
+            <div><dt>{dictionary.appointments.status}</dt><dd><span className="status-pill" data-status={appointment.status}>{dictionary.appointments.statuses[appointment.status]}</span></dd></div>
           </dl>
         </article>
+        </aside>
       </div>
 
-      <section className="appointment-detail-card appointment-designs-section">
-        <h2>{dictionary.appointments.designsSection}</h2>
-        <div className="appointment-design-gallery">
-          {appointment.designs.map(({ design, isFinal }) => (
-            <Link className="appointment-design-card" href={`/designs/${design.id}`} key={design.id}>
-              <div className="appointment-design-image-wrap">
-                <img src={`/api/designs/${design.id}/image?variant=preview`} alt={design.title} loading="lazy" />
-                {isFinal ? <span className="final-design-badge">{dictionary.appointments.finalDesign}</span> : null}
-              </div>
-              <strong>{design.title}</strong>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="appointment-detail-card">
-        <h2>{dictionary.appointments.notesSection}</h2>
-        {appointment.notes ? <p className="prewrap appointment-notes">{appointment.notes}</p> : <p className="muted-copy">{dictionary.appointments.noNotes}</p>}
-      </section>
-
-      <section className="appointment-detail-card money-section">
+      <section className="appointment-detail-card money-section workspace-section section-intro">
         <div className="section-heading-row">
           <div>
             <h2>{dictionary.appointments.moneySection}</h2>

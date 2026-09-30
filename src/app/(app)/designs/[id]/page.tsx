@@ -44,7 +44,7 @@ export default async function DesignDetailPage({
   const dateFormatter = new Intl.DateTimeFormat(localeName, { dateStyle: "medium" });
 
   return (
-    <section>
+    <section className="workspace-stack">
       <div className="page-title-row">
         <div>
           <Link className="back-link" href="/designs">
@@ -57,10 +57,10 @@ export default async function DesignDetailPage({
         </Link>
       </div>
 
-      <div className="design-detail-grid">
+      <div className="design-detail-grid workspace-split" data-lead="artwork">
         <DesignImageViewer designId={design.id} title={design.title} copy={dictionary.designs} />
 
-        <div className="detail-card">
+        <div className="detail-card workspace-section">
           <dl className="detail-list">
             <div>
               <dt>{dictionary.designs.added}</dt>
@@ -79,13 +79,13 @@ export default async function DesignDetailPage({
         </div>
       </div>
 
-      <section className="history-section">
+      <section className="history-section workspace-section section-intro">
         <h2>{dictionary.designs.appointments}</h2>
         {design.appointments.length ? (
           <div className="appointment-history">
             {design.appointments.map(({ appointment, isFinal }) => (
               <Link
-                className="history-row"
+                className="history-row data-row"
                 href={`/appointments/${appointment.id}`}
                 key={appointment.id}
               >

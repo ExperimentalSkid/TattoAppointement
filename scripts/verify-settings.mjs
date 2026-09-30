@@ -1,0 +1,12 @@
+import assert from "node:assert/strict";
+import { validatePasswordChange, validateProfile } from "../src/lib/settings-validation.ts";
+assert.deepEqual(validateProfile("  Ana López  ", "  Estudio Tinta  "), { ok: true, name: "Ana López", studioName: "Estudio Tinta" });
+assert.deepEqual(validateProfile("Ana", "  "), { ok: true, name: "Ana", studioName: null });
+for (const values of [[" ", "Studio"], ["a".repeat(81), "Studio"], ["Ana", "a".repeat(81)], ["Ana\u0000", "Studio"], ["Ana", "Two\nlines"], [{ toString: () => "Ana" }, "Studio"]]) assert.equal(validateProfile(...values).ok, false);
+assert.equal(validatePasswordChange("oldpassword", "unique-new-password", "unique-new-password"), null);
+assert.equal(validatePasswordChange("", "unique-new-password", "unique-new-password"), "current");
+assert.equal(validatePasswordChange("oldpassword", "short", "short"), "length");
+assert.equal(validatePasswordChange("oldpassword", "a".repeat(129), "a".repeat(129)), "length");
+assert.equal(validatePasswordChange("oldpassword", "newpassword", "otherpassword"), "match");
+assert.equal(validatePasswordChange("oldpassword", "oldpassword", "oldpassword"), "same");
+console.log("Studio profile and password validation checks passed.");

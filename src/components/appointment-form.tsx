@@ -5,6 +5,7 @@ import { useActionState, useMemo, useState } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { AppointmentFormState } from "@/app/(app)/appointments/actions";
 import { appointmentStatuses, type AppointmentStatusValue } from "@/lib/appointments";
+import { studioLocalInputValue, studioTimezoneOffset, studioTimeZone } from "@/lib/studio-time";
 
 type AppointmentAction = (
   state: AppointmentFormState,
@@ -28,18 +29,6 @@ type InitialAppointment = {
 
 const initialFormState: AppointmentFormState = { error: null };
 
-function localInputValue(iso: string) {
-  const date = new Date(iso);
-  const localMs = date.getTime() - date.getTimezoneOffset() * 60_000;
-  return new Date(localMs).toISOString().slice(0, 16);
-}
-
-function offsetForLocalValue(value: string) {
-  if (!value) return new Date().getTimezoneOffset();
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? new Date().getTimezoneOffset() : date.getTimezoneOffset();
-}
-
 export function AppointmentForm({ action, clients, designs, copy, initial, cancelHref }: {
   action: AppointmentAction;
   clients: ClientOption[];
@@ -50,7 +39,7 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
 }) {
   const [state, formAction, pending] = useActionState(action, initialFormState);
   const [clientId, setClientId] = useState(initial?.clientId ?? "");
-  const [startsAtLocal, setStartsAtLocal] = useState(() => initial?.startsAtIso ? localInputValue(initial.startsAtIso) : "");
+  const [startsAtLocal, setStartsAtLocal] = useState(() => initial?.startsAtIso ? studioLocalInputValue(initial.startsAtIso) : "");
   const [durationMinutes, setDurationMinutes] = useState(String(initial?.durationMinutes ?? 120));
   const [status, setStatus] = useState<AppointmentStatusValue>(initial?.status ?? "PLANNED");
   const [selectedDesignIds, setSelectedDesignIds] = useState<string[]>(initial?.designIds ?? []);
@@ -60,11 +49,7 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
   const [depositRequired, setDepositRequired] = useState(initial?.depositRequired ?? "0.00");
   const [initialPayment, setInitialPayment] = useState("0.00");
   const [allowOverlap, setAllowOverlap] = useState(false);
-  const timezoneOffset = useMemo(() => offsetForLocalValue(startsAtLocal), [startsAtLocal]);
-
-  function populateTimezoneName(node: HTMLInputElement | null) {
-    if (node) node.value = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "";
-  }
+  const timezoneOffset = useMemo(() => studioTimezoneOffset(startsAtLocal), [startsAtLocal]);
 
   function scheduleChanged() {
     setAllowOverlap(false);
@@ -88,12 +73,12 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
                       : null;
 
   return (
-    <form action={formAction} className="appointment-form">
-      <input type="hidden" name="timezoneOffset" value={timezoneOffset} />
-      <input ref={populateTimezoneName} type="hidden" name="timezoneName" defaultValue="" />
+    <form action={formAction} className="appointment-form workspace-stack">
+      <input type="hidden" name="timezoneOffset" value={String(timezoneOffset)} />
+      <input type="hidden" name="timezoneName" value={studioTimeZone} />
       <input type="hidden" name="allowOverlap" value={allowOverlap ? "true" : "false"} />
 
-      <section className="appointment-form-section">
+      <section className="appointment-form-section workspace-section section-intro">
         <div className="section-heading-row">
           <h2>{copy.clientSection}</h2>
           <Link className="text-link compact-link" href="/clients/new">{copy.addClient}</Link>
@@ -107,7 +92,7 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
         </div>
       </section>
 
-      <section className="appointment-form-section">
+      <section className="appointment-form-section workspace-section section-intro">
         <h2>{copy.scheduleSection}</h2>
         <div className="appointment-form-grid">
           <div className="field">
@@ -124,6 +109,7 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
               suppressHydrationWarning
               required
             />
+            <span className="field-help">{copy.client === "Cliente" ? "Hora de Madrid (Europe/Madrid)" : "Madrid time (Europe/Madrid)"}</span>
           </div>
           <div className="field">
             <label htmlFor="appointment-duration">{copy.duration}</label>
@@ -161,7 +147,7 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
         </div>
       </section>
 
-      <section className="appointment-form-section">
+      <section className="appointment-form-section workspace-section section-intro">
         <div className="section-heading-row">
           <div><h2>{copy.designsSection}</h2><p className="muted-copy">{copy.designsHelp}</p></div>
           <Link className="text-link compact-link" href="/designs/new">{copy.addDesign}</Link>
@@ -171,9 +157,11 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
             {designs.map((design) => {
               const selected = selectedDesignIds.includes(design.id);
               return (
-                <article className="appointment-design-option" key={design.id} data-selected={selected}>
+                <article className="appointment-design-option artwork-object" key={design.id} data-selected={selected}>
                   <label className="appointment-design-select">
                     <input type="checkbox" name="designIds" value={design.id} checked={selected} onChange={(event) => toggleDesign(design.id, event.target.checked)} />
+                    {/* Authenticated previews are already optimized by Sharp. */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={`/api/designs/${design.id}/image?variant=preview`} alt="" loading="lazy" />
                     <strong>{design.title}</strong>
                   </label>
@@ -192,7 +180,7 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
         </label>
       </section>
 
-      <section className="appointment-form-section">
+      <section className="appointment-form-section workspace-section section-intro">
         <h2>{copy.notesSection}</h2>
         <div className="field">
           <label htmlFor="appointment-notes">{copy.notes} <span className="field-optional">({copy.optional})</span></label>
@@ -200,20 +188,20 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
         </div>
       </section>
 
-      <section className="appointment-form-section">
+      <section className="appointment-form-section workspace-section section-intro">
         <h2>{copy.moneySection}</h2>
         <div className="appointment-form-grid">
           <div className="field">
-            <label htmlFor="agreed-price">{copy.agreedPrice}</label>
+            <label htmlFor="agreed-price">{copy.agreedPrice} (€)</label>
             <input id="agreed-price" name="agreedPrice" type="text" inputMode="decimal" placeholder="0.00" value={agreedPrice} onChange={(event) => setAgreedPrice(event.target.value)} />
           </div>
           <div className="field">
-            <label htmlFor="deposit-required">{copy.depositRequired}</label>
+            <label htmlFor="deposit-required">{copy.depositRequired} (€)</label>
             <input id="deposit-required" name="depositRequired" type="text" inputMode="decimal" placeholder="0.00" value={depositRequired} onChange={(event) => setDepositRequired(event.target.value)} />
           </div>
           {!initial ? (
             <div className="field appointment-form-wide">
-              <label htmlFor="initial-payment">{copy.initialPayment}</label>
+              <label htmlFor="initial-payment">{copy.initialPayment} (€)</label>
               <input id="initial-payment" name="initialPayment" type="text" inputMode="decimal" placeholder="0.00" value={initialPayment} onChange={(event) => setInitialPayment(event.target.value)} />
               <span className="field-help">{copy.initialPaymentHelp}</span>
             </div>

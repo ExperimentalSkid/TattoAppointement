@@ -1,0 +1,129 @@
+/* Premium dark studio palette: charcoal, ivory and restrained red ink. */
+:root {
+  color-scheme: dark;
+  --bg: #121212;
+  --surface: #1c1c1b;
+  --surface-soft: #252523;
+  --text: #f1ece2;
+  --muted: #aaa69e;
+  --border: #343431;
+  --accent: #e1ac9b;
+  --accent-hover: #ba584d;
+  --accent-text: #fff7f0;
+  --action: #a24940;
+  --danger: #f0988e;
+  --success: #a4d1b1;
+  --shadow: 0 2px 12px #00000020;
+}
+body { background: var(--bg); color: var(--text); }
+::selection { background: #79453c; color: #fff7f0; }
+::placeholder { color: #99968f; opacity: 1; }
+.field input, .field textarea, .field select, .client-search input, .search-bar input,
+.appointment-form .field select, .auth-form .field input {
+  background: #151515; border-color: #45443f; color: var(--text);
+}
+.field input:hover, .field textarea:hover, .field select:hover { border-color: #777066; }
+.field input:focus-visible, .field textarea:focus-visible, .field select:focus-visible,
+.client-search input:focus-visible, .search-bar input:focus-visible {
+  border-color: var(--accent); box-shadow: 0 0 0 3px #e1ac9b22;
+}
+.primary-button { background: var(--action); border-color: var(--action); color: var(--accent-text); box-shadow: 0 2px 6px #00000020; }
+.primary-button:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+.secondary-button { background: #232321; color: var(--text); border-color: #45443f; }
+.secondary-button:hover:not(:disabled) { background: #30302c; border-color: #777066; }
+.danger-button { color: var(--danger); border-color: #ad645b; }
+.danger-button:hover:not(:disabled) { background: #3d2422; }
+.skip-link { background: var(--action); color: var(--accent-text); }
+.eyebrow { color: #c3aaa0; }
+.desktop-sidebar { background: #191919; border-color: var(--border); }
+.desktop-brand-mark, .topbar-brand-mark, .auth-mobile-brand { color: #e8d9c1; }
+.desktop-brand-copy strong { color: #f1ece2; }
+.sidebar-workspace { color: #bfb9af; border-color: var(--border); }
+.studio-dot { background: #ba7969; }
+.sidebar-section-label { color: #aaa398; }
+.desktop-nav a { color: #b8b4ac; }
+.desktop-nav a:hover { background: #282725; color: var(--text); }
+.desktop-nav a[data-active="true"] { background: #332624; color: #f0cabb; }
+.desktop-nav a[href="/new-appointment"], .desktop-nav a[href="/new-appointment"][data-active="true"] { background: var(--action); border-color: var(--action); color: var(--accent-text); }
+.desktop-nav a[href="/new-appointment"]:hover { background: var(--accent-hover); }
+.sidebar-note { color: #a69b89; }
+.artist-avatar, .client-avatar { background: #2e2d28; color: #ddc8a8; }
+.desktop-sidebar .signout-button:hover { background: #282725; color: var(--text); }
+.app-topbar { background: #171717; border-color: var(--border); }
+.app-topbar .language-select, .app-topbar .signout-button { background: #222220; border-color: #41403b; color: #e5ded1; }
+.mobile-nav { background: #191919; box-shadow: 0 -4px 20px #00000025; }
+.mobile-nav a { color: #b0aaa0; }
+.mobile-nav a[data-active="true"] { background: #352725; color: #f0cabb; }
+.mobile-nav a[href="/new-appointment"] .nav-icon { background: var(--action); color: var(--accent-text); }
+.form-card, .detail-card, .client-panel, .appointment-detail-card { box-shadow: var(--shadow); }
+.client-search, .search-bar, .client-list, .empty-state, .client-empty, .appointment-form-section,
+.appointment-form-section:first-of-type, .loading-panel { background: var(--surface); border-color: var(--border); }
+.client-list-item:hover { background: #272623; }
+.list-chevron { color: #a69b89; }
+.client-count { background: #252523; color: #d6cbbb; }
+.text-link, .back-link, .detail-link { color: #ddc8a8; text-decoration-color: #6e6150; }
+.empty-icon { background: #302824; border-color: #554137; color: #d3b293; }
+.design-card:hover { border-color: #8d7666; box-shadow: 0 5px 15px #00000030; }
+.design-card-image, .upload-preview, .design-preview-button { background: #252522; }
+.final-design-badge { background: var(--action); color: var(--accent-text); }
+.appointment-design-option { border-color: #4d4940; }
+.appointment-design-option[data-selected="true"] { border-color: var(--accent); }
+.status-pill { background: #302b22; border-color: #544b36; color: #dec9a0; }
+.status-pill[data-status="CONFIRMED"] { background: #243329; border-color: #435e49; color: #b1d6b9; }
+.status-pill[data-status="COMPLETED"] { background: #253039; border-color: #425463; color: #b4cbdc; }
+.status-pill[data-status="CANCELLED"], .status-pill[data-status="NO_SHOW"] { background: #392725; border-color: #69433d; color: #e7b3a5; }
+.form-error { background: #3b2523; color: #ffc3b8; }
+.settings-success, .recovery-form .form-success { background: #253126; border-color: #455b42; color: #c1ddbb; }
+.settings-form input[readonly] { background: #242420; color: #b9b2a5; }
+.loading-line { background: #33332e; }
+.overlap-warning { background: #332c22; border-color: #806e4c; color: #f0dcc0; }
+.auth-shell { background: #151515; }
+.auth-story { background: #1e1b19; color: #e9dfcf; border-right: 1px solid #3d3630; }
+.auth-brand { color: #eee1cb; }
+.auth-story-copy .eyebrow { color: #c0a995; }
+.auth-story-copy h2 em { color: #d9a08b; }
+.auth-story-copy > p:last-child { color: #c4b8a8; }
+.auth-art { color: #b99a74; }
+.auth-art > span { color: #c7b196; }
+.auth-story-footer, .auth-footer { color: #b0a494; }
+.auth-card > .eyebrow { color: #c7ab97; }
+.auth-language .language-select { background: #22221f; border-color: #48443b; color: #ece3d4; }
+.calendar-summary, .calendar-planner { background: var(--surface); }
+.calendar-view-switch { background: #292926; }
+.calendar-view-switch button[data-active="true"] { background: #48403a; color: #f3e0cd; box-shadow: 0 1px 4px #00000040; }
+.calendar-navigation button { background: #252522; }
+.calendar-navigation button:hover, .calendar-view-switch button:hover { background: #37332d; }
+.calendar-day-heading, .calendar-week-body, .calendar-hour-gutter { background: #1c1c1b; }
+.calendar-time-heading, .calendar-hour-gutter > span { color: #b7b0a3; font-size: 10px; }
+.calendar-day-heading > span:first-child { font-size: 10px; }
+.calendar-day-booking-count { font-size: 9px; }
+.calendar-day-heading[data-today="true"] > strong, .calendar-month-day[data-today="true"] .calendar-month-date { background: #d9a08b; color: #211713; }
+.calendar-day-heading[data-weekend="true"], .calendar-week-day[data-weekend="true"] { background-color: #191918; }
+.calendar-week-day[data-today="true"] { background-color: #211e1b; }
+.calendar-week-day { background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--calendar-hour-height) - 1px), #34332e calc(var(--calendar-hour-height) - 1px), #34332e var(--calendar-hour-height)); }
+.calendar-time-event { background: #353024; border-color: #5b5037; border-left-color: #c4a56b; }
+.calendar-time-event[data-status="CONFIRMED"] { background: #28352e; border-color: #435b4d; border-left-color: #9bc3a6; }
+.calendar-time-event[data-status="COMPLETED"] { background: #2c333a; border-color: #465867; border-left-color: #9cb6cc; }
+.calendar-time-event[data-status="CANCELLED"], .calendar-time-event[data-status="NO_SHOW"] { background: #3a2a27; border-color: #65443b; border-left-color: #cb9580; }
+.calendar-time-event[data-conflict="true"] { border-left-color: #f0a295; }
+.calendar-event-details { color: #eee5d5; }
+.calendar-event-details time { font-size: 11px; }
+.calendar-event-details h3 { font-size: 12px; }
+.calendar-event-status { color: #d2c8b5; font-size: 10px; }
+.calendar-event-edit { background: #ffffff0b; color: #e2d0b1; }
+.calendar-week-empty { background: #23221ff5; box-shadow: 0 8px 24px #00000030; }
+.calendar-week-empty svg, .calendar-empty-featured > svg { stroke: #c2a684; }
+.calendar-mobile-days button { background: #292824; }
+.calendar-mobile-days button[data-active="true"] { background: #a24940; color: #fff4e9; }
+.calendar-appointment:not(.calendar-time-event) { background: #22221f; }
+.calendar-client-avatar { background: #353027; color: #dfc8a7; }
+.calendar-month-day[data-outside-month="true"] { background: #181817; color: #a7a091; }
+.calendar-month-event { background: #303426; color: #d7d7b2; font-size: 10px; }
+.calendar-month-event[data-status="CONFIRMED"] { background: #28362c; color: #c3dcc5; }
+.calendar-month-event[data-status="COMPLETED"] { background: #2b3540; color: #c0d0df; }
+.calendar-month-event[data-status="CANCELLED"], .calendar-month-event[data-status="NO_SHOW"] { background: #3b2925; color: #e9baaa; }
+.calendar-legend i { background: #c4a56b; }
+.calendar-legend [data-status="CONFIRMED"] i { background: #9bc3a6; }
+.calendar-legend [data-status="COMPLETED"] i { background: #9cb6cc; }
+.calendar-legend [data-status="CANCELLED"] i { background: #cb9580; }
+@media (prefers-contrast: more) { :root { --muted: #d2ccc0; --border: #6c665c; } }

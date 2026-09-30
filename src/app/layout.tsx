@@ -6,15 +6,19 @@ import "./appointments.css";
 import "./calendar.css";
 import "./money.css";
 import "./qa-fixes.css";
+import "./studio.css";
+import "./studio-theme.css";
+import "./workspace.css";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { getLocale } from "@/i18n";
 
 export const metadata: Metadata = {
   title: {
-    default: "Tattoo Appointment",
-    template: "%s | Tattoo Appointment",
+    default: "Tinta · Tattoo Appointment",
+    template: "%s | Tinta",
   },
-  description: "Practical appointment management for tattoo artists.",
+  description: "Tu espacio de trabajo como artista: citas, clientes, diseños y señales en un solo lugar.",
+  icons: { icon: "/icons/app-icon.svg", apple: "/icons/apple-touch-icon.png" },
   manifest: "/manifest.webmanifest",
 };
 

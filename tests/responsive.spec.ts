@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "./fixtures";
+import { type Page } from "@playwright/test";
 
 const viewports = [
   { name: "phone-360", width: 360, height: 800 },
@@ -67,8 +68,11 @@ test("critical screens remain usable from 360px through wide desktop", async ({ 
 
   const unique = Date.now().toString(36);
   await page.goto("/sign-up");
+  if (await page.locator(".auth-language .language-select").inputValue() !== "en") {
+    await Promise.all([page.waitForEvent("load"), page.locator(".auth-language .language-select").selectOption("en")]);
+  }
   await page.locator("#name").fill("Responsive QA Artist");
-  await page.locator("#email").fill(`responsive-${unique}@example.com`);
+  await page.locator("#email").fill("owner@example.com");
   await page.locator("#password").fill("ResponsiveQA-2026!");
   await page.locator(".auth-form button[type='submit']").click();
   await page.waitForURL(/\/calendar/);

@@ -8,7 +8,7 @@ export async function GET() {
   if (!session) return Response.json({ error: "unauthorized" }, { status: 401, headers: { "Cache-Control": "private, no-store" } });
   const artistId = session.user.id;
   const [profile, clients, designs, appointments, payments] = await prisma.$transaction([
-    prisma.user.findUniqueOrThrow({ where: { id: artistId }, select: { id: true, name: true, studioName: true, email: true, language: true, createdAt: true } }),
+    prisma.user.findUniqueOrThrow({ where: { id: artistId }, select: { id: true, name: true, studioName: true, email: true, language: true, whatsappReminderTemplate: true, createdAt: true } }),
     prisma.client.findMany({ where: { artistId }, orderBy: { createdAt: "asc" } }),
     prisma.design.findMany({ where: { artistId }, orderBy: { createdAt: "asc" }, select: { id: true, title: true, notes: true, originalName: true, mimeType: true, fileSize: true, createdAt: true, updatedAt: true } }),
     prisma.appointment.findMany({ where: { artistId }, orderBy: { startsAt: "asc" }, include: { designs: { where: { design: { artistId } }, select: { designId: true, isFinal: true } } } }),

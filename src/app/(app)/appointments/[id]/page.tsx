@@ -9,6 +9,8 @@ import { getDictionary } from "@/i18n";
 import { cancelAppointment, deleteAppointment } from "@/app/(app)/appointments/actions";
 import { deletePayment, recordPayment } from "@/app/(app)/appointments/payment-actions";
 import { calculateMoneySummary, decimalToCents, formatEuro } from "@/lib/money";
+import { studioTimeZone } from "@/lib/studio-time";
+import { getDefaultReminderTemplate, getWhatsAppReminderUrl, renderReminderTemplate } from "@/lib/whatsapp-reminder";
 
 export default async function AppointmentDetailPage({
   params,
@@ -32,6 +34,26 @@ export default async function AppointmentDetailPage({
   });
 
   if (!appointment) notFound();
+
+  const artist = await prisma.user.findUnique({
+    where: { id: artistId },
+    select: { name: true, studioName: true, whatsappReminderTemplate: true },
+  });
+  // This authenticated server page evaluates eligibility at the time of the request.
+  // eslint-disable-next-line react-hooks/purity
+  const isUpcoming = appointment.startsAt.getTime() > Date.now();
+  const canSendReminder = isUpcoming && (appointment.status === "PLANNED" || appointment.status === "CONFIRMED");
+  const reminderLocale = locale === "es" ? "es-ES" : "en-GB";
+  const reminderMessage = renderReminderTemplate(
+    artist?.whatsappReminderTemplate ?? getDefaultReminderTemplate(locale),
+    {
+      client: appointment.client.name,
+      date: new Intl.DateTimeFormat(reminderLocale, { dateStyle: "long", timeZone: studioTimeZone }).format(appointment.startsAt),
+      time: new Intl.DateTimeFormat(reminderLocale, { timeStyle: "short", timeZone: studioTimeZone }).format(appointment.startsAt),
+      studio: artist?.studioName || artist?.name || "",
+    },
+  );
+  const reminderUrl = canSendReminder ? getWhatsAppReminderUrl(appointment.client.phone, reminderMessage) : null;
 
   const cancelAction = cancelAppointment.bind(null, appointment.id);
   const deleteAction = deleteAppointment.bind(null, appointment.id);
@@ -89,6 +111,22 @@ export default async function AppointmentDetailPage({
             <div><dt>{dictionary.appointments.client}</dt><dd><Link className="detail-link" href={`/clients/${appointment.client.id}`}>{appointment.client.name}</Link></dd></div>
             <div><dt>{dictionary.appointments.phone}</dt><dd><a href={`tel:${appointment.client.phone}`}>{appointment.client.phone}</a></dd></div>
           </dl>
+          {canSendReminder ? reminderUrl ? (
+            <>
+              <a className="secondary-button button-link" href={reminderUrl} target="_blank" rel="noopener noreferrer">
+                {locale === "es" ? "Preparar recordatorio por WhatsApp" : "Prepare WhatsApp reminder"}
+              </a>
+              <p className="muted-copy">
+                {locale === "es" ? "Revisa el mensaje en WhatsApp y pulsa Enviar." : "Review the message in WhatsApp and press Send."}
+              </p>
+            </>
+          ) : (
+            <p className="muted-copy">
+              {locale === "es"
+                ? "Para usar WhatsApp, añade un teléfono válido con prefijo internacional o un número español de 9 cifras."
+                : "To use WhatsApp, add a valid phone number with its country code or a 9-digit Spanish number."}
+            </p>
+          ) : null}
         </article>
 
         <article className="appointment-detail-card workspace-section section-intro">

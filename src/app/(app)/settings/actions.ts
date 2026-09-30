@@ -6,9 +6,25 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { requireArtistId } from "@/lib/session";
 import { validateNewPassword, validatePasswordChange, validateProfile } from "@/lib/settings-validation";
+import { validateReminderTemplate } from "@/lib/whatsapp-reminder";
 
 export type ProfileFormState = { error: "name" | "studio" | "save" | null; saved: boolean };
 export type PasswordFormState = { error: "current" | "length" | "match" | "same" | "save" | null; saved: boolean };
+export type ReminderFormState = { error: "empty" | "length" | "placeholder" | "save" | null; savedTemplate: string | null };
+
+export async function updateReminderTemplate(_previous: ReminderFormState, formData: FormData): Promise<ReminderFormState> {
+  const artistId = await requireArtistId();
+  const result = validateReminderTemplate(formData.get("whatsappReminderTemplate"));
+  if (!result.ok) return { error: result.error, savedTemplate: null };
+  try {
+    await prisma.user.update({ where: { id: artistId }, data: { whatsappReminderTemplate: result.template } });
+  } catch {
+    return { error: "save", savedTemplate: null };
+  }
+  revalidatePath("/settings");
+  revalidatePath("/appointments/[id]", "page");
+  return { error: null, savedTemplate: result.template };
+}
 
 export async function updateProfile(_previous: ProfileFormState, formData: FormData): Promise<ProfileFormState> {
   const artistId = await requireArtistId();

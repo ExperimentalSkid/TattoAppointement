@@ -23,7 +23,7 @@
     "verify:images": "node scripts/verify-image-processing.mjs",
     "verify:money": "node scripts/verify-money.mjs",
     "verify:appointments": "node scripts/verify-appointments.mjs",
-    "test:unit": "node scripts/verify-money.mjs && node scripts/verify-appointments.mjs && node scripts/verify-uploads.mjs && node scripts/verify-studio-time.mjs && node scripts/verify-email.mjs && node scripts/verify-settings.mjs && node scripts/verify-studio-access.mjs",
+    "test:unit": "node scripts/verify-money.mjs && node scripts/verify-appointments.mjs && node scripts/verify-uploads.mjs && node scripts/verify-studio-time.mjs && node scripts/verify-email.mjs && node scripts/verify-settings.mjs && node scripts/verify-studio-access.mjs && node scripts/verify-whatsapp-reminder.mjs",
     "test:responsive": "playwright test tests/responsive.spec.ts",
     "test:final": "playwright test tests/final-workflows.spec.ts",
     "test:pwa": "playwright test tests/pwa.spec.ts",

@@ -1,8 +1,35 @@
 "use client";
 
-import { useActionState } from "react";
-import { changePassword, updateProfile, type PasswordFormState, type ProfileFormState } from "./actions";
+import { useActionState, useState } from "react";
+import { changePassword, updateProfile, updateReminderTemplate, type PasswordFormState, type ProfileFormState, type ReminderFormState } from "./actions";
 import type { SettingsCopy } from "./copy";
+import { getDefaultReminderTemplate, renderReminderTemplate, REMINDER_TEMPLATE_MAX_LENGTH } from "@/lib/whatsapp-reminder";
+
+export function ReminderSettingsForm({ copy, locale, initialTemplate, studioName }: { copy: SettingsCopy; locale: "es" | "en"; initialTemplate: string; studioName: string }) {
+  const [template, setTemplate] = useState(initialTemplate);
+  const [state, action, pending] = useActionState(updateReminderTemplate, { error: null, savedTemplate: null } as ReminderFormState);
+  const preview = renderReminderTemplate(template, { client: copy.reminderExampleClient, date: copy.reminderExampleDate, time: "14:00", studio: studioName });
+  return (
+    <form action={action} className="client-form settings-form reminder-settings-form">
+      <div className="field">
+        <label htmlFor="whatsapp-reminder-template">{copy.reminderTemplate}</label>
+        <textarea id="whatsapp-reminder-template" name="whatsappReminderTemplate" value={template} onChange={event => setTemplate(event.target.value)} rows={5} maxLength={REMINDER_TEMPLATE_MAX_LENGTH} aria-describedby="whatsapp-reminder-tokens" required />
+        <p className="muted-copy" id="whatsapp-reminder-tokens">{copy.reminderTokens} <code>{"{client}"}</code> ({copy.reminderClient}), <code>{"{date}"}</code> ({copy.reminderDate}), <code>{"{time}"}</code> ({copy.reminderTime}), <code>{"{studio}"}</code> ({copy.reminderStudio}).</p>
+      </div>
+      <div className="section-intro">
+        <h3>{copy.reminderPreview}</h3>
+        <p className="muted-copy">{copy.reminderPreviewNote}</p>
+        <p id="whatsapp-reminder-preview" className="prewrap">{preview}</p>
+      </div>
+      {state.error ? <p className="form-error" role="alert">{copy.reminderErrors[state.error]}</p> : null}
+      {state.savedTemplate !== null && state.savedTemplate === template.trim() ? <p className="form-note settings-success" role="status">{copy.reminderSaved}</p> : null}
+      <div className="form-actions">
+        <button className="primary-button" disabled={pending} type="submit">{pending ? copy.saving : copy.save}</button>
+        <button className="secondary-button" disabled={pending} type="button" onClick={() => setTemplate(getDefaultReminderTemplate(locale))}>{copy.reminderReset}</button>
+      </div>
+    </form>
+  );
+}
 
 export function StudioSettingsForm({ copy, initial }: { copy: SettingsCopy; initial: { name: string; studioName: string | null; email: string } }) {
   const [state, action, pending] = useActionState(updateProfile, { error: null, saved: false } as ProfileFormState);

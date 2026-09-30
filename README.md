@@ -15,6 +15,7 @@ The dark editorial interface uses six shared layout primitives, open sections an
 - Private artwork library with original files, optimized previews and reusable design selections.
 - Appointments with multiple designs, a final design, price, deposit and payment history.
 - Studio profile, artist preferences and persistent language selection.
+- Optional manual WhatsApp appointment reminders with a customizable template in Settings. Client, date, time and studio placeholders fill in appointment details; the artist reviews the message and presses Send in WhatsApp. No WhatsApp API account or messaging fees are required.
 - A private download of the artist's client, appointment, design metadata and payment records.
 - Responsive desktop workspace and mobile navigation; installable PWA metadata and static asset caching.
 - Ownership checks on records and private image requests; authenticated responses are not publicly cached.

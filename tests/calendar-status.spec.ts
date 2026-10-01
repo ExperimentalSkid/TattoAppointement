@@ -1,15 +1,17 @@
 import { expect, test } from "./fixtures";
 import { type Page } from "@playwright/test";
+import { fillAppointmentStart, revealAppointmentMoney } from "./appointment-helpers";
 
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64");
 
 async function createAppointment(page: Page, start: string, status: "PLANNED" | "COMPLETED", notes: string, initialPayment = "0.00") {
   await page.goto("/new-appointment");
   await page.locator("#appointment-client").selectOption({ index: 1 });
-  await page.locator("#appointment-start").fill(start);
+  await fillAppointmentStart(page, start);
   await page.locator("#appointment-status").selectOption(status);
   await page.locator("input[name='designIds']").first().check();
   await page.locator("#appointment-notes").fill(notes);
+  await revealAppointmentMoney(page);
   await page.locator("#agreed-price").fill("250.00");
   await page.locator("#deposit-required").fill("50.00");
   await page.locator("#initial-payment").fill(initialPayment);
@@ -52,6 +54,7 @@ test("cancelled appointments leave all calendar views, retain history and free t
   }
 
   await page.goto(cancelledPath);
+  page.once("dialog", async dialog => { await dialog.accept(); });
   await page.getByRole("button", { name: "Cancel appointment", exact: true }).click();
   await expect(page.locator(".status-pill[data-status='CANCELLED']")).toHaveText("Cancelled");
 

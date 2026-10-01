@@ -1,5 +1,6 @@
 import { expect, test } from "./fixtures";
 import { type Page } from "@playwright/test";
+import { fillAppointmentStart, revealAppointmentMoney } from "./appointment-helpers";
 
 const viewports = [
   { name: "phone-360", width: 360, height: 800 },
@@ -104,11 +105,12 @@ test("critical screens remain usable from 360px through wide desktop", async ({ 
 
   await page.goto("/new-appointment");
   await page.locator("#appointment-client").selectOption({ index: 1 });
-  await page.locator("#appointment-start").fill("2026-10-05T10:00");
+  await fillAppointmentStart(page, "2026-10-05T10:00");
   await expect(page.locator("input[name='designIds']").first()).toBeVisible();
   await page.locator("input[name='designIds']").first().check();
   await page.locator("input[name='finalDesignId']").first().check();
   await page.locator("#appointment-notes").fill("Responsive QA appointment notes");
+  await revealAppointmentMoney(page);
   await page.locator("#agreed-price").fill("350.00");
   await page.locator("#deposit-required").fill("100.00");
   await page.locator("#initial-payment").fill("50.00");
@@ -142,6 +144,7 @@ test("critical screens remain usable from 360px through wide desktop", async ({ 
     await page.getByRole("button", { name: "Close full-screen" }).click();
 
     await page.goto("/new-appointment");
+    await revealAppointmentMoney(page);
     await page.locator("#initial-payment").focus();
     await page.keyboard.press("Tab");
     await expect(page.locator(".appointment-form-actions .primary-button")).toBeFocused();

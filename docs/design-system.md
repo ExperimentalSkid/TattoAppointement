@@ -35,6 +35,14 @@ Use composition, type and space before a frame. Keep visible control boundaries 
 
 Reuse these primitives rather than introducing a new card class for each page. Existing component classes retain functional layout responsibilities. Avoid a card inside another card, an outer panel around a whole page or matching boxes for metadata and artwork.
 
+## Appointment interactions
+
+`appointment-workflows.css` reuses the shared spacing, palette and rule tokens. The record header groups date, status, contact and actions before the artwork. Focused rescheduling opens between horizontal rules; errors use a short accent edge and visible focus rather than a surrounding card. Form errors are linked to their fields and retain the artist's entered values.
+
+Date and time controls stay consistent across creation and editing. References are optional, and supplementary price/deposit fields use a disclosure that opens when needed for editing or error correction. The payment record leads with price, received amount and remaining balance; deposit information is secondary. Cancelled/no-show records show a neutral signed difference between price and received amounts, without implying a cancellation or refund policy.
+
+Adding a client or importing artwork from a booking stores a bounded, short-lived draft in the current tab's session storage. Return URLs carry an opaque token, not notes or payment values. Newly created records are selected on return, and the temporary snapshot is consumed.
+
 ## Measured reduction
 
 At 1440px, the same seven populated routes were audited before and after using computed styles. The measure counts rendered elements at least 120px wide and 45px high with a visible border on all four sides; input controls are outside the count. The calendar's primary action link is included consistently in both runs.

@@ -3,10 +3,11 @@ import { notFound } from "next/navigation";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { LocalDateTime } from "@/components/local-date-time";
 import { PaymentForm } from "@/components/payment-form";
+import { AppointmentRescheduleForm } from "@/components/appointment-reschedule-form";
 import { prisma } from "@/lib/prisma";
 import { requireArtistId } from "@/lib/session";
 import { getDictionary } from "@/i18n";
-import { cancelAppointment, deleteAppointment } from "@/app/(app)/appointments/actions";
+import { cancelAppointment, deleteAppointment, rescheduleAppointment } from "@/app/(app)/appointments/actions";
 import { deletePayment, recordPayment } from "@/app/(app)/appointments/payment-actions";
 import { calculateMoneySummary, decimalToCents, formatEuro } from "@/lib/money";
 import { studioTimeZone } from "@/lib/studio-time";
@@ -14,11 +15,14 @@ import { getDefaultReminderTemplate, getWhatsAppReminderUrl, renderReminderTempl
 
 export default async function AppointmentDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ reschedule?: string | string[] }>;
 }) {
   const artistId = await requireArtistId();
   const { id } = await params;
+  const { reschedule } = await searchParams;
   const { locale, dictionary } = await getDictionary();
 
   const appointment = await prisma.appointment.findFirst({
@@ -54,38 +58,51 @@ export default async function AppointmentDetailPage({
     },
   );
   const reminderUrl = canSendReminder ? getWhatsAppReminderUrl(appointment.client.phone, reminderMessage) : null;
+  const isActive = appointment.status === "PLANNED" || appointment.status === "CONFIRMED";
+  const isHistoricalOutcome = appointment.status === "CANCELLED" || appointment.status === "NO_SHOW";
 
   const cancelAction = cancelAppointment.bind(null, appointment.id);
   const deleteAction = deleteAppointment.bind(null, appointment.id);
+  const rescheduleAction = rescheduleAppointment.bind(null, appointment.id);
   const paymentAction = recordPayment.bind(null, appointment.id);
   const agreedPriceCents = decimalToCents(appointment.agreedPrice);
   const depositRequiredCents = decimalToCents(appointment.depositRequired) ?? 0;
   const paymentCents = appointment.payments.map((payment) => decimalToCents(payment.amount) ?? 0);
   const money = calculateMoneySummary({ agreedPriceCents, depositRequiredCents, paymentsCents: paymentCents });
+  const historicalDifferenceCents = agreedPriceCents === null ? null : agreedPriceCents - money.totalReceivedCents;
 
-  const formatMoney = (cents: number | null) => formatEuro(cents, locale);
+  const formatMoney = (cents: number | null) => cents !== null && cents < 0
+    ? `-${formatEuro(-cents, locale)}`
+    : formatEuro(cents, locale);
   const removePaymentLabel = locale === "es" ? "Eliminar pago" : "Remove payment";
-  const deleteAppointmentConfirmation = locale === "es"
-    ? "¿Eliminar esta cita y su historial de pagos?"
-    : "Delete this appointment and its payment history?";
 
   return (
     <section className="appointment-page workspace-stack">
-      <div className="page-title-row appointment-detail-header">
+      <header className="appointment-detail-header">
         <div>
           <Link className="back-link" href={`/clients/${appointment.clientId}`}>← {dictionary.appointments.backToClient}</Link>
           <p className="eyebrow">{dictionary.appointments.detailsTitle}</p>
           <h1 className="page-heading">{appointment.client.name}</h1>
-          <p className="muted-copy"><LocalDateTime iso={appointment.startsAt.toISOString()} locale={locale} /></p>
+          <div className="appointment-record-meta">
+            <LocalDateTime iso={appointment.startsAt.toISOString()} locale={locale} />
+            <span className="status-pill" data-status={appointment.status}>{dictionary.appointments.statuses[appointment.status]}</span>
+            <a href={`tel:${appointment.client.phone}`}>{appointment.client.phone}</a>
+          </div>
         </div>
-        <Link className="secondary-button button-link" href={`/appointments/${appointment.id}/edit`}>{dictionary.appointments.edit}</Link>
-      </div>
+        <div className="appointment-record-actions">
+          <Link className="secondary-button button-link" href={`/appointments/${appointment.id}/edit`}>{dictionary.appointments.edit}</Link>
+          {isActive ? <AppointmentRescheduleForm key={`${appointment.startsAt.toISOString()}-${reschedule === "1"}`} action={rescheduleAction} startsAtIso={appointment.startsAt.toISOString()} copy={dictionary.appointments} locale={locale} initialExpanded={reschedule === "1"} /> : null}
+          {reminderUrl ? <a className="secondary-button button-link" href={reminderUrl} target="_blank" rel="noopener noreferrer">{locale === "es" ? "Preparar recordatorio por WhatsApp" : "Prepare WhatsApp reminder"}</a> : null}
+          {canSendReminder ? <p className="appointment-reminder-help muted-copy">{reminderUrl
+            ? locale === "es" ? "Revisa el mensaje en WhatsApp y pulsa Enviar." : "Review the message in WhatsApp and press Send."
+            : locale === "es" ? "Para usar WhatsApp, añade un teléfono válido con prefijo internacional o un número español de 9 cifras." : "To use WhatsApp, add a valid phone number with its country code or a 9-digit Spanish number."}</p> : null}
+        </div>
+      </header>
 
       <div className="workspace-split" data-lead="artwork">
-        <div className="workspace-stack">
           <section className="appointment-detail-card appointment-designs-section workspace-section section-intro">
             <h2>{dictionary.appointments.designsSection}</h2>
-            <div className="appointment-design-gallery">
+            {appointment.designs.length ? <div className="appointment-design-gallery">
               {appointment.designs.map(({ design, isFinal }) => (
                 <Link className="appointment-design-card artwork-object" href={`/designs/${design.id}`} key={design.id}>
                   <div className="appointment-design-image-wrap">
@@ -97,64 +114,36 @@ export default async function AppointmentDetailPage({
                   {isFinal ? <span className="final-design-badge">✓ {dictionary.appointments.finalDesign}</span> : null}
                 </Link>
               ))}
-            </div>
+            </div> : <div className="appointment-artwork-empty">
+              <p className="muted-copy">{dictionary.appointments.noArtworkAttached}</p>
+              <Link className="text-link" href={`/appointments/${appointment.id}/edit#appointment-designs`}>{dictionary.appointments.addArtwork}</Link>
+            </div>}
           </section>
           <section className="appointment-detail-card workspace-section section-intro">
             <h2>{dictionary.appointments.notesSection}</h2>
             {appointment.notes ? <p className="prewrap appointment-notes">{appointment.notes}</p> : <p className="muted-copy">{dictionary.appointments.noNotes}</p>}
           </section>
-        </div>
-        <aside className="workspace-stack">
-        <article className="appointment-detail-card workspace-section section-intro">
-          <h2>{dictionary.appointments.clientSection}</h2>
-          <dl className="detail-list">
-            <div><dt>{dictionary.appointments.client}</dt><dd><Link className="detail-link" href={`/clients/${appointment.client.id}`}>{appointment.client.name}</Link></dd></div>
-            <div><dt>{dictionary.appointments.phone}</dt><dd><a href={`tel:${appointment.client.phone}`}>{appointment.client.phone}</a></dd></div>
-          </dl>
-          {canSendReminder ? reminderUrl ? (
-            <>
-              <a className="secondary-button button-link" href={reminderUrl} target="_blank" rel="noopener noreferrer">
-                {locale === "es" ? "Preparar recordatorio por WhatsApp" : "Prepare WhatsApp reminder"}
-              </a>
-              <p className="muted-copy">
-                {locale === "es" ? "Revisa el mensaje en WhatsApp y pulsa Enviar." : "Review the message in WhatsApp and press Send."}
-              </p>
-            </>
-          ) : (
-            <p className="muted-copy">
-              {locale === "es"
-                ? "Para usar WhatsApp, añade un teléfono válido con prefijo internacional o un número español de 9 cifras."
-                : "To use WhatsApp, add a valid phone number with its country code or a 9-digit Spanish number."}
-            </p>
-          ) : null}
-        </article>
-
-        <article className="appointment-detail-card workspace-section section-intro">
-          <h2>{dictionary.appointments.scheduleSection}</h2>
-          <dl className="detail-list">
-            <div><dt>{dictionary.appointments.start}</dt><dd><LocalDateTime iso={appointment.startsAt.toISOString()} locale={locale} /></dd></div>
-            <div><dt>{dictionary.appointments.status}</dt><dd><span className="status-pill" data-status={appointment.status}>{dictionary.appointments.statuses[appointment.status]}</span></dd></div>
-          </dl>
-        </article>
-        </aside>
       </div>
 
       <section className="appointment-detail-card money-section workspace-section section-intro">
         <div className="section-heading-row">
           <div>
             <h2>{dictionary.appointments.moneySection}</h2>
-            <p className="muted-copy">{dictionary.appointments.paymentStates[money.paymentState]} · {dictionary.appointments.depositStates[money.depositState]}</p>
+            <p className="muted-copy">{isHistoricalOutcome ? dictionary.appointments.historicalPaymentSummary : dictionary.appointments.paymentStates[money.paymentState]}</p>
           </div>
+          <Link className="text-link compact-link" href={`/appointments/${appointment.id}/edit?section=money#appointment-money`}>{dictionary.appointments.editMoney}</Link>
         </div>
-        <dl className="money-summary-grid">
+        <dl className="money-summary-grid appointment-money-overview">
           <div><dt>{dictionary.appointments.agreedPrice}</dt><dd>{formatMoney(agreedPriceCents)}</dd></div>
-          <div><dt>{dictionary.appointments.depositRequired}</dt><dd>{formatMoney(depositRequiredCents)}</dd></div>
           <div><dt>{dictionary.appointments.amountReceived}</dt><dd>{formatMoney(money.totalReceivedCents)}</dd></div>
-          <div><dt>{dictionary.appointments.depositRemaining}</dt><dd>{formatMoney(money.depositPendingCents)}</dd></div>
-          <div><dt>{dictionary.appointments.remainingBalance}</dt><dd>{formatMoney(money.remainingTotalCents)}</dd></div>
-          <div><dt>{dictionary.appointments.depositStatus}</dt><dd>{dictionary.appointments.depositStates[money.depositState]}</dd></div>
-          <div><dt>{dictionary.appointments.paymentStatus}</dt><dd>{dictionary.appointments.paymentStates[money.paymentState]}</dd></div>
+          <div><dt>{isHistoricalOutcome ? dictionary.appointments.historicalBalance : dictionary.appointments.remainingBalance}</dt><dd>{formatMoney(isHistoricalOutcome ? historicalDifferenceCents : money.remainingTotalCents)}</dd></div>
         </dl>
+        <p className="appointment-deposit-summary">
+          {depositRequiredCents > 0 ? <>
+            <span>{dictionary.appointments.depositRequired}: {formatMoney(depositRequiredCents)}</span>
+            {!isHistoricalOutcome ? <span>{money.depositPendingCents > 0 ? `${dictionary.appointments.depositRemaining}: ${formatMoney(money.depositPendingCents)}` : dictionary.appointments.depositStates.PAID}</span> : null}
+          </> : dictionary.appointments.depositStates.NOT_REQUIRED}
+        </p>
 
         <PaymentForm action={paymentAction} copy={dictionary.appointments} />
 
@@ -191,14 +180,14 @@ export default async function AppointmentDetailPage({
         </div>
       </section>
 
-      <section className="appointment-actions-section">
-        {appointment.status !== "CANCELLED" ? <form action={cancelAction}><button className="secondary-button" type="submit">{dictionary.appointments.cancelAppointment}</button></form> : null}
-        <form action={deleteAction}>
-          <ConfirmSubmitButton className="danger-button" message={deleteAppointmentConfirmation}>
+      <footer className="appointment-actions-section appointment-history-actions">
+        {isActive ? <form action={cancelAction}><ConfirmSubmitButton className="secondary-button" message={dictionary.appointments.cancelConfirmation}>{dictionary.appointments.cancelAppointment}</ConfirmSubmitButton></form> : null}
+        <form className="appointment-delete-action" action={deleteAction}>
+          <ConfirmSubmitButton className="danger-button" message={dictionary.appointments.deleteConfirmation}>
             {dictionary.appointments.deleteAppointment}
           </ConfirmSubmitButton>
         </form>
-      </section>
+      </footer>
     </section>
   );
 }

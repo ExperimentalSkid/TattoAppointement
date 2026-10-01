@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireArtistId } from "@/lib/session";
+import { appointmentReturnWithSelection, validateAppointmentReturn } from "@/lib/appointment-return";
 
 export type ClientFormState = {
   error: "required" | "duplicate" | "save" | null;
@@ -34,6 +35,18 @@ export async function createClient(
   _previousState: ClientFormState,
   formData: FormData,
 ): Promise<ClientFormState> {
+  return saveNewClient(formData, null);
+}
+
+export async function createClientForAppointment(
+  returnTo: string,
+  _previousState: ClientFormState,
+  formData: FormData,
+): Promise<ClientFormState> {
+  return saveNewClient(formData, validateAppointmentReturn(returnTo));
+}
+
+async function saveNewClient(formData: FormData, returnTo: string | null): Promise<ClientFormState> {
   const artistId = await requireArtistId();
   const name = String(formData.get("name") ?? "").trim();
   const phone = normalizePhone(formData.get("phone"));
@@ -46,6 +59,7 @@ export async function createClient(
     return { error: "duplicate" };
   }
 
+  let clientId: string;
   try {
     const client = await prisma.client.create({
       data: {
@@ -58,14 +72,18 @@ export async function createClient(
       select: { id: true },
     });
 
-    revalidatePath("/clients");
-    redirect(`/clients/${client.id}`);
-  } catch (error) {
-    if (error && typeof error === "object" && "digest" in error) {
-      throw error;
-    }
+    clientId = client.id;
+  } catch {
     return { error: "save" };
   }
+
+  revalidatePath("/clients");
+  const appointmentReturn = appointmentReturnWithSelection(returnTo, "createdClient", clientId);
+  if (appointmentReturn) {
+    revalidatePath(appointmentReturn.split("?")[0]);
+    redirect(appointmentReturn);
+  }
+  redirect(`/clients/${clientId}`);
 }
 
 export async function updateClient(

@@ -137,6 +137,9 @@ function CalendarAppointmentCard({
   const startsAt = new Date(appointment.startsAtIso);
   const time = timeFormatter.format(startsAt);
   const label = `${time} · ${appointment.client.name} · ${statuses[appointment.status]}${conflicted ? ` · ${copy.overlap}` : ""}`;
+  const canReschedule = appointment.status === "PLANNED" || appointment.status === "CONFIRMED";
+  const actionHref = canReschedule ? `/appointments/${appointment.id}?reschedule=1#appointment-reschedule-form` : `/appointments/${appointment.id}/edit`;
+  const actionLabel = canReschedule ? copy.reschedule : copy.edit;
 
   if (timelineStyle) {
     return (
@@ -146,7 +149,7 @@ function CalendarAppointmentCard({
           <h3>{appointment.client.name}</h3>
           <span className="calendar-event-status">{conflicted ? copy.overlap : statuses[appointment.status]}</span>
         </Link>
-        <Link className="calendar-event-edit" href={`/appointments/${appointment.id}/edit`} aria-label={`${copy.reschedule}: ${appointment.client.name}`} title={copy.reschedule}>
+        <Link className="calendar-event-edit" href={actionHref} aria-label={`${actionLabel}: ${appointment.client.name}`} title={actionLabel}>
           <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m12.5 3.5 4 4M3.5 12.5l9-9a2.8 2.8 0 0 1 4 4l-9 9-5 1 1-5Z" /></svg>
         </Link>
       </article>
@@ -166,7 +169,7 @@ function CalendarAppointmentCard({
       <span className="status-pill calendar-status" data-status={appointment.status}>{statuses[appointment.status]}</span>
       <div className="calendar-card-actions">
         <Link href={`/appointments/${appointment.id}`}>{copy.open}<span aria-hidden="true"> ↗</span></Link>
-        <Link href={`/appointments/${appointment.id}/edit`}>{copy.reschedule}</Link>
+        <Link href={actionHref}>{actionLabel}</Link>
       </div>
     </article>
   );

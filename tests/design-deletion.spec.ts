@@ -2,6 +2,7 @@ import { expect, test } from "./fixtures";
 import { access } from "node:fs/promises";
 import path from "node:path";
 import { Pool } from "pg";
+import { fillAppointmentStart, revealAppointmentMoney } from "./appointment-helpers";
 
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64");
 
@@ -59,10 +60,11 @@ test("design deletion confirms intent, removes private files and preserves appoi
 
   await page.goto("/new-appointment");
   await page.locator("#appointment-client").selectOption({ index: 1 });
-  await page.locator("#appointment-start").fill("2026-10-05T10:00");
+  await fillAppointmentStart(page, "2026-10-05T10:00");
   await page.locator(`input[name='designIds'][value='${designId}']`).check();
   await page.locator(`input[name='finalDesignId'][value='${designId}']`).check();
   await page.locator("#appointment-notes").fill("Keep these appointment notes after artwork deletion");
+  await revealAppointmentMoney(page);
   await page.locator("#agreed-price").fill("250.00");
   await page.locator("#deposit-required").fill("100.00");
   await page.locator("#initial-payment").fill("50.00");

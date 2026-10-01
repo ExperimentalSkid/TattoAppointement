@@ -19,7 +19,7 @@ export default async function NewAppointmentPage({
   searchParams: Promise<{ date?: string | string[] }>;
 }) {
   const artistId = await requireArtistId();
-  const { dictionary } = await getDictionary();
+  const { locale, dictionary } = await getDictionary();
   const initialDate = validCalendarDate((await searchParams).date);
 
   const [clients, designs] = await Promise.all([
@@ -51,6 +51,9 @@ export default async function NewAppointmentPage({
         designs={designs}
         copy={dictionary.appointments}
         initialDate={initialDate}
+        artistId={artistId}
+        bookingPath="/new-appointment"
+        locale={locale}
       />
     </section>
   );

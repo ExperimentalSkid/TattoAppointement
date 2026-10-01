@@ -1,5 +1,6 @@
 import { expect, test } from "./fixtures";
 import { type Page } from "@playwright/test";
+import { fillAppointmentStart, revealAppointmentMoney } from "./appointment-helpers";
 
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64");
 
@@ -45,8 +46,9 @@ test("private uploads and concurrent appointment saves remain guarded", async ({
   async function fillAppointment(target: Page) {
     await target.goto("/new-appointment");
     await target.locator("#appointment-client").selectOption({ index: 1 });
-    await target.locator("#appointment-start").fill("2027-10-05T10:00");
+    await fillAppointmentStart(target, "2027-10-05T10:00");
     await target.locator("input[name='designIds']").first().check();
+    await revealAppointmentMoney(target);
     await target.locator("#agreed-price").fill("350.00");
     await target.locator("#deposit-required").fill("100.00");
     await target.locator("#initial-payment").fill("0.00");

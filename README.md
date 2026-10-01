@@ -13,7 +13,8 @@ The dark editorial interface uses six shared layout primitives, open sections an
 - Day, week and month calendars with client details, appointment status and overlap confirmation.
 - Clients with search, contact details, notes and appointment history.
 - Private artwork library with original files, optimized previews and reusable design selections.
-- Appointments with multiple designs, a final design, price, deposit and payment history.
+- Appointments with optional references, a final design, price, deposit and manual payment history. Date and time use the studio's Madrid timezone.
+- Booking drafts survive adding a client or importing artwork. Field-specific errors preserve entered values; focused rescheduling identifies conflicts before an explicit override. Confirmed cancellation frees the calendar slot and preserves history.
 - Studio profile, artist preferences and persistent language selection.
 - Optional manual WhatsApp appointment reminders with a customizable template in Settings. Client, date, time and studio placeholders fill in appointment details; the artist reviews the message and presses Send in WhatsApp. No WhatsApp API account or messaging fees are required.
 - A private download of the artist's client, appointment, design metadata and payment records.

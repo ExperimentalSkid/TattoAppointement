@@ -4,9 +4,17 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Dictionary } from "@/i18n/dictionaries";
+import { appointmentReturnWithSelection, validateAppointmentReturn } from "@/lib/appointment-return";
 
-export function DesignUploadForm({ copy }: { copy: Dictionary["designs"] }) {
+export function DesignUploadForm({
+  copy,
+  returnTo,
+}: {
+  copy: Dictionary["designs"];
+  returnTo?: string | null;
+}) {
   const router = useRouter();
+  const appointmentReturn = validateAppointmentReturn(returnTo);
   const [title, setTitle] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -71,7 +79,7 @@ export function DesignUploadForm({ copy }: { copy: Dictionary["designs"] }) {
         return;
       }
 
-      router.push(`/designs/${result.id}`);
+      router.push(appointmentReturnWithSelection(appointmentReturn, "createdDesign", result.id) ?? `/designs/${result.id}`);
       router.refresh();
     } catch {
       setError(copy.uploadError);
@@ -130,7 +138,7 @@ export function DesignUploadForm({ copy }: { copy: Dictionary["designs"] }) {
         <button className="primary-button" type="submit" disabled={pending}>
           {pending ? copy.uploading : copy.upload}
         </button>
-        <Link className="secondary-button button-link" href="/designs">
+        <Link className="secondary-button button-link" href={appointmentReturn ?? "/designs"}>
           {copy.cancel}
         </Link>
       </div>

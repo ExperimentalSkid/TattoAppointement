@@ -1,5 +1,6 @@
 import { expect, test } from "./fixtures";
 import { type Browser, type Page } from "@playwright/test";
+import { fillAppointmentStart, revealAppointmentMoney } from "./appointment-helpers";
 
 const png = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
@@ -64,12 +65,13 @@ async function createAppointment(
 ) {
   await page.goto("/new-appointment");
   await page.locator("#appointment-client").selectOption({ index: 1 });
-  await page.locator("#appointment-start").fill(options.start);
+  await fillAppointmentStart(page, options.start);
   await expect(page.locator("input[name='durationMinutes']")).toHaveCount(0);
   await expect(page.locator("main")).not.toContainText(/\b(?:duraci[oó]n|duration)\b/i);
   await page.locator("input[name='designIds']").first().check();
   await page.locator("input[name='finalDesignId']").first().check();
   await page.locator("#appointment-notes").fill(options.notes ?? "Final QA appointment notes");
+  await revealAppointmentMoney(page);
   await page.locator("#agreed-price").fill(options.agreedPrice ?? "350.00");
   await page.locator("#deposit-required").fill(options.deposit ?? "100.00");
   await page.locator("#initial-payment").fill(options.initialPayment ?? "0.00");
@@ -86,7 +88,7 @@ async function createAppointment(
 }
 
 async function moneyValue(page: Page, label: string) {
-  const item = page.locator(".money-summary-grid > div").filter({
+  const item = page.locator(".money-section dl > div").filter({
     has: page.locator("dt", { hasText: label }),
   });
   await expect(item).toHaveCount(1);
@@ -157,8 +159,11 @@ test("Pass 8 workflows A-F, persistence, errors, and ownership boundaries", asyn
   await expect(page.getByText("Final QA Client", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Final QA Design", { exact: true }).first()).toBeVisible();
   await expect(page.locator("main")).not.toContainText(/\b(?:duraci[oó]n|duration)\b/i);
+  await expect(page.locator(".money-summary-grid > div")).toHaveCount(3);
+  expect(await moneyValue(page, "Agreed total price")).toBe("350.00");
   expect(await moneyValue(page, "Amount received")).toBe("25.00");
-  expect(await moneyValue(page, "Deposit remaining")).toBe("75.00");
+  await expect(page.locator(".appointment-deposit-summary")).toContainText(/Deposit required:\s*€\s*100\.00/);
+  await expect(page.locator(".appointment-deposit-summary")).toContainText(/Deposit remaining:\s*€\s*75\.00/);
   expect(await moneyValue(page, "Remaining balance")).toBe("325.00");
   await page.reload();
   await expect(page.getByText("Workflow A connected appointment", { exact: true })).toBeVisible();
@@ -186,14 +191,15 @@ test("Pass 8 workflows A-F, persistence, errors, and ownership boundaries", asyn
   });
   expect(phoneAppointmentPath).not.toBeNull();
   await page.goto(`${phoneAppointmentPath}/edit`);
-  await page.locator("#appointment-start").fill("2026-10-07T13:15");
+  await fillAppointmentStart(page, "2026-10-07T13:15");
   await page.locator("#appointment-notes").fill("Workflow C rescheduled on phone");
   await page.locator(".appointment-form button[type='submit']").click();
   await page.waitForURL(new RegExp(`${phoneAppointmentPath}$`));
 
   await page.setViewportSize({ width: 1366, height: 768 });
   await page.goto(`${phoneAppointmentPath}/edit`);
-  await expect(page.locator("#appointment-start")).toHaveValue("2026-10-07T13:15");
+  await expect(page.locator("#appointment-date")).toHaveValue("2026-10-07");
+  await expect(page.locator("#appointment-time")).toHaveValue("13:15");
   await expect(page.locator("input[name='durationMinutes']")).toHaveCount(0);
   await expect(page.locator("#appointment-notes")).toHaveValue("Workflow C rescheduled on phone");
 
@@ -207,7 +213,7 @@ test("Pass 8 workflows A-F, persistence, errors, and ownership boundaries", asyn
   await page.locator(".payment-entry-form button[type='submit']").click();
   await expect(page.locator(".form-success")).toHaveText("Payment recorded.");
   expect(await moneyValue(page, "Amount received")).toBe("50.00");
-  expect(await moneyValue(page, "Deposit remaining")).toBe("50.00");
+  await expect(page.locator(".appointment-deposit-summary")).toContainText(/Deposit remaining:\s*€\s*50\.00/);
   expect(await moneyValue(page, "Remaining balance")).toBe("300.00");
   await expect(page.getByText("Partially paid", { exact: true }).first()).toBeVisible();
 

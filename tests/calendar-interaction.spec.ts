@@ -98,12 +98,13 @@ test("mobile selected days persist through reload, views and keyboard navigation
   await page.waitForURL(/\/appointments\/[A-Za-z0-9_-]+$/);
   const appointmentPath = new URL(page.url()).pathname;
   await page.goto(`${appointmentPath}/edit`);
-  await expect(page.locator("#appointment-start")).toHaveValue("2026-10-09T14:15");
-  await expect(page.locator("#appointment-date")).toHaveCount(0);
+  await expect(page.locator("#appointment-date")).toHaveValue("2026-10-09");
+  await expect(page.locator("#appointment-time")).toHaveValue("14:15");
+  await expect(page.locator("input[name='startsAtLocal']")).toHaveValue("2026-10-09T14:15");
   for (const query of ["date=2026-02-31", "date=2026-02-29", "date=2026-10-09&date=2026-10-10"]) {
     await page.goto(`/new-appointment?${query}`);
-    await expect(page.locator("#appointment-start")).toHaveValue("");
-    await expect(page.locator("#appointment-date")).toHaveCount(0);
+    await expect(page.locator("#appointment-date")).toHaveValue("");
+    await expect(page.locator("#appointment-time")).toHaveValue("");
   }
   expect(errors).toEqual([]);
 });
@@ -155,7 +156,7 @@ test("crowded weeks expose full client names and actions, with Madrid current-ti
   for (const row of denseRows) {
     await expect(page.locator(".calendar-week-dense-agenda h3").filter({ hasText: row.name })).toBeVisible();
     await expect(page.locator(`.calendar-week-dense-agenda a[href='/appointments/${row.id}']`)).toBeVisible();
-    await expect(page.locator(`.calendar-week-dense-agenda a[href='/appointments/${row.id}/edit']`)).toBeVisible();
+    await expect(page.locator(`.calendar-week-dense-agenda a[href='/appointments/${row.id}?reschedule=1#appointment-reschedule-form']`)).toBeVisible();
   }
   const marker = page.locator(".calendar-now-marker");
   await expect(marker).toHaveCount(1);
@@ -182,7 +183,7 @@ test("crowded weeks expose full client names and actions, with Madrid current-ti
   await page.setViewportSize({ width: 390, height: 900 });
   for (const row of denseRows) {
     await expect(page.locator(".calendar-mobile-week h3").filter({ hasText: row.name })).toBeVisible();
-    await expect(page.locator(`.calendar-mobile-week a[href='/appointments/${row.id}/edit']`)).toBeVisible();
+    await expect(page.locator(`.calendar-mobile-week a[href='/appointments/${row.id}?reschedule=1#appointment-reschedule-form']`)).toBeVisible();
   }
   await captureCalendar(page, testInfo, "mobile-crowded-week");
 

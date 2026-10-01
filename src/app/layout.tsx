@@ -9,6 +9,7 @@ import "./qa-fixes.css";
 import "./studio.css";
 import "./studio-theme.css";
 import "./workspace.css";
+import "./appointment-workflows.css";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { getLocale } from "@/i18n";
 

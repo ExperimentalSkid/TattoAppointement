@@ -13,7 +13,7 @@ export default async function EditAppointmentPage({
 }) {
   const artistId = await requireArtistId();
   const { id } = await params;
-  const { dictionary } = await getDictionary();
+  const { locale, dictionary } = await getDictionary();
 
   const [appointment, clients, designs] = await Promise.all([
     prisma.appointment.findFirst({
@@ -52,6 +52,9 @@ export default async function EditAppointmentPage({
         designs={designs}
         copy={dictionary.appointments}
         cancelHref={`/appointments/${appointment.id}`}
+        artistId={artistId}
+        bookingPath={`/appointments/${appointment.id}/edit`}
+        locale={locale}
         initial={{
           clientId: appointment.clientId,
           startsAtIso: appointment.startsAt.toISOString(),

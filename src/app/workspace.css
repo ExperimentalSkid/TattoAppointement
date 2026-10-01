@@ -86,8 +86,16 @@
 }
 @media (max-width: 650px) {
   .design-grid { grid-template-columns: minmax(0, 1fr); }
-  .calendar-summary { justify-content: space-between; gap: var(--space-small); }
-  .calendar-summary-stat > strong { font-size: 30px; }
+  .calendar-workspace-header { gap: var(--space-small); margin-bottom: var(--space-group); }
+  .calendar-workspace-title h1 { font-size: 32px; }
+  .calendar-workspace-title p { margin-top: 6px; font-size: 12px; line-height: 1.5; }
+  .calendar-summary { justify-content: flex-start; gap: 32px; margin-bottom: var(--space-group); }
+  .calendar-summary-stat { gap: 6px; }
+  .calendar-summary-stat > strong { font-size: 28px; }
+  .calendar-toolbar { gap: 8px; padding-bottom: var(--space-small); }
+  .calendar-mobile-days { padding-block: var(--space-small); }
+  .calendar-agenda { padding-top: var(--space-small); }
+  .calendar-agenda > h2 { margin-bottom: var(--space-small); }
   .payment-entry-form { grid-template-columns: minmax(0, 1fr); }
   .calendar-toolbar { padding-inline: 0; }
 }

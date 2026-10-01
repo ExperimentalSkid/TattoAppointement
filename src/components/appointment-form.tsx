@@ -28,17 +28,20 @@ type InitialAppointment = {
 
 const initialFormState: AppointmentFormState = { error: null };
 
-export function AppointmentForm({ action, clients, designs, copy, initial, cancelHref }: {
+export function AppointmentForm({ action, clients, designs, copy, initial, initialDate, cancelHref }: {
   action: AppointmentAction;
   clients: ClientOption[];
   designs: DesignOption[];
   copy: Dictionary["appointments"];
   initial?: InitialAppointment;
+  initialDate?: string;
   cancelHref?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, initialFormState);
   const [clientId, setClientId] = useState(initial?.clientId ?? "");
   const [startsAtLocal, setStartsAtLocal] = useState(() => initial?.startsAtIso ? studioLocalInputValue(initial.startsAtIso) : "");
+  const [appointmentDate, setAppointmentDate] = useState(initialDate ?? "");
+  const [appointmentTime, setAppointmentTime] = useState("");
   const [status, setStatus] = useState<AppointmentStatusValue>(initial?.status ?? "PLANNED");
   const [selectedDesignIds, setSelectedDesignIds] = useState<string[]>(initial?.designIds ?? []);
   const [finalDesignId, setFinalDesignId] = useState(initial?.finalDesignId ?? "");
@@ -47,7 +50,11 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
   const [depositRequired, setDepositRequired] = useState(initial?.depositRequired ?? "0.00");
   const [initialPayment, setInitialPayment] = useState("0.00");
   const [allowOverlap, setAllowOverlap] = useState(false);
-  const timezoneOffset = useMemo(() => studioTimezoneOffset(startsAtLocal), [startsAtLocal]);
+  const hasCalendarDate = !initial && Boolean(initialDate);
+  const scheduleValue = hasCalendarDate
+    ? appointmentDate && appointmentTime ? `${appointmentDate}T${appointmentTime}` : ""
+    : startsAtLocal;
+  const timezoneOffset = useMemo(() => studioTimezoneOffset(scheduleValue), [scheduleValue]);
 
   function scheduleChanged() {
     setAllowOverlap(false);
@@ -74,6 +81,7 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
       <input type="hidden" name="timezoneOffset" value={String(timezoneOffset)} />
       <input type="hidden" name="timezoneName" value={studioTimeZone} />
       <input type="hidden" name="allowOverlap" value={allowOverlap ? "true" : "false"} />
+      {hasCalendarDate ? <input type="hidden" name="startsAtLocal" value={scheduleValue} /> : null}
 
       <section className="appointment-form-section workspace-section section-intro">
         <div className="section-heading-row">
@@ -92,22 +100,54 @@ export function AppointmentForm({ action, clients, designs, copy, initial, cance
       <section className="appointment-form-section workspace-section section-intro">
         <h2>{copy.scheduleSection}</h2>
         <div className="appointment-form-grid">
-          <div className="field">
-            <label htmlFor="appointment-start">{copy.start}</label>
-            <input
-              id="appointment-start"
-              name="startsAtLocal"
-              type="datetime-local"
-              value={startsAtLocal}
-              onChange={(event) => {
-                setStartsAtLocal(event.target.value);
-                scheduleChanged();
-              }}
-              suppressHydrationWarning
-              required
-            />
-            <span className="field-help">{copy.client === "Cliente" ? "Hora de Madrid (Europe/Madrid)" : "Madrid time (Europe/Madrid)"}</span>
-          </div>
+          {hasCalendarDate ? (
+            <>
+              <div className="field">
+                <label htmlFor="appointment-date">{copy.date}</label>
+                <input
+                  id="appointment-date"
+                  type="date"
+                  value={appointmentDate}
+                  onChange={(event) => {
+                    setAppointmentDate(event.target.value);
+                    scheduleChanged();
+                  }}
+                  required
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="appointment-time">{copy.startTime}</label>
+                <input
+                  id="appointment-time"
+                  type="time"
+                  value={appointmentTime}
+                  onChange={(event) => {
+                    setAppointmentTime(event.target.value);
+                    scheduleChanged();
+                  }}
+                  required
+                />
+                <span className="field-help">{copy.client === "Cliente" ? "Hora de Madrid (Europe/Madrid)" : "Madrid time (Europe/Madrid)"}</span>
+              </div>
+            </>
+          ) : (
+            <div className="field">
+              <label htmlFor="appointment-start">{copy.start}</label>
+              <input
+                id="appointment-start"
+                name="startsAtLocal"
+                type="datetime-local"
+                value={startsAtLocal}
+                onChange={(event) => {
+                  setStartsAtLocal(event.target.value);
+                  scheduleChanged();
+                }}
+                suppressHydrationWarning
+                required
+              />
+              <span className="field-help">{copy.client === "Cliente" ? "Hora de Madrid (Europe/Madrid)" : "Madrid time (Europe/Madrid)"}</span>
+            </div>
+          )}
           <div className="field">
             <label htmlFor="appointment-status">{copy.status}</label>
             <select

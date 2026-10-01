@@ -39,7 +39,8 @@ export default async function CalendarPage({
   const params = await searchParams;
   const mode = params.view === "day" || params.view === "month" ? params.view : "week";
   const requestedAnchor = validDateKey(params.anchor);
-  const anchor = requestedAnchor ?? studioLocalInputValue(new Date().toISOString()).slice(0, 10);
+  const today = studioLocalInputValue(new Date().toISOString()).slice(0, 10);
+  const anchor = requestedAnchor ?? today;
   const anchorUtc = new Date(`${anchor}T12:00:00.000Z`);
   const monthStart = new Date(Date.UTC(anchorUtc.getUTCFullYear(), anchorUtc.getUTCMonth(), 1, 12));
   const monthOffset = (monthStart.getUTCDay() + 6) % 7;
@@ -86,6 +87,7 @@ export default async function CalendarPage({
         client: appointment.client,
       }))}
       anchor={anchor}
+      today={today}
       anchorProvided={Boolean(requestedAnchor)}
       mode={mode}
       locale={locale}

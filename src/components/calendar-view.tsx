@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type CSSProperties, type KeyboardEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useSyncExternalStore, type CSSProperties, type KeyboardEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { AppointmentStatusValue } from "@/lib/appointments";
 
@@ -32,6 +32,23 @@ const studioTimeFormatter = new Intl.DateTimeFormat("en-GB", {
   hourCycle: "h23",
 });
 
+function subscribeToClock(onChange: () => void) {
+  const timer = window.setInterval(onChange, 30_000);
+  window.addEventListener("focus", onChange);
+  return () => {
+    window.clearInterval(timer);
+    window.removeEventListener("focus", onChange);
+  };
+}
+
+function clockSnapshot() {
+  return Math.floor(Date.now() / 60_000);
+}
+
+function serverClockSnapshot() {
+  return null;
+}
+
 // Calendar dates use UTC noon for arithmetic; appointment instants use studio time.
 function dateKey(date: Date) {
   return date.toISOString().slice(0, 10);
@@ -57,7 +74,11 @@ function weekStart(date: Date) {
 }
 
 function appointmentMinute(appointment: CalendarAppointment) {
-  const [hour, minute] = studioTimeFormatter.format(new Date(appointment.startsAtIso)).split(":").map(Number);
+  return studioMinute(new Date(appointment.startsAtIso));
+}
+
+function studioMinute(date: Date) {
+  const [hour, minute] = studioTimeFormatter.format(date).split(":").map(Number);
   return hour * 60 + minute;
 }
 
@@ -173,7 +194,7 @@ function CalendarDayAgenda({
           <span className="calendar-empty-icon"><CalendarIcon /></span>
           <strong>{copy.emptyDayTitle}</strong>
           <p>{copy.emptyDayHint}</p>
-          <Link href="/new-appointment" className="secondary-button button-link">{copy.newAppointment}<span aria-hidden="true"> →</span></Link>
+          <Link href={`/new-appointment?date=${dayKey}`} className="secondary-button button-link">{copy.newAppointment}<span aria-hidden="true"> →</span></Link>
         </div>
       )}
     </section>
@@ -181,10 +202,11 @@ function CalendarDayAgenda({
 }
 
 export function CalendarView({
-  appointments, anchor, anchorProvided, mode, locale, copy, statuses,
+  appointments, anchor, today, anchorProvided, mode, locale, copy, statuses,
 }: {
   appointments: CalendarAppointment[];
   anchor: string;
+  today: string;
   anchorProvided: boolean;
   mode: CalendarViewMode;
   locale: "en" | "es";
@@ -192,15 +214,21 @@ export function CalendarView({
   statuses: StatusCopy;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const anchorDate = useMemo(() => dateFromKey(anchor), [anchor]);
-  const [mobileSelectedDay, setMobileSelectedDay] = useState(anchor);
+  const requestedDay = searchParams.get("anchor");
+  const selectedDay = mode === "week" && anchorProvided ? requestedDay ?? anchor : anchor;
+  const selectedDate = dateFromKey(selectedDay);
+  const weekScrollRef = useRef<HTMLDivElement>(null);
+  const clockMinute = useSyncExternalStore<number | null>(subscribeToClock, clockSnapshot, serverClockSnapshot);
+  const currentTime = clockMinute === null ? null : new Date(clockMinute * 60_000);
   const localeName = locale === "es" ? "es-ES" : "en-GB";
   const text = locale === "es" ? {
     subtitle: "Tu tiempo, tus sesiones. Todo en su sitio.",
-    confirmed: "Confirmadas", pickDate: "Ir a una fecha", views: "Vista del calendario", navigation: "Navegar por fechas", studioTime: "Hora de Madrid", weekEmpty: "Una semana por crear", weekEmptyHint: "Añade tu próxima sesión y dale forma a tu agenda.", legend: "Estados de las citas",
+    confirmed: "Confirmadas", pickDate: "Ir a una fecha", views: "Vista del calendario", navigation: "Navegar por fechas", studioTime: "Hora de Madrid", weekEmpty: "Una semana por crear", weekEmptyHint: "Añade tu próxima sesión y dale forma a tu agenda.", legend: "Estados de las citas", denseWeek: "Agenda de citas coincidentes",
   } : {
     subtitle: "Your time, your sessions. Everything in place.",
-    confirmed: "Confirmed", pickDate: "Go to a date", views: "Calendar view", navigation: "Navigate dates", studioTime: "Madrid time", weekEmpty: "A week to make your own", weekEmptyHint: "Add your next session and shape your schedule.", legend: "Appointment statuses",
+    confirmed: "Confirmed", pickDate: "Go to a date", views: "Calendar view", navigation: "Navigate dates", studioTime: "Madrid time", weekEmpty: "A week to make your own", weekEmptyHint: "Add your next session and shape your schedule.", legend: "Appointment statuses", denseWeek: "Agenda for overlapping appointments",
   };
 
   useEffect(() => {
@@ -237,7 +265,8 @@ export function CalendarView({
   const timeFormatter = new Intl.DateTimeFormat(localeName, { timeZone: studioTimeZone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
   const weekdayFormatter = new Intl.DateTimeFormat(localeName, { timeZone: studioTimeZone, weekday: "short" });
   const monthFormatter = new Intl.DateTimeFormat(localeName, { timeZone: studioTimeZone, month: "long", year: "numeric" });
-  const todayKey = studioDateKey(new Date());
+  const todayKey = currentTime ? studioDateKey(currentTime) : today;
+  const currentMinute = currentTime ? studioMinute(currentTime) : null;
   const monthGridStart = weekStart(new Date(Date.UTC(anchorDate.getUTCFullYear(), anchorDate.getUTCMonth(), 1, 12)));
   const monthDays = Array.from({ length: 42 }, (_, index) => addDays(monthGridStart, index));
   const visibleAppointments = mode === "day" ? appointmentsByDay.get(anchor) ?? [] : mode === "month" ? appointments.filter((appointment) => studioDateKey(new Date(appointment.startsAtIso)).startsWith(anchor.slice(0, 7))) : weekDays.flatMap((day) => appointmentsByDay.get(dateKey(day)) ?? []);
@@ -246,12 +275,27 @@ export function CalendarView({
   const lastHour = Math.min(24, Math.max(20, ...visibleAppointments.map((appointment) => Math.ceil((appointmentMinute(appointment) + appointment.durationMinutes) / 60))));
   const hours = Array.from({ length: lastHour - firstHour }, (_, index) => firstHour + index);
   const timelineHeight = hours.length * hourHeight;
+  const weekEvents = new Map(weekDays.map(day => [dateKey(day), scheduleEvents(appointmentsByDay.get(dateKey(day)) ?? [])]));
+  const denseDays = weekDays.filter(day => weekEvents.get(dateKey(day))?.some(event => event.lanes > 1));
+
+  useEffect(() => {
+    if (mode !== "week" || !weekScrollRef.current) return;
+    const now = new Date();
+    const today = studioDateKey(now);
+    const start = weekStart(dateFromKey(anchor));
+    const thisWeek = today >= dateKey(start) && today < dateKey(addDays(start, 7));
+    const targetMinute = thisWeek ? studioMinute(now) - 60 : 9 * 60;
+    weekScrollRef.current.scrollTop = Math.max(0, (targetMinute - firstHour * 60) / 60 * hourHeight);
+  }, [anchor, firstHour, mode]);
 
   function navigate(nextMode: CalendarViewMode, nextDate: Date) {
     router.push(`/calendar?view=${nextMode}&anchor=${dateKey(nextDate)}`, { scroll: false });
   }
   function navigatePeriod(direction: -1 | 1) {
-    navigate(mode, mode === "month" ? new Date(Date.UTC(anchorDate.getUTCFullYear(), anchorDate.getUTCMonth() + direction, 1, 12)) : addDays(anchorDate, direction * (mode === "week" ? 7 : 1)));
+    navigate(mode, mode === "month" ? new Date(Date.UTC(anchorDate.getUTCFullYear(), anchorDate.getUTCMonth() + direction, 1, 12)) : addDays(selectedDate, direction * (mode === "week" ? 7 : 1)));
+  }
+  function selectWeekDay(key: string) {
+    window.history.replaceState(null, "", `/calendar?view=week&anchor=${key}`);
   }
   function handleDayTabKey(event: KeyboardEvent<HTMLButtonElement>, index: number) {
     let next = index;
@@ -261,7 +305,7 @@ export function CalendarView({
     else if (event.key === "End") next = 6;
     else return;
     event.preventDefault();
-    setMobileSelectedDay(dateKey(weekDays[next]));
+    selectWeekDay(dateKey(weekDays[next]));
     (event.currentTarget.parentElement?.children[next] as HTMLButtonElement | undefined)?.focus();
   }
 
@@ -269,7 +313,7 @@ export function CalendarView({
     <section className="calendar-page">
       <header className="calendar-workspace-header">
         <div className="calendar-workspace-title"><h1>{copy.calendarTitle}</h1><p>{text.subtitle}</p></div>
-        <Link className="primary-button button-link calendar-new-button" href="/new-appointment"><span aria-hidden="true">+</span>{copy.newAppointment}</Link>
+        <Link className="primary-button button-link calendar-new-button" href={`/new-appointment?date=${selectedDay}`}><span aria-hidden="true">+</span>{copy.newAppointment}</Link>
       </header>
 
       <div className="calendar-summary">
@@ -280,9 +324,9 @@ export function CalendarView({
 
       <section className="calendar-planner">
         <div className="calendar-toolbar">
-          <div className="calendar-period"><h2 className="calendar-range-label">{periodLabel}</h2><label className="calendar-date-jump" title={text.pickDate}><CalendarIcon /><input type="date" aria-label={text.pickDate} value={anchor} onChange={(event) => { if (/^\d{4}-\d{2}-\d{2}$/.test(event.target.value)) navigate(mode, dateFromKey(event.target.value)); }} /></label></div>
+          <div className="calendar-period"><h2 className="calendar-range-label">{periodLabel}</h2><label className="calendar-date-jump" title={text.pickDate}><CalendarIcon /><input type="date" aria-label={text.pickDate} value={selectedDay} onChange={(event) => { if (/^\d{4}-\d{2}-\d{2}$/.test(event.target.value)) navigate(mode, dateFromKey(event.target.value)); }} /></label></div>
           <div className="calendar-toolbar-controls">
-            <div className="calendar-view-switch" role="group" aria-label={text.views}>{(["day", "week", "month"] as const).map((view) => <button key={view} type="button" data-active={mode === view} aria-pressed={mode === view} onClick={() => navigate(view, anchorDate)}>{copy[view]}</button>)}</div>
+            <div className="calendar-view-switch" role="group" aria-label={text.views}>{(["day", "week", "month"] as const).map((view) => <button key={view} type="button" data-active={mode === view} aria-pressed={mode === view} onClick={() => navigate(view, selectedDate)}>{copy[view]}</button>)}</div>
             <div className="calendar-navigation" role="group" aria-label={text.navigation}>
               <button type="button" aria-label={copy.previous} onClick={() => navigatePeriod(-1)}>‹</button>
               <button type="button" onClick={() => navigate(mode, dateFromKey(todayKey))}>{copy.today}</button>
@@ -300,28 +344,30 @@ export function CalendarView({
               const count = appointmentsByDay.get(key)?.length ?? 0;
               return <button className="calendar-day-heading" key={key} type="button" data-today={key === todayKey} data-weekend={day.getUTCDay() === 0 || day.getUTCDay() === 6} aria-label={fullDateFormatter.format(day)} onClick={() => navigate("day", day)}><span>{weekdayFormatter.format(day)}</span><strong>{day.getUTCDate()}</strong><span className="calendar-day-booking-count">{count ? `${count} ${copy.sessions}` : copy.clearDay}</span></button>;
             })}</div>
-            <div className="calendar-week-scroll" tabIndex={0} aria-label={periodLabel}>
+            <div className="calendar-week-scroll" ref={weekScrollRef} tabIndex={0} aria-label={periodLabel}>
               <div className="calendar-week-body" style={{ height: timelineHeight, "--calendar-hour-height": `${hourHeight}px` } as CSSProperties}>
                 <div className="calendar-hour-gutter" aria-hidden="true">{hours.map((hour) => <span key={hour} style={{ top: (hour - firstHour) * hourHeight }}>{String(hour).padStart(2, "0")}:00</span>)}</div>
                 {weekDays.map((day) => {
                   const key = dateKey(day);
-                  return <section className="calendar-week-day" key={key} aria-label={fullDateFormatter.format(day)} data-today={key === todayKey} data-weekend={day.getUTCDay() === 0 || day.getUTCDay() === 6}>{scheduleEvents(appointmentsByDay.get(key) ?? []).map((event) => {
+                  return <section className="calendar-week-day" key={key} aria-label={fullDateFormatter.format(day)} data-today={key === todayKey} data-weekend={day.getUTCDay() === 0 || day.getUTCDay() === 6}>{weekEvents.get(key)?.map((event) => {
                     const height = Math.max(44, Math.min(event.end, 1440) - event.start) / 60 * hourHeight;
                     return <CalendarAppointmentCard key={event.appointment.id} appointment={event.appointment} conflicted={conflictIds.has(event.appointment.id)} timeFormatter={timeFormatter} copy={copy} statuses={statuses} compact={height < 100 || event.lanes > 1} timelineStyle={{ top: (event.start - firstHour * 60) / 60 * hourHeight + 3, height: Math.max(44, height - 6), left: `calc(${event.lane / event.lanes * 100}% + 4px)`, width: `calc(${100 / event.lanes}% - 8px)` }} />;
-                  })}</section>;
+                  })}{key === todayKey && currentTime && currentMinute !== null && currentMinute >= firstHour * 60 && currentMinute < lastHour * 60 ? <span className="calendar-now-marker" data-date={todayKey} style={{ top: (currentMinute - firstHour * 60) / 60 * hourHeight }}><time dateTime={currentTime.toISOString()}>{timeFormatter.format(currentTime)}</time></span> : null}</section>;
                 })}
-                {!visibleAppointments.length ? <div className="calendar-week-empty"><CalendarIcon /><strong>{text.weekEmpty}</strong><p>{text.weekEmptyHint}</p><Link className="secondary-button button-link" href="/new-appointment">{copy.newAppointment}<span aria-hidden="true"> →</span></Link></div> : null}
+                {!visibleAppointments.length ? <div className="calendar-week-empty"><CalendarIcon /><strong>{text.weekEmpty}</strong><p>{text.weekEmptyHint}</p><Link className="secondary-button button-link" href={`/new-appointment?date=${selectedDay}`}>{copy.newAppointment}<span aria-hidden="true"> →</span></Link></div> : null}
               </div>
             </div>
           </div>
+
+          {denseDays.length ? <section className="calendar-week-dense-agenda" aria-label={text.denseWeek}><h2>{text.denseWeek}</h2>{denseDays.map(day => <CalendarDayAgenda key={dateKey(day)} dayKey={dateKey(day)} heading appointmentsByDay={appointmentsByDay} conflictIds={conflictIds} fullDateFormatter={fullDateFormatter} timeFormatter={timeFormatter} copy={copy} statuses={statuses} />)}</section> : null}
 
           <div className="calendar-mobile-week">
             <div className="calendar-mobile-days" role="tablist" aria-label={periodLabel}>{weekDays.map((day, index) => {
               const key = dateKey(day);
               const count = appointmentsByDay.get(key)?.length ?? 0;
-              return <button key={key} id={`calendar-tab-${key}`} type="button" role="tab" aria-label={`${fullDateFormatter.format(day)}${count ? `, ${count} ${copy.sessions}` : ""}`} aria-selected={mobileSelectedDay === key} aria-controls="calendar-day-panel" tabIndex={mobileSelectedDay === key ? 0 : -1} data-active={mobileSelectedDay === key} data-today={key === todayKey} onKeyDown={(event) => handleDayTabKey(event, index)} onClick={() => setMobileSelectedDay(key)}><span>{weekdayFormatter.format(day)}</span><strong>{day.getUTCDate()}</strong><span className="calendar-tab-dot" data-booked={count > 0} aria-hidden="true" /></button>;
+              return <button key={key} id={`calendar-tab-${key}`} type="button" role="tab" aria-label={`${fullDateFormatter.format(day)}${count ? `, ${count} ${copy.sessions}` : ""}`} aria-selected={selectedDay === key} aria-controls="calendar-day-panel" tabIndex={selectedDay === key ? 0 : -1} data-active={selectedDay === key} data-today={key === todayKey} onKeyDown={(event) => handleDayTabKey(event, index)} onClick={() => selectWeekDay(key)}><span>{weekdayFormatter.format(day)}</span><strong>{day.getUTCDate()}</strong><span className="calendar-tab-dot" data-booked={count > 0} aria-hidden="true" /></button>;
             })}</div>
-            <CalendarDayAgenda dayKey={mobileSelectedDay} heading tabPanel appointmentsByDay={appointmentsByDay} conflictIds={conflictIds} fullDateFormatter={fullDateFormatter} timeFormatter={timeFormatter} copy={copy} statuses={statuses} />
+            <CalendarDayAgenda dayKey={selectedDay} heading tabPanel appointmentsByDay={appointmentsByDay} conflictIds={conflictIds} fullDateFormatter={fullDateFormatter} timeFormatter={timeFormatter} copy={copy} statuses={statuses} />
           </div>
         </> : null}
 
@@ -332,13 +378,14 @@ export function CalendarView({
             const values = appointmentsByDay.get(key) ?? [];
             return <section className="calendar-month-day" key={key} data-outside-month={day.getUTCMonth() !== anchorDate.getUTCMonth()} data-today={key === todayKey}>
               <button type="button" className="calendar-month-date" aria-label={fullDateFormatter.format(day)} onClick={() => navigate("day", day)}>{day.getUTCDate()}</button>
+              <button type="button" className="calendar-month-open-day" aria-label={`${fullDateFormatter.format(day)}${values.length ? `, ${values.length} ${copy.sessions}` : ""}`} onClick={() => navigate("day", day)}><span>{day.getUTCDate()}</span></button>
               <div className="calendar-month-events">{values.slice(0, 3).map((appointment) => <Link className="calendar-month-event" data-status={appointment.status} key={appointment.id} href={`/appointments/${appointment.id}`} aria-label={`${timeFormatter.format(new Date(appointment.startsAtIso))} ${appointment.client.name}, ${statuses[appointment.status]}`}><time dateTime={appointment.startsAtIso}>{timeFormatter.format(new Date(appointment.startsAtIso))}</time><span>{appointment.client.name}</span></Link>)}{values.length > 3 ? <button className="calendar-month-more" type="button" onClick={() => navigate("day", day)}>+{values.length - 3} {copy.more}</button> : null}</div>
               {values.length ? <span className="calendar-month-count">{values.length} {copy.sessions}</span> : null}
             </section>;
           })}
         </div> : null}
 
-        <div className="calendar-legend" aria-label={text.legend}>{(["PLANNED", "CONFIRMED", "COMPLETED"] as const).map((status) => <span key={status} data-status={status}><i aria-hidden="true" />{statuses[status]}</span>)}</div>
+        <div className="calendar-legend" aria-label={text.legend}>{(["PLANNED", "CONFIRMED", "COMPLETED", "NO_SHOW"] as const).map((status) => <span key={status} data-status={status}><i aria-hidden="true" />{statuses[status]}</span>)}</div>
       </section>
     </section>
   );

@@ -64,11 +64,10 @@ async function moneyValue(page: Page, label: string) {
 
 async function submitValidationAttempt(page: Page) {
   const submit = page.locator(".appointment-form button[type='submit']");
-  const [response] = await Promise.all([
+  await Promise.all([
     page.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === "/new-appointment"),
     submit.click(),
   ]);
-  await response.finished();
   await expect(submit).toBeEnabled();
 }
 

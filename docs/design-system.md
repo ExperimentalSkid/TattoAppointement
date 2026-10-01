@@ -43,6 +43,12 @@ Date and time controls stay consistent across creation and editing. References a
 
 Adding a client or importing artwork from a booking stores a bounded, short-lived draft in the current tab's session storage. Return URLs carry an opaque token, not notes or payment values. Newly created records are selected on return, and the temporary snapshot is consumed.
 
+## Client directory
+
+Client rows use a small private artwork preview, a larger serif name and aligned contact/booking information. Artwork comes from the client's own appointment records, preferring the selected booking's final design and then a reference. Clients without linked artwork use an unframed monogram. Design captions identify final selections or references; they do not describe images as completed tattoos.
+
+Booking context shows the next future planned/confirmed appointment, or the latest completed appointment. The labelled count includes all appointment records, including cancelled and no-show entries. Rows retain alphabetical ordering, contact search and a single full-row link. Mobile rows stack the same information compactly; hover and keyboard focus use the existing quiet surface and terracotta tokens. The client detail page is unchanged by this directory pass.
+
 ## Measured reduction
 
 At 1440px, the same seven populated routes were audited before and after using computed styles. The measure counts rendered elements at least 120px wide and 45px high with a visible border on all four sides; input controls are outside the count. The calendar's primary action link is included consistently in both runs.
@@ -67,6 +73,8 @@ Visual verification also covers mobile calendar and artwork layouts, the asymmet
 These screenshots use fictitious demo records and sample artwork.
 
 ![Open artwork library](previews/designs.png)
+
+![Client directory with private artwork and booking context](previews/clients.png)
 
 ![Artwork-led appointment details](previews/appointment.png)
 

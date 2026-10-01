@@ -13,6 +13,7 @@ The dark editorial interface uses six shared layout primitives, open sections an
 - Day, week and month calendars with client details, appointment status and overlap confirmation.
 - Clients with search, contact details, notes and appointment history.
 - Private artwork library with original files, optimized previews and reusable design selections.
+- Client directory with real appointment artwork, next/last-completed booking context and labelled appointment history counts, with responsive editorial rows.
 - Appointments with optional references, a final design, price, deposit and manual payment history. Date and time use the studio's Madrid timezone.
 - Booking drafts survive adding a client or importing artwork. Field-specific errors preserve entered values; focused rescheduling identifies conflicts before an explicit override. Confirmed cancellation frees the calendar slot and preserves history.
 - Studio profile, artist preferences and persistent language selection.

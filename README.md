@@ -11,7 +11,7 @@ The dark editorial interface uses six shared layout primitives, open sections an
 - One private artist account per installation, with email/password and optional Google sign-in.
 - Optional password recovery by email through Resend, with single-use reset links and session revocation.
 - Day, week and month calendars with client details, appointment status and overlap confirmation.
-- Clients with search, contact details, notes and appointment history.
+- Client records put Call/Email and Edit by the name, show upcoming active bookings before full remaining history, and use each appointment's own final/reference artwork. Plain rows keep bookings without artwork readable; notes and the Madrid creation date stay secondary, with appointments first on mobile.
 - Private artwork library with original files, optimized previews and reusable design selections.
 - Client directory with real appointment artwork, next/last-completed booking context and labelled appointment history counts, with responsive editorial rows.
 - Appointments with optional references, a final design, price, deposit and manual payment history. Date and time use the studio's Madrid timezone.

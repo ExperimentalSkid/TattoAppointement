@@ -47,7 +47,15 @@ Adding a client or importing artwork from a booking stores a bounded, short-live
 
 Client rows use a small private artwork preview, a larger serif name and aligned contact/booking information. Artwork comes from the client's own appointment records, preferring the selected booking's final design and then a reference. Clients without linked artwork use an unframed monogram. Design captions identify final selections or references; they do not describe images as completed tattoos.
 
-Booking context shows the next future planned/confirmed appointment, or the latest completed appointment. The labelled count includes all appointment records, including cancelled and no-show entries. Rows retain alphabetical ordering, contact search and a single full-row link. Mobile rows stack the same information compactly; hover and keyboard focus use the existing quiet surface and terracotta tokens. The client detail page is unchanged by this directory pass.
+Booking context shows the next future planned/confirmed appointment, or the latest completed appointment. The labelled count includes all appointment records, including cancelled and no-show entries. Rows retain alphabetical ordering, contact search and a single full-row link. Mobile rows stack the same information compactly; hover and keyboard focus use the existing quiet surface and terracotta tokens.
+
+## Client record
+
+The header groups the name, Edit and labelled Call/Email links with their contact values. Appointment rows lead the wider column; notes use an open, quieter column, with the creation date secondary and formatted in Europe/Madrid. The shared `workspace-split` stacks appointments before notes on mobile.
+
+Upcoming contains only future planned/confirmed appointments, ordered earliest first, with the first labelled as the next appointment. History contains every remaining appointment, ordered latest first, including cancelled/no-show outcomes and past active records. Each owned appointment appears once, and the labelled total counts every outcome. History is not described as completed tattoos or past-only bookings.
+
+Each row displays one real owned artwork preview from that appointment, preferring its final selection and labelling other artwork as a reference. Detail rows never borrow artwork from a different appointment. Rows without artwork remain plain text rather than an empty image frame. The whole row opens the appointment, with visible keyboard focus and no nested links; status text and Madrid date/time stay readable alongside the artwork title.
 
 ## Measured reduction
 
@@ -75,6 +83,8 @@ These screenshots use fictitious demo records and sample artwork.
 ![Open artwork library](previews/designs.png)
 
 ![Client directory with private artwork and booking context](previews/clients.png)
+
+![Client record with artwork-led appointments and open notes](previews/client-details.png)
 
 ![Artwork-led appointment details](previews/appointment.png)
 

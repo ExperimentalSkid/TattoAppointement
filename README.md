@@ -15,6 +15,7 @@ The dark editorial interface uses six shared layout primitives, open sections an
 - Private artwork library with original files, optimized previews and reusable design selections.
 - Fullscreen artwork loads the original on demand, falls back to the private preview if needed and offers Retry after a loading failure. Design edits preserve entered values after rejected saves; library search stays with detail/edit, Cancel, Save and Delete navigation.
 - Design records show owned linked appointments in upcoming/history groups with explicit Final design/Reference roles, all outcomes retained and Madrid dates.
+- Settings retain rejected profile edits, identify field errors and distinguish unsaved changes from saved values. Reminder fields insert at the cursor, restoring the default message is undoable, and data downloads show progress and retryable failures.
 - Client directory with real appointment artwork, next/last-completed booking context and labelled appointment history counts, with responsive editorial rows.
 - Appointments with optional references, a final design, price, deposit and manual payment history. Date and time use the studio's Madrid timezone.
 - Booking drafts survive adding a client or importing artwork. Field-specific errors preserve entered values; focused rescheduling identifies conflicts before an explicit override. Confirmed cancellation frees the calendar slot and preserves history.

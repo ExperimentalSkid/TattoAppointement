@@ -51,6 +51,14 @@ Rejected metadata saves retain the raw title and notes the artist entered. Inlin
 
 Used-in-appointment rows reuse the open history groups, status text and focus treatment. Upcoming contains future planned/confirmed bookings earliest first; History contains every remaining owned linked appointment latest first. Each record appears once, with an explicit Final design or Reference role for that appointment. The total includes all outcomes, and both appointment dates and artwork Added dates use Europe/Madrid. These refinements preserve the existing tattoo workspace scope and visual identity.
 
+## Settings interactions
+
+Settings keep the existing open, labelled sections. Profile fields retain entered text after rejected saves, with inline field errors and a focused summary linking to the affected control. Unsaved feedback compares the current draft with the latest successful save; further edits clear stale success messages. Password feedback also clears when the artist starts another edit, while the existing account behavior remains intact.
+
+Reminder fields are quiet inline actions below the message. They insert a complete placeholder at the current cursor or replace selected text, return focus to the message and respect its length limit. Restoring the default changes the draft and offers Undo; the artist still saves explicitly. The preview uses the current studio identity and example appointment values. Changing the Settings language retains the current reminder draft. These controls support the existing manual WhatsApp workflow.
+
+The data download action announces preparation, checks for a valid export response and offers Retry after a failure. Success means the browser download has started. Feedback reuses the existing text, error and status styles without adding section cards.
+
 ## Client directory
 
 Client rows use a small private artwork preview, a larger serif name and aligned contact/booking information. Artwork comes from the client's own appointment records, preferring the selected booking's final design and then a reference. Clients without linked artwork use an unframed monogram. Design captions identify final selections or references; they do not describe images as completed tattoos.
@@ -95,6 +103,8 @@ These screenshots use fictitious demo records and sample artwork.
 ![Client directory with private artwork and booking context](previews/clients.png)
 
 ![Client record with artwork-led appointments and open notes](previews/client-details.png)
+
+![Open Settings with reminder controls and clear save feedback](previews/settings.png)
 
 ![Artwork-led appointment details](previews/appointment.png)
 

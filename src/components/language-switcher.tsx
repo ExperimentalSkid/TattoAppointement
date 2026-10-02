@@ -1,6 +1,7 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useState, useTransition } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import type { Locale } from "@/i18n";
 
 export function LanguageSwitcher({
@@ -11,7 +12,11 @@ export function LanguageSwitcher({
   label: string;
 }) {
   const selectorId = useId();
-  const [pending, setPending] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
+  const [saving, setPending] = useState(false);
+  const [refreshing, startTransition] = useTransition();
+  const pending = saving || refreshing;
   const [failed, setFailed] = useState(false);
 
   async function changeLanguage(language: Locale) {
@@ -28,7 +33,13 @@ export function LanguageSwitcher({
         throw new Error("Could not update language");
       }
 
-      window.location.reload();
+      if (pathname === "/settings") {
+        // Refresh the translated Settings content while retaining its form drafts.
+        startTransition(() => router.refresh());
+        setPending(false);
+      } else {
+        window.location.reload();
+      }
     } catch {
       setPending(false);
       setFailed(true);

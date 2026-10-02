@@ -8,7 +8,11 @@ import { requireArtistId } from "@/lib/session";
 import { validateNewPassword, validatePasswordChange, validateProfile } from "@/lib/settings-validation";
 import { validateReminderTemplate } from "@/lib/whatsapp-reminder";
 
-export type ProfileFormState = { error: "name" | "studio" | "save" | null; saved: boolean };
+export type ProfileFormState = {
+  error: "name" | "studio" | "save" | null;
+  saved: boolean;
+  savedProfile: { name: string; studioName: string | null } | null;
+};
 export type PasswordFormState = { error: "current" | "length" | "match" | "same" | "save" | null; saved: boolean };
 export type ReminderFormState = { error: "empty" | "length" | "placeholder" | "save" | null; savedTemplate: string | null };
 
@@ -29,14 +33,14 @@ export async function updateReminderTemplate(_previous: ReminderFormState, formD
 export async function updateProfile(_previous: ProfileFormState, formData: FormData): Promise<ProfileFormState> {
   const artistId = await requireArtistId();
   const profile = validateProfile(formData.get("name"), formData.get("studioName"));
-  if (!profile.ok) return { error: profile.error, saved: false };
+  if (!profile.ok) return { error: profile.error, saved: false, savedProfile: null };
   try {
     await prisma.user.update({ where: { id: artistId }, data: { name: profile.name, studioName: profile.studioName } });
   } catch {
-    return { error: "save", saved: false };
+    return { error: "save", saved: false, savedProfile: null };
   }
   revalidatePath("/", "layout");
-  return { error: null, saved: true };
+  return { error: null, saved: true, savedProfile: { name: profile.name, studioName: profile.studioName } };
 }
 
 export async function changePassword(_previous: PasswordFormState, formData: FormData): Promise<PasswordFormState> {

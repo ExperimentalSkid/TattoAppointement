@@ -73,6 +73,12 @@ Upcoming contains only future planned/confirmed appointments, ordered earliest f
 
 Each row displays one real owned artwork preview from that appointment, preferring its final selection and labelling other artwork as a reference. Detail rows never borrow artwork from a different appointment. Rows without artwork remain plain text rather than an empty image frame. The whole row opens the appointment, with visible keyboard focus and no nested links; status text and Madrid date/time stay readable alongside the artwork title.
 
+## Client forms
+
+Creation and editing retain raw names, phone numbers, optional email and notes after rejected saves. Validation uses shared limits in the browser and server; phone normalization retains the existing formatting behavior. A focused error summary links to the affected fields, with inline messages and accessible field associations. Editing clears stale feedback, and saving temporarily disables the controls.
+
+Contact selection changes only the provided name and phone, preserving email and notes. Cancellation leaves the draft intact; unsupported browsers and read failures offer a quiet manual-entry explanation. The existing open form layout, Save/Cancel actions and return to the booking remain unchanged. Feedback reuses the existing error summary, type, spacing and focus styles.
+
 ## Measured reduction
 
 At 1440px, the same seven populated routes were audited before and after using computed styles. The measure counts rendered elements at least 120px wide and 45px high with a visible border on all four sides; input controls are outside the count. The calendar's primary action link is included consistently in both runs.
@@ -103,6 +109,8 @@ These screenshots use fictitious demo records and sample artwork.
 ![Client directory with private artwork and booking context](previews/clients.png)
 
 ![Client record with artwork-led appointments and open notes](previews/client-details.png)
+
+![Open client editing form with the existing contact fields](previews/client-form.png)
 
 ![Open Settings with reminder controls and clear save feedback](previews/settings.png)
 

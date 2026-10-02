@@ -5,19 +5,12 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireArtistId } from "@/lib/session";
 import { appointmentReturnWithSelection, validateAppointmentReturn } from "@/lib/appointment-return";
+import { normalizeClientPhone, readClientFields, type ClientField } from "@/lib/client-fields";
 
 export type ClientFormState = {
-  error: "required" | "duplicate" | "save" | null;
+  error: ClientField | "required" | "duplicate" | "save" | null;
+  fields?: ClientField[];
 };
-
-function cleanOptional(value: FormDataEntryValue | null) {
-  const text = String(value ?? "").trim();
-  return text.length ? text : null;
-}
-
-function normalizePhone(value: FormDataEntryValue | null) {
-  return String(value ?? "").trim().replace(/[\s().-]/g, "");
-}
 
 async function duplicatePhoneExists(artistId: string, phone: string, excludeId?: string) {
   const candidates = await prisma.client.findMany({
@@ -28,7 +21,7 @@ async function duplicatePhoneExists(artistId: string, phone: string, excludeId?:
     select: { phone: true },
   });
 
-  return candidates.some((client) => normalizePhone(client.phone) === phone);
+  return candidates.some((client) => normalizeClientPhone(client.phone) === phone);
 }
 
 export async function createClient(
@@ -48,26 +41,20 @@ export async function createClientForAppointment(
 
 async function saveNewClient(formData: FormData, returnTo: string | null): Promise<ClientFormState> {
   const artistId = await requireArtistId();
-  const name = String(formData.get("name") ?? "").trim();
-  const phone = normalizePhone(formData.get("phone"));
-
-  if (!name || !phone) {
-    return { error: "required" };
-  }
-
-  if (await duplicatePhoneExists(artistId, phone)) {
-    return { error: "duplicate" };
+  const { values, fields } = readClientFields(formData);
+  if (fields.length) {
+    return { error: fields[0], fields };
   }
 
   let clientId: string;
   try {
+    if (await duplicatePhoneExists(artistId, values.phone)) {
+      return { error: "duplicate", fields: ["phone"] };
+    }
     const client = await prisma.client.create({
       data: {
         artistId,
-        name,
-        phone,
-        email: cleanOptional(formData.get("email")),
-        notes: cleanOptional(formData.get("notes")),
+        ...values,
       },
       select: { id: true },
     });
@@ -92,35 +79,25 @@ export async function updateClient(
   formData: FormData,
 ): Promise<ClientFormState> {
   const artistId = await requireArtistId();
-  const name = String(formData.get("name") ?? "").trim();
-  const phone = normalizePhone(formData.get("phone"));
-
-  if (!name || !phone) {
-    return { error: "required" };
-  }
-
-  const existing = await prisma.client.findFirst({
-    where: { id: clientId, artistId },
-    select: { id: true },
-  });
-
-  if (!existing) {
-    return { error: "save" };
-  }
-
-  if (await duplicatePhoneExists(artistId, phone, clientId)) {
-    return { error: "duplicate" };
+  const { values, fields } = readClientFields(formData);
+  if (fields.length) {
+    return { error: fields[0], fields };
   }
 
   try {
+    const existing = await prisma.client.findFirst({
+      where: { id: clientId, artistId },
+      select: { id: true },
+    });
+    if (!existing) {
+      return { error: "save" };
+    }
+    if (await duplicatePhoneExists(artistId, values.phone, clientId)) {
+      return { error: "duplicate", fields: ["phone"] };
+    }
     await prisma.client.update({
       where: { id: clientId },
-      data: {
-        name,
-        phone,
-        email: cleanOptional(formData.get("email")),
-        notes: cleanOptional(formData.get("notes")),
-      },
+      data: values,
     });
 
     revalidatePath("/clients");

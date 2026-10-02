@@ -12,6 +12,7 @@ The dark editorial interface uses six shared layout primitives, open sections an
 - Optional password recovery by email through Resend, with single-use reset links and session revocation.
 - Day, week and month calendars with client details, appointment status and overlap confirmation.
 - Client records put Call/Email and Edit by the name, show upcoming active bookings before full remaining history, and use each appointment's own final/reference artwork. Plain rows keep bookings without artwork readable; notes and the Madrid creation date stay secondary, with appointments first on mobile.
+- Client creation and editing retain every field after rejected saves, link errors to the affected controls and share validation limits with the server. Contact selection keeps optional details intact, and failed saves can be corrected and retried.
 - Private artwork library with original files, optimized previews and reusable design selections.
 - Fullscreen artwork loads the original on demand, falls back to the private preview if needed and offers Retry after a loading failure. Design edits preserve entered values after rejected saves; library search stays with detail/edit, Cancel, Save and Delete navigation.
 - Design records show owned linked appointments in upcoming/history groups with explicit Final design/Reference roles, all outcomes retained and Madrid dates.

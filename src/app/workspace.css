@@ -94,6 +94,7 @@
 .settings-card-heading.section-intro { padding: 0; margin: 0; border: 0; }
 .settings-unsaved { color: var(--muted); font-size: 12px; }
 .settings-page .settings-success { background: transparent; border: 0; border-radius: 0; padding: 0; color: var(--muted); }
+.client-form .field-error { background: transparent; border-radius: 0; padding: 0; color: var(--danger); }
 .reminder-token-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-group); }
 .reminder-token-controls .secondary-button { font-size: 12px; font-weight: 400; text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 5px; }
 .reminder-token-controls code { color: var(--muted); font-size: 11px; }

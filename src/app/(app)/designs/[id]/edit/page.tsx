@@ -4,16 +4,20 @@ import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { prisma } from "@/lib/prisma";
 import { requireArtistId } from "@/lib/session";
 import { getDictionary } from "@/i18n";
+import { normalizeDesignQuery } from "@/lib/design-navigation";
 import { deleteDesign, updateDesign } from "@/app/(app)/designs/actions";
 
 export default async function EditDesignPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ libraryQuery?: string | string[] }>;
 }) {
   const artistId = await requireArtistId();
   const { id } = await params;
   const { dictionary } = await getDictionary();
+  const libraryQuery = normalizeDesignQuery((await searchParams).libraryQuery);
 
   const design = await prisma.design.findFirst({
     where: { id, artistId },
@@ -30,8 +34,10 @@ export default async function EditDesignPage({
           action={updateDesign.bind(null, design.id)}
           copy={dictionary.designs}
           design={design}
+          libraryQuery={libraryQuery}
         />
         <form action={deleteDesign.bind(null, design.id)} className="form-actions">
+          <input type="hidden" name="libraryQuery" value={libraryQuery} />
           <ConfirmSubmitButton className="danger-button" message={dictionary.designs.deleteConfirmation}>
             {dictionary.designs.deleteDesign}
           </ConfirmSubmitButton>

@@ -13,6 +13,8 @@ The dark editorial interface uses six shared layout primitives, open sections an
 - Day, week and month calendars with client details, appointment status and overlap confirmation.
 - Client records put Call/Email and Edit by the name, show upcoming active bookings before full remaining history, and use each appointment's own final/reference artwork. Plain rows keep bookings without artwork readable; notes and the Madrid creation date stay secondary, with appointments first on mobile.
 - Private artwork library with original files, optimized previews and reusable design selections.
+- Fullscreen artwork loads the original on demand, falls back to the private preview if needed and offers Retry after a loading failure. Design edits preserve entered values after rejected saves; library search stays with detail/edit, Cancel, Save and Delete navigation.
+- Design records show owned linked appointments in upcoming/history groups with explicit Final design/Reference roles, all outcomes retained and Madrid dates.
 - Client directory with real appointment artwork, next/last-completed booking context and labelled appointment history counts, with responsive editorial rows.
 - Appointments with optional references, a final design, price, deposit and manual payment history. Date and time use the studio's Madrid timezone.
 - Booking drafts survive adding a client or importing artwork. Field-specific errors preserve entered values; focused rescheduling identifies conflicts before an explicit override. Confirmed cancellation frees the calendar slot and preserves history.

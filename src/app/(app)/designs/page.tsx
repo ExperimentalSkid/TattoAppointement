@@ -2,15 +2,17 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireArtistId } from "@/lib/session";
 import { getDictionary } from "@/i18n";
+import { designDetailPath, normalizeDesignQuery } from "@/lib/design-navigation";
+import { studioTimeZone } from "@/lib/studio-time";
 
 export default async function DesignsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string | string[] }>;
 }) {
   const artistId = await requireArtistId();
   const { locale, dictionary } = await getDictionary();
-  const query = String((await searchParams).q ?? "").trim();
+  const query = normalizeDesignQuery((await searchParams).q);
 
   const designs = await prisma.design.findMany({
     where: {
@@ -35,6 +37,7 @@ export default async function DesignsPage({
 
   const dateFormatter = new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", {
     dateStyle: "medium",
+    timeZone: studioTimeZone,
   });
 
   return (
@@ -50,6 +53,7 @@ export default async function DesignsPage({
         <input
           name="q"
           type="search"
+          maxLength={500}
           defaultValue={query}
           placeholder={dictionary.designs.searchPlaceholder}
           aria-label={dictionary.designs.searchPlaceholder}
@@ -67,7 +71,7 @@ export default async function DesignsPage({
       {designs.length ? (
         <div className="design-grid">
           {designs.map((design) => (
-            <Link className="design-card artwork-object" href={`/designs/${design.id}`} key={design.id}>
+            <Link className="design-card artwork-object" href={designDetailPath(design.id, query)} key={design.id}>
               <div className="design-card-image">
                 {/* Authenticated image routes cannot use the public Next image optimizer. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -75,7 +79,7 @@ export default async function DesignsPage({
               </div>
               <div className="design-card-body">
                 <strong>{design.title}</strong>
-                <span>{dateFormatter.format(design.createdAt)}</span>
+                <span><time dateTime={design.createdAt.toISOString()}>{dateFormatter.format(design.createdAt)}</time></span>
                 {design.notes ? <p>{design.notes}</p> : null}
               </div>
             </Link>

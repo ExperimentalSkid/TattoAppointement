@@ -43,6 +43,14 @@ Date and time controls stay consistent across creation and editing. References a
 
 Adding a client or importing artwork from a booking stores a bounded, short-lived draft in the current tab's session storage. Return URLs carry an opaque token, not notes or payment values. Newly created records are selected on return, and the temporary snapshot is consumed.
 
+## Artwork interactions
+
+The library and design detail retain their artwork-first composition. Fullscreen uses the existing native dialog with the artwork title as its accessible name, loading feedback and Close/Escape focus restoration. The original image mounts only while the viewer is open. If it cannot be displayed, the viewer tries the private preview once and identifies that fallback after it loads; if both images fail, a clear error and explicit Retry keep recovery deliberate.
+
+Rejected metadata saves retain the raw title and notes the artist entered. Inline errors identify their fields, and the focused summary links back to those controls. Save and Cancel keep the library search context, as do opening details, editing and confirmed deletion. Navigation carries only a normalized keyword of at most 500 characters and builds destinations from fixed application paths.
+
+Used-in-appointment rows reuse the open history groups, status text and focus treatment. Upcoming contains future planned/confirmed bookings earliest first; History contains every remaining owned linked appointment latest first. Each record appears once, with an explicit Final design or Reference role for that appointment. The total includes all outcomes, and both appointment dates and artwork Added dates use Europe/Madrid. These refinements preserve the existing tattoo workspace scope and visual identity.
+
 ## Client directory
 
 Client rows use a small private artwork preview, a larger serif name and aligned contact/booking information. Artwork comes from the client's own appointment records, preferring the selected booking's final design and then a reference. Clients without linked artwork use an unframed monogram. Design captions identify final selections or references; they do not describe images as completed tattoos.
@@ -81,6 +89,8 @@ Visual verification also covers mobile calendar and artwork layouts, the asymmet
 These screenshots use fictitious demo records and sample artwork.
 
 ![Open artwork library](previews/designs.png)
+
+![Design detail with private artwork and grouped appointment use](previews/design-details.png)
 
 ![Client directory with private artwork and booking context](previews/clients.png)
 

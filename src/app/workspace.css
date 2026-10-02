@@ -64,8 +64,8 @@
 .client-record-notes > .client-added { display: grid; gap: 5px; margin-top: var(--space-group); font-size: 12px; }
 .client-history-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-small); margin-bottom: var(--space-group); }
 .client-history-heading h2 { margin: 0; }
-.client-history { gap: var(--space-group); }
-.client-history-group > h3 { margin: 0 0 var(--space-small); color: var(--muted); font-size: 11px; font-weight: 400; text-transform: uppercase; letter-spacing: .07em; }
+.client-history, .record-history { gap: var(--space-group); }
+:is(.client-history-group, .record-history-group) > h3 { margin: 0 0 var(--space-small); color: var(--muted); font-size: 11px; font-weight: 400; text-transform: uppercase; letter-spacing: .07em; }
 .client-record .appointment-history-item { display: grid; grid-template-columns: minmax(0, 1fr) 16px; align-items: center; gap: var(--space-group); border-top: 0; padding: var(--space-group) 0; }
 .client-record .appointment-history-item[data-artwork="true"] { grid-template-columns: 88px minmax(0, 1fr) 16px; }
 .client-record .client-artwork-preview { width: 88px; grid-column: auto; grid-row: auto; }
@@ -74,6 +74,17 @@
 .client-record .appointment-history-item .client-context-label { font-size: 10px; }
 .client-appointment-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px var(--space-small); font-size: 12px; line-height: 1.5; }
 .client-record .client-appointment-meta .status-pill { font-size: 11px; }
+.design-history .history-row { grid-template-columns: minmax(0, 1fr) max-content 16px; gap: var(--space-small); border-top: 0; padding: var(--space-group) 0; }
+.design-history .history-row .client-context-label { font-size: 10px; }
+.design-history .history-row:hover { background: var(--surface-soft); }
+.design-history .history-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; background: var(--surface-soft); }
+.design-dialog-title { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.design-dialog { width: 100%; }
+.design-dialog-image-wrap > :is(img, .design-dialog-status, .design-dialog-feedback) { grid-area: 1 / 1; }
+.design-dialog-image-wrap:not([data-state="loaded"]) img { visibility: hidden; }
+.design-dialog-status, .design-dialog-feedback { max-width: 48ch; color: var(--text); font-size: 13px; line-height: 1.6; }
+.design-dialog-image-wrap[data-state="loaded"] .design-dialog-status { align-self: end; justify-self: start; padding: var(--space-small); background: var(--bg); }
+.design-dialog-retry { margin-top: var(--space-small); }
 .empty-state, .client-empty { min-height: 0; background: transparent; border: 0; padding: var(--space-section) 0; align-items: flex-start; text-align: left; }
 .empty-icon { border: 0; background: transparent; padding: 0; width: 30px; height: 30px; border-radius: 0; }
 .design-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-section) var(--space-group); }

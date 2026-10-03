@@ -10,6 +10,7 @@ The dark editorial interface uses six shared layout primitives, open sections an
 
 - One private artist account per installation, with email/password and optional Google sign-in.
 - Optional password recovery by email through Resend, with single-use reset links and session revocation.
+- Successful account access reaches the calendar even if saving the language preference fails. Sign-in and recovery lock submitted fields while pending, retain values after failures and focus clear feedback for correction or recovery.
 - Day, week and month calendars with client details, appointment status and overlap confirmation.
 - Client records put Call/Email and Edit by the name, show upcoming active bookings before full remaining history, and use each appointment's own final/reference artwork. Plain rows keep bookings without artwork readable; notes and the Madrid creation date stay secondary, with appointments first on mobile.
 - Client creation and editing retain every field after rejected saves, link errors to the affected controls and share validation limits with the server. Contact selection keeps optional details intact, and failed saves can be corrected and retried.

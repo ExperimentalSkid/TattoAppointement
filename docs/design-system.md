@@ -79,6 +79,10 @@ Creation and editing retain raw names, phone numbers, optional email and notes a
 
 Contact selection changes only the provided name and phone, preserving email and notes. Cancellation leaves the draft intact; unsupported browsers and read failures offer a quiet manual-entry explanation. The existing open form layout, Save/Cancel actions and return to the booking remain unchanged. Feedback reuses the existing error summary, type, spacing and focus styles.
 
+## Account feedback
+
+Account access and recovery reuse a single focused text-feedback primitive. Errors retain the existing alert treatment, and terminal recovery outcomes announce status with a visible focus outline. Incorrect credentials remain a generic form error; password mismatch associates the explanation with confirmation. Editing clears stale feedback, and pending controls keep the submitted values stable. Successful authentication still opens the calendar when the separate language-preference request fails. This pass preserves the existing typography, palette, layout and single-owner account model.
+
 ## Measured reduction
 
 At 1440px, the same seven populated routes were audited before and after using computed styles. The measure counts rendered elements at least 120px wide and 45px high with a visible border on all four sides; input controls are outside the count. The calendar's primary action link is included consistently in both runs.

@@ -6,6 +6,7 @@ test("recovery handles absent and invalid tokens without changing a password", a
     await Promise.all([page.waitForEvent("load"), page.locator(".auth-language .language-select").selectOption("en")]);
   }
   await expect(page.locator(".auth-card [role=alert]")).toContainText("invalid or has expired");
+  await expect(page.locator(".auth-card [role=alert]")).toBeFocused();
   await expect(page.locator("#recovery-password")).toHaveCount(0);
 
   await page.goto("/reset-password?token=invalid-recovery-token");
@@ -27,6 +28,7 @@ test("recovery is explicit when email delivery is not configured", async ({ page
     await Promise.all([page.waitForEvent("load"), page.locator(".auth-language .language-select").selectOption("en")]);
   }
   await expect(page.getByRole("status")).toContainText("Email recovery is unavailable");
+  await expect(page.getByRole("status")).toBeFocused();
   await expect(page.locator("#recovery-email")).toHaveCount(0);
   await page.goto("/sign-in");
   await expect(page.getByRole("link", { name: "Forgot your password?" })).toHaveCount(0);

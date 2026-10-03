@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AuthShell } from "@/components/auth-shell";
 import { ResetPasswordForm } from "@/components/password-recovery-form";
+import { AuthFeedback } from "@/components/auth-feedback";
 import { getDictionary } from "@/i18n";
 import { getPasswordRecoveryCopy } from "@/lib/password-recovery-copy";
 
@@ -16,7 +17,7 @@ export default async function ResetPasswordPage({ searchParams }: {
       <h1>{copy.resetTitle}</h1>
       <p>{copy.resetDescription}</p>
       {token ? <ResetPasswordForm token={token} copy={copy} /> : <>
-        <p className="form-error" role="alert">{copy.invalid}</p>
+        <AuthFeedback>{copy.invalid}</AuthFeedback>
         <Link className="primary-button button-link" href="/forgot-password">{copy.retry}</Link>
       </>}
       <div className="auth-switch"><Link href="/sign-in">{copy.back}</Link></div>

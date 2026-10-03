@@ -5,6 +5,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { DesignFormState } from "@/app/(app)/designs/actions";
 import { designDetailPath } from "@/lib/design-navigation";
+import { SyncEditConflict } from "@/components/sync-edit-conflict";
 
 type DesignAction = (
   state: DesignFormState,
@@ -18,15 +19,24 @@ export function DesignMetadataForm({
   copy,
   design,
   libraryQuery = "",
+  locale,
 }: {
   action: DesignAction;
   copy: Dictionary["designs"];
-  design: { id: string; title: string; notes: string | null };
+  design: { id: string; title: string; notes: string | null; expectedVersion: string };
   libraryQuery?: string;
+  locale: "en" | "es";
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
   const [title, setTitle] = useState(design.title);
   const [notes, setNotes] = useState(design.notes ?? "");
+  const [baseline, setBaseline] = useState({ version: design.expectedVersion, title: design.title, notes: design.notes ?? "" });
+  const dirty = title !== baseline.title || notes !== baseline.notes;
+  if (!dirty && !pending && baseline.version !== design.expectedVersion) {
+    setTitle(design.title);
+    setNotes(design.notes ?? "");
+    setBaseline({ version: design.expectedVersion, title: design.title, notes: design.notes ?? "" });
+  }
   const feedbackRef = useRef<HTMLDivElement>(null);
   const errorField = state.error === "title" || state.error === "notes" ? state.error : null;
   const errorMessage =
@@ -43,8 +53,10 @@ export function DesignMetadataForm({
   }, [state]);
 
   return (
-    <form action={formAction} className="design-form" noValidate onReset={event => event.preventDefault()}>
+    <form data-sync-protect data-sync-dirty={dirty} data-sync-pending={pending} action={formAction} className="design-form" noValidate onReset={event => event.preventDefault()}>
       <input type="hidden" name="libraryQuery" value={libraryQuery} />
+      <input type="hidden" name="expectedVersion" value={baseline.version} />
+      {state.error === "stale" ? <SyncEditConflict locale={locale} href={`/designs/${encodeURIComponent(design.id)}/edit${libraryQuery ? `?${new URLSearchParams({ libraryQuery })}` : ""}`} /> : null}
       {errorMessage ? (
         <div ref={feedbackRef} tabIndex={-1} className="appointment-error-summary design-form-feedback" role="alert">
           <h2>{copy.errorsTitle}</h2>
@@ -67,6 +79,7 @@ export function DesignMetadataForm({
           aria-invalid={state.error === "title" || undefined}
           aria-describedby={state.error === "title" ? "design-title-error" : undefined}
           required
+          disabled={pending}
         />
         {state.error === "title" ? <p id="design-title-error" className="field-error form-error">{copy.titleError}</p> : null}
       </div>
@@ -82,6 +95,7 @@ export function DesignMetadataForm({
           onChange={event => setNotes(event.target.value)}
           rows={6}
           maxLength={4000}
+          disabled={pending}
           aria-invalid={state.error === "notes" || undefined}
           aria-describedby={state.error === "notes" ? "design-notes-error" : undefined}
         />

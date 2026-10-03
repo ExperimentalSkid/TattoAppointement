@@ -203,8 +203,8 @@ test("design edits retain every entered value after validation and preserve libr
   await withTestDatabase(pool => pool.query('UPDATE "Design" SET id=$1 WHERE id=$2', [unavailableId, id]));
   try {
     await page.getByRole("button", { name: "Save changes", exact: true }).click();
-    await expect(page.locator(".design-form-feedback")).toBeFocused();
-    await expect(page.locator(".design-form-feedback")).toContainText("Could not save the design.");
+    await expect(page.locator("[data-sync-conflict]")).toBeFocused();
+    await expect(page.locator("[data-sync-conflict]")).toContainText("This record changed on another device. Your unsaved changes are still here.");
     await expect(title).toHaveValue(validTitle);
     await expect(notes).toHaveValue(validNotes);
     await expect(page).toHaveURL(url => url.pathname === `${designPath}/edit` && url.searchParams.get("libraryQuery") === query);

@@ -91,7 +91,7 @@ export default async function AppointmentDetailPage({
         </div>
         <div className="appointment-record-actions">
           <Link className="secondary-button button-link" href={`/appointments/${appointment.id}/edit`}>{dictionary.appointments.edit}</Link>
-          {isActive ? <AppointmentRescheduleForm key={`${appointment.startsAt.toISOString()}-${reschedule === "1"}`} action={rescheduleAction} startsAtIso={appointment.startsAt.toISOString()} copy={dictionary.appointments} locale={locale} initialExpanded={reschedule === "1"} /> : null}
+          <AppointmentRescheduleForm key={`${appointment.id}-${reschedule === "1"}`} action={rescheduleAction} appointmentId={appointment.id} startsAtIso={appointment.startsAt.toISOString()} expectedVersion={appointment.updatedAt.toISOString()} isActive={isActive} copy={dictionary.appointments} locale={locale} initialExpanded={reschedule === "1"} />
           {reminderUrl ? <a className="secondary-button button-link" href={reminderUrl} target="_blank" rel="noopener noreferrer">{locale === "es" ? "Preparar recordatorio por WhatsApp" : "Prepare WhatsApp reminder"}</a> : null}
           {canSendReminder ? <p className="appointment-reminder-help muted-copy">{reminderUrl
             ? locale === "es" ? "Revisa el mensaje en WhatsApp y pulsa Enviar." : "Review the message in WhatsApp and press Send."

@@ -6,6 +6,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { ClientFormState } from "@/app/(app)/clients/actions";
 import { CLIENT_FIELD_LIMITS, type ClientField } from "@/lib/client-fields";
+import { SyncEditConflict } from "@/components/sync-edit-conflict";
 
 type ClientAction = (
   state: ClientFormState,
@@ -54,6 +55,8 @@ export function ClientForm({
   copy,
   initial,
   cancelHref = "/clients",
+  locale,
+  expectedVersion,
 }: {
   action: ClientAction;
   copy: Dictionary["clients"];
@@ -64,6 +67,8 @@ export function ClientForm({
     notes: string | null;
   };
   cancelHref?: string;
+  locale: "en" | "es";
+  expectedVersion?: string;
 }) {
   const submittingRef = useRef(false);
   const [state, formAction, pending] = useActionState(async (previous: ClientFormState, formData: FormData) => {
@@ -80,11 +85,21 @@ export function ClientForm({
   const [phone, setPhone] = useState(initial?.phone ?? "");
   const [email, setEmail] = useState(initial?.email ?? "");
   const [notes, setNotes] = useState(initial?.notes ?? "");
+  const [baseline, setBaseline] = useState({ version: expectedVersion, name: initial?.name ?? "", phone: initial?.phone ?? "", email: initial?.email ?? "", notes: initial?.notes ?? "" });
   const [edited, setEdited] = useState(false);
   const [contactMessage, setContactMessage] = useState<string | null>(null);
   const [choosingContact, setChoosingContact] = useState(false);
   const choosingContactRef = useRef(false);
   const busy = pending || choosingContact;
+  const dirty = name !== baseline.name || phone !== baseline.phone || email !== baseline.email || notes !== baseline.notes;
+  if (!dirty && !busy && expectedVersion !== baseline.version) {
+    const next = { version: expectedVersion, name: initial?.name ?? "", phone: initial?.phone ?? "", email: initial?.email ?? "", notes: initial?.notes ?? "" };
+    setName(next.name);
+    setPhone(next.phone);
+    setEmail(next.email);
+    setNotes(next.notes);
+    setBaseline(next);
+  }
 
   async function chooseContact() {
     if (pending || submittingRef.current || choosingContactRef.current) return;
@@ -115,9 +130,9 @@ export function ClientForm({
     }
   }
 
-  const error = !edited && !pending ? state.error : null;
+  const error = !pending && (state.error === "stale" || !edited) ? state.error : null;
   const invalidFields: ClientField[] = error
-    ? state.fields ?? (error === "duplicate" ? ["phone"] : error === "required" ? ["name", "phone"] : error === "save" ? [] : [error])
+    ? state.fields ?? (error === "duplicate" ? ["phone"] : error === "required" ? ["name", "phone"] : error === "save" || error === "stale" ? [] : [error])
     : [];
   const fieldMessages: Record<ClientField, string> = {
     name: copy.nameError,
@@ -148,13 +163,14 @@ export function ClientForm({
   }
 
   return (
-    <form action={formAction} className="client-form" noValidate aria-busy={busy} onReset={event => event.preventDefault()} onSubmit={event => {
+    <form data-sync-protect data-sync-dirty={dirty} data-sync-pending={busy} action={formAction} className="client-form" noValidate aria-busy={busy} onReset={event => event.preventDefault()} onSubmit={event => {
       if (busy || submittingRef.current || choosingContactRef.current) { event.preventDefault(); return; }
       submittingRef.current = true;
       setEdited(false);
       setContactMessage(null);
     }}>
-      {error ? <ClientErrorSummary title={copy.errorsTitle} message={errorMessage} errors={fieldErrors} /> : null}
+      {initial ? <input type="hidden" name="expectedVersion" value={baseline.version ?? ""} /> : null}
+      {error === "stale" ? <SyncEditConflict locale={locale} href={`${cancelHref}/edit`} /> : error ? <ClientErrorSummary title={copy.errorsTitle} message={errorMessage} errors={fieldErrors} /> : null}
       <button className="secondary-button contact-picker-button" type="button" onClick={chooseContact} disabled={busy}>
         {copy.chooseContact}
       </button>

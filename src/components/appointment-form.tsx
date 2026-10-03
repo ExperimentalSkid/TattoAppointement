@@ -9,11 +9,13 @@ import { appointmentStatuses, type AppointmentStatusValue } from "@/lib/appointm
 import { studioLocalInputValue, studioTimezoneOffset, studioTimeZone } from "@/lib/studio-time";
 import { appointmentDraftKey, parseAppointmentDraft, readAppointmentDraft, removeAppointmentDraft, storeAppointmentDraft, type AppointmentDraft } from "@/lib/appointment-draft";
 import { LocalDateTime } from "@/components/local-date-time";
+import { SyncEditConflict } from "@/components/sync-edit-conflict";
 
 type AppointmentAction = (state: AppointmentFormState, formData: FormData) => Promise<AppointmentFormState>;
 type ClientOption = { id: string; name: string; phone: string };
 type DesignOption = { id: string; title: string };
 type InitialAppointment = {
+  expectedVersion: string;
   clientId: string; startsAtIso: string; notes: string | null; status: AppointmentStatusValue;
   designIds: string[]; finalDesignId: string | null; agreedPrice: string | null; depositRequired: string;
 };
@@ -47,10 +49,12 @@ export function AppointmentForm({ action, clients, designs, copy, initial, initi
     if (createdDesign && designs.some(design => design.id === createdDesign) && !designIds.includes(createdDesign)) designIds.push(createdDesign);
     return { ...value, clientId: createdClient && clients.some(client => client.id === createdClient) ? createdClient : clients.some(client => client.id === value.clientId) ? value.clientId : "", designIds, finalDesignId: designIds.includes(value.finalDesignId) ? value.finalDesignId : "" };
   };
-  const [model, setModel] = useState<AppointmentDraft>(() => {
+  function initialModel(): AppointmentDraft {
     const local = initial?.startsAtIso ? studioLocalInputValue(initial.startsAtIso) : "";
-    return applySelections({ clientId: initial?.clientId ?? "", date: local.slice(0, 10) || initialDate || "", time: local.slice(11, 16), status: initial?.status ?? "PLANNED", designIds: initial?.designIds ?? [], finalDesignId: initial?.finalDesignId ?? "", notes: initial?.notes ?? "", agreedPrice: initial?.agreedPrice ?? "", depositRequired: initial?.depositRequired ?? "0.00", initialPayment: "0.00", moneyOpen: params.get("section") === "money" || Boolean(initial?.agreedPrice || Number(initial?.depositRequired)) });
-  });
+    return applySelections({ expectedVersion: initial?.expectedVersion, clientId: initial?.clientId ?? "", date: local.slice(0, 10) || initialDate || "", time: local.slice(11, 16), status: initial?.status ?? "PLANNED", designIds: initial?.designIds ?? [], finalDesignId: initial?.finalDesignId ?? "", notes: initial?.notes ?? "", agreedPrice: initial?.agreedPrice ?? "", depositRequired: initial?.depositRequired ?? "0.00", initialPayment: "0.00", moneyOpen: params.get("section") === "money" || Boolean(initial?.agreedPrice || Number(initial?.depositRequired)) });
+  }
+  const [model, setModel] = useState<AppointmentDraft>(initialModel);
+  const [baseline, setBaseline] = useState<AppointmentDraft>(model);
   // Restore only an explicit add/import round trip, never an unrelated new booking.
   if (storedDraft && restoredDraft !== storedDraft) {
     setRestoredDraft(storedDraft);
@@ -68,6 +72,12 @@ export function AppointmentForm({ action, clients, designs, copy, initial, initi
   }, [restoredDraft, draftKey, token, params, bookingPath]);
 
   const [state, formAction, pending] = useActionState(action, { error: null });
+  const dirty = Boolean(restoredDraft) || JSON.stringify({ ...model, moneyOpen: false }) !== JSON.stringify({ ...baseline, moneyOpen: false });
+  if (!dirty && !pending && model.expectedVersion !== initial?.expectedVersion) {
+    const next = { ...initialModel(), moneyOpen: model.moneyOpen };
+    setModel(next);
+    setBaseline(next);
+  }
   const [allowOverlap, setAllowOverlap] = useState(false);
   const [editedSchedule, setEditedSchedule] = useState(false);
   const [draftError, setDraftError] = useState(false);
@@ -120,12 +130,13 @@ export function AppointmentForm({ action, clients, designs, copy, initial, initi
   }
 
   return (
-    <form action={formAction} noValidate className="appointment-form workspace-stack" onSubmit={() => setEditedSchedule(false)} onReset={event => event.preventDefault()}>
+    <form data-sync-protect data-sync-dirty={dirty} data-sync-pending={pending} action={formAction} noValidate className="appointment-form workspace-stack" onSubmit={() => setEditedSchedule(false)} onReset={event => event.preventDefault()}>
+      {initial ? <input type="hidden" name="expectedVersion" value={model.expectedVersion ?? ""} /> : null}
       <input type="hidden" name="startsAtLocal" value={scheduleValue} />
       <input type="hidden" name="timezoneOffset" value={String(timezoneOffset)} />
       <input type="hidden" name="timezoneName" value={studioTimeZone} />
       <input type="hidden" name="allowOverlap" value={allowOverlap ? "true" : "false"} />
-      {state.error && (state.error !== "overlap" || showOverlap) ? (
+      {state.error === "stale" ? <SyncEditConflict locale={locale} href={bookingPath} /> : state.error && (state.error !== "overlap" || showOverlap) ? (
         <div ref={feedbackRef} tabIndex={-1} className="appointment-error-summary appointment-form-feedback" role="alert"><h2>{copy.errorsTitle}</h2>
           {errors.length ? <ul>{errors.map(([field, code]) => <li key={field}><a href={`#${fieldIds[field]}`} onClick={event => focusField(event, field)}>{labels[field]}: {errorText(field, code)}</a></li>)}</ul> : <p className="form-error">{showOverlap ? copy.overlapWarning : copy.saveError}</p>}
         </div>

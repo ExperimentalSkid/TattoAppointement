@@ -4,11 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireArtistId } from "@/lib/session";
+import { nextRecordVersion, readRecordVersion } from "@/lib/record-version";
 import { appointmentReturnWithSelection, validateAppointmentReturn } from "@/lib/appointment-return";
 import { normalizeClientPhone, readClientFields, type ClientField } from "@/lib/client-fields";
 
 export type ClientFormState = {
-  error: ClientField | "required" | "duplicate" | "save" | null;
+  error: ClientField | "required" | "duplicate" | "stale" | "save" | null;
   fields?: ClientField[];
 };
 
@@ -79,6 +80,8 @@ export async function updateClient(
   formData: FormData,
 ): Promise<ClientFormState> {
   const artistId = await requireArtistId();
+  const expectedVersion = readRecordVersion(formData.get("expectedVersion"));
+  if (!expectedVersion) return { error: "stale" };
   const { values, fields } = readClientFields(formData);
   if (fields.length) {
     return { error: fields[0], fields };
@@ -87,18 +90,19 @@ export async function updateClient(
   try {
     const existing = await prisma.client.findFirst({
       where: { id: clientId, artistId },
-      select: { id: true },
+      select: { id: true, updatedAt: true },
     });
-    if (!existing) {
-      return { error: "save" };
+    if (!existing || existing.updatedAt.getTime() !== expectedVersion.getTime()) {
+      return { error: "stale" };
     }
     if (await duplicatePhoneExists(artistId, values.phone, clientId)) {
       return { error: "duplicate", fields: ["phone"] };
     }
-    await prisma.client.update({
-      where: { id: clientId },
-      data: values,
+    const updated = await prisma.client.updateMany({
+      where: { id: clientId, artistId, updatedAt: expectedVersion },
+      data: { ...values, updatedAt: nextRecordVersion(expectedVersion) },
     });
+    if (updated.count !== 1) return { error: "stale" };
 
     revalidatePath("/clients");
     revalidatePath(`/clients/${clientId}`);

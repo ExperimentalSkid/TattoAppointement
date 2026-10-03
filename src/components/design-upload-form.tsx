@@ -89,7 +89,7 @@ export function DesignUploadForm({
   }
 
   return (
-    <form className="design-form" onSubmit={submit}>
+    <form data-sync-protect data-sync-pending={pending} className="design-form" onSubmit={submit}>
       <div className="field">
         <label htmlFor="design-image">{copy.image}</label>
         <input

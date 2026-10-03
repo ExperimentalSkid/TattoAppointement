@@ -35,6 +35,8 @@ On the host, `curl --fail http://127.0.0.1:3000/api/health` should return `{"sta
 
 Before a release, take a database and artwork backup, verify changes in staging, and run `docker compose up -d --build`. Database schema changes require a migration-aware recovery plan; an older application image is not a database rollback.
 
+The workspace revision migrations are additive: they create revision tracking for existing artists and transaction-bound change notifications for studio records and Google account connections. Apply them with `prisma migrate deploy` before starting the updated app. Keep the existing records and storage; a database reset is not part of this update.
+
 ## HTTPS and proxy
 
 Configure your HTTPS proxy to forward to `http://127.0.0.1:3000`, preserve the external `Host` header, and send the correct forwarded host/protocol. `BETTER_AUTH_URL` must match the artist-facing origin. Restrict the proxy upload body to 26 MiB and set an appropriate timeout for image uploads. The app accepts original artwork up to 25 MiB with up to 40 million decoded pixels; previews are at most 1400×1400 pixels. Unsupported or corrupt images return a form error.
@@ -47,10 +49,16 @@ Compose creates two named volumes: `database` for PostgreSQL and `designs` for p
 
 `DESIGN_STORAGE_DIR` must be writable by the server process and persist across container replacement. Keep it outside the public web directory. An ephemeral serverless filesystem will lose artwork, even if PostgreSQL survives. The filesystem adapter supports a single app instance with persistent disk; multiple app instances require shared private storage and coordinated operation before scaling.
 
+Devices share this central database and private artwork storage. Google sign-in identifies the owner and opens the same workspace; it does not store records in Google Drive. Use the private HTTPS deployment for actual phone/computer testing, since a local loopback address reaches only the device running the server.
+
+Visible online workspace pages poll a private revision endpoint every three seconds and refresh when committed data changes. Checks also resume on window focus, returning to a visible page or reconnection. This updates calendar bookings, cancellations, clients, artwork, recorded payments, studio settings and Google connection status. Background pages catch up when opened again; cancellations release calendar availability on the other devices.
+
+Refresh waits while a protected form has unsaved edits, a pending save or a focused field. A quiet notice offers review, with confirmation before discarding a draft and reloading. Edit and reschedule submissions atomically check their original record version; profile and reminder forms compare their own saved fields so independent settings edits remain possible. Stale submissions keep the draft and offer the latest version in a separate tab. Saves require a connection; the app does not queue offline writes.
+
 ## Studio setup and access
 
 1. On an empty installation, the first successful Google sign-in or password registration creates the artist account. Google requires a verified email. Choose the studio name and preferred language in Settings. For a controlled private launch, optionally set `STUDIO_OWNER_EMAIL` before opening the site to restrict setup and access to that artist's email.
-2. Check a client, upload a design, create a Madrid-time appointment and record a deposit. Sign out and sign back in to confirm persistence.
+2. Check a client, upload a design, create a Madrid-time appointment and record a deposit. Sign out and sign back in to confirm persistence. Open the same owner workspace on a second device and verify saved changes appear automatically, a cancellation frees the other calendar and competing edits retain the rejected draft.
 3. Confirm additional account creation is rejected and `/sign-up` returns to sign-in. The database enforces a single owner even for simultaneous registration attempts. You may additionally set `DISABLE_SIGN_UP=true` and recreate the app with `docker compose up -d app`.
 4. Use a password manager and retain a documented support route for artist account recovery. Configure and verify email recovery before relying on it for account access.
 
@@ -111,6 +119,7 @@ Restore into a separate staging deployment before trusting a backup. Copy the du
 
 - Lockfile install, dependency audit, unit checks, lint, type check, production build and browser workflows pass.
 - HTTPS works on phone and desktop; both languages and the studio name persist after sign-in.
+- Two signed-in devices receive bookings, cancellations and edits automatically; reconnection catches up, and another device's edits cannot silently overwrite an unsaved draft.
 - Private routes and artwork reject an anonymous session and another artist's account.
 - Migrations apply from an empty database and the readiness endpoint responds.
 - Artwork persists after replacing the app; a matched backup restores into staging.

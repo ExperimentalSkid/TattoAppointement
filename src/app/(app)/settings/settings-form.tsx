@@ -4,6 +4,7 @@ import { useActionState, useEffect, useLayoutEffect, useRef, useState } from "re
 import { changePassword, updateProfile, updateReminderTemplate, type PasswordFormState, type ProfileFormState, type ReminderFormState } from "./actions";
 import type { SettingsCopy } from "./copy";
 import { getDefaultReminderTemplate, renderReminderTemplate, REMINDER_TEMPLATE_MAX_LENGTH } from "@/lib/whatsapp-reminder";
+import { SyncEditConflict } from "@/components/sync-edit-conflict";
 
 function SettingsErrorSummary({ title, message, fieldId, label }: { title: string; message: string; fieldId?: string; label?: string }) {
   const feedbackRef = useRef<HTMLDivElement>(null);
@@ -17,9 +18,10 @@ function SettingsErrorSummary({ title, message, fieldId, label }: { title: strin
   </div>;
 }
 
-export function ReminderSettingsForm({ copy, locale, initialTemplate, studioName }: { copy: SettingsCopy; locale: "es" | "en"; initialTemplate: string; studioName: string }) {
+export function ReminderSettingsForm({ copy, locale, initialTemplate, storedTemplate, studioName }: { copy: SettingsCopy; locale: "es" | "en"; initialTemplate: string; storedTemplate: string | null; studioName: string }) {
   const [template, setTemplate] = useState(initialTemplate);
   const [baseline, setBaseline] = useState(initialTemplate);
+  const [expectedTemplate, setExpectedTemplate] = useState(storedTemplate);
   const [edited, setEdited] = useState(false);
   const [undoTemplate, setUndoTemplate] = useState<string | null>(null);
   const [insertLimit, setInsertLimit] = useState(false);
@@ -31,11 +33,17 @@ export function ReminderSettingsForm({ copy, locale, initialTemplate, studioName
     if (result.savedTemplate !== null) {
       setBaseline(result.savedTemplate);
       setTemplate(result.savedTemplate);
+      setExpectedTemplate(result.savedTemplate);
     }
     return result;
   }, { error: null, savedTemplate: null } as ReminderFormState);
-  const error = !edited && !pending ? state.error : null;
+  const error = !pending && (state.error === "stale" || !edited) ? state.error : null;
   const dirty = template !== baseline;
+  if (!dirty && !pending && (expectedTemplate !== storedTemplate || (storedTemplate === null && baseline !== initialTemplate))) {
+    setTemplate(initialTemplate);
+    setBaseline(initialTemplate);
+    setExpectedTemplate(storedTemplate);
+  }
   const preview = renderReminderTemplate(template, { client: copy.reminderExampleClient, date: copy.reminderExampleDate, time: "14:00", studio: studioName });
   const tokens = [
     { token: "{client}", label: copy.reminderClient },
@@ -96,20 +104,21 @@ export function ReminderSettingsForm({ copy, locale, initialTemplate, studioName
   }
 
   return (
-    <form action={action} className="client-form settings-form reminder-settings-form" noValidate onReset={event => event.preventDefault()} onSubmit={() => {
+    <form data-sync-protect data-sync-dirty={dirty} data-sync-pending={pending} action={action} className="client-form settings-form reminder-settings-form" noValidate onReset={event => event.preventDefault()} onSubmit={() => {
       setEdited(false);
       setUndoTemplate(null);
       setInsertLimit(false);
     }}>
-      {error ? <SettingsErrorSummary title={copy.errorsTitle} message={copy.reminderErrors[error]} fieldId={error === "save" ? undefined : "whatsapp-reminder-template"} label={copy.reminderTemplate} /> : null}
+      <input type="hidden" name="expectedReminderTemplate" value={JSON.stringify(expectedTemplate)} />
+      {error === "stale" ? <SyncEditConflict locale={locale} href="/settings" /> : error ? <SettingsErrorSummary title={copy.errorsTitle} message={copy.reminderErrors[error]} fieldId={error === "save" ? undefined : "whatsapp-reminder-template"} label={copy.reminderTemplate} /> : null}
       <div className="field">
         <label htmlFor="whatsapp-reminder-template">{copy.reminderTemplate}</label>
-        <textarea ref={textareaRef} id="whatsapp-reminder-template" name="whatsappReminderTemplate" value={template} onChange={event => { rememberSelection(); editTemplate(event.target.value); }} onSelect={rememberSelection} onBlur={rememberSelection} rows={5} maxLength={REMINDER_TEMPLATE_MAX_LENGTH} disabled={pending} aria-invalid={Boolean(error && error !== "save") || undefined} aria-describedby={`whatsapp-reminder-tokens${error && error !== "save" ? " whatsapp-reminder-error" : ""}${insertLimit ? " whatsapp-reminder-limit" : ""}`} required />
+        <textarea ref={textareaRef} id="whatsapp-reminder-template" name="whatsappReminderTemplate" value={template} onChange={event => { rememberSelection(); editTemplate(event.target.value); }} onSelect={rememberSelection} onBlur={rememberSelection} rows={5} maxLength={REMINDER_TEMPLATE_MAX_LENGTH} disabled={pending} aria-invalid={Boolean(error && error !== "save" && error !== "stale") || undefined} aria-describedby={`whatsapp-reminder-tokens${error && error !== "save" && error !== "stale" ? " whatsapp-reminder-error" : ""}${insertLimit ? " whatsapp-reminder-limit" : ""}`} required />
         <p className="muted-copy" id="whatsapp-reminder-tokens">{copy.reminderTokens}</p>
         <div className="reminder-token-controls" role="group" aria-label={copy.reminderTokens}>
           {tokens.map(({ token, label }) => <button key={token} className="secondary-button" type="button" disabled={pending} aria-label={copy.reminderInsertLabel.replace("{token}", token)} onClick={() => insertToken(token)}>{label} <code>{token}</code></button>)}
         </div>
-        {error && error !== "save" ? <p id="whatsapp-reminder-error" className="field-error form-error">{copy.reminderErrors[error]}</p> : null}
+        {error && error !== "save" && error !== "stale" ? <p id="whatsapp-reminder-error" className="field-error form-error">{copy.reminderErrors[error]}</p> : null}
         {insertLimit ? <p id="whatsapp-reminder-limit" className="reminder-template-feedback form-error" role="status">{copy.reminderInsertLimit}</p> : null}
       </div>
       <div className="section-intro">
@@ -129,10 +138,11 @@ export function ReminderSettingsForm({ copy, locale, initialTemplate, studioName
   );
 }
 
-export function StudioSettingsForm({ copy, initial }: { copy: SettingsCopy; initial: { name: string; studioName: string | null; email: string } }) {
+export function StudioSettingsForm({ copy, locale, initial }: { copy: SettingsCopy; locale: "en" | "es"; initial: { name: string; studioName: string | null; email: string } }) {
   const [name, setName] = useState(initial.name);
   const [studio, setStudio] = useState(initial.studioName ?? "");
   const [baseline, setBaseline] = useState({ name: initial.name, studio: initial.studioName ?? "" });
+  const [expectedProfile, setExpectedProfile] = useState({ name: initial.name, studioName: initial.studioName });
   const [edited, setEdited] = useState(false);
   const [state, action, pending] = useActionState(async (previous: ProfileFormState, formData: FormData) => {
     const result = await updateProfile(previous, formData);
@@ -141,14 +151,22 @@ export function StudioSettingsForm({ copy, initial }: { copy: SettingsCopy; init
       setName(saved.name);
       setStudio(saved.studio);
       setBaseline(saved);
+      setExpectedProfile(result.savedProfile);
     }
     return result;
   }, { error: null, saved: false, savedProfile: null } as ProfileFormState);
-  const error = !edited && !pending ? state.error : null;
+  const error = !pending && (state.error === "stale" || !edited) ? state.error : null;
   const dirty = name !== baseline.name || studio !== baseline.studio;
+  if (!dirty && !pending && (expectedProfile.name !== initial.name || expectedProfile.studioName !== initial.studioName)) {
+    setName(initial.name);
+    setStudio(initial.studioName ?? "");
+    setBaseline({ name: initial.name, studio: initial.studioName ?? "" });
+    setExpectedProfile({ name: initial.name, studioName: initial.studioName });
+  }
   return (
-    <form action={action} className="client-form settings-form studio-settings-form" noValidate onReset={event => event.preventDefault()} onSubmit={() => setEdited(false)}>
-      {error ? <SettingsErrorSummary title={copy.errorsTitle} message={copy.profileErrors[error]} fieldId={error === "name" ? "artist-name" : error === "studio" ? "studio-name" : undefined} label={error === "name" ? copy.name : copy.studio} /> : null}
+    <form data-sync-protect data-sync-dirty={dirty} data-sync-pending={pending} action={action} className="client-form settings-form studio-settings-form" noValidate onReset={event => event.preventDefault()} onSubmit={() => setEdited(false)}>
+      <input type="hidden" name="expectedProfile" value={JSON.stringify(expectedProfile)} />
+      {error === "stale" ? <SyncEditConflict locale={locale} href="/settings" /> : error ? <SettingsErrorSummary title={copy.errorsTitle} message={copy.profileErrors[error]} fieldId={error === "name" ? "artist-name" : error === "studio" ? "studio-name" : undefined} label={error === "name" ? copy.name : copy.studio} /> : null}
       <div className="client-form-grid">
         <div className="field"><label htmlFor="artist-name">{copy.name}</label><input id="artist-name" name="name" value={name} onChange={event => { setName(event.target.value); setEdited(true); }} autoComplete="name" maxLength={80} disabled={pending} aria-invalid={error === "name" || undefined} aria-describedby={error === "name" ? "artist-name-error" : undefined} required />{error === "name" ? <p id="artist-name-error" className="field-error form-error">{copy.profileErrors.name}</p> : null}</div>
         <div className="field"><label htmlFor="studio-name">{copy.studio} <span className="field-optional">({copy.optional})</span></label><input id="studio-name" name="studioName" value={studio} onChange={event => { setStudio(event.target.value); setEdited(true); }} autoComplete="organization" maxLength={80} placeholder={copy.studioPlaceholder} disabled={pending} aria-invalid={error === "studio" || undefined} aria-describedby={error === "studio" ? "studio-name-error" : undefined} />{error === "studio" ? <p id="studio-name-error" className="field-error form-error">{copy.profileErrors.studio}</p> : null}</div>
@@ -165,7 +183,7 @@ export function PasswordSettingsForm({ copy, hasPassword = true }: { copy: Setti
   const [state, action, pending] = useActionState(changePassword, { error: null, saved: false } as PasswordFormState);
   const [edited, setEdited] = useState(false);
   return (
-    <form action={action} className="client-form settings-form password-settings-form" onChange={() => setEdited(true)} onSubmit={() => setEdited(false)}>
+    <form data-sync-protect data-sync-pending={pending} action={action} className="client-form settings-form password-settings-form" onChange={() => setEdited(true)} onSubmit={() => setEdited(false)}>
       {hasPassword ? <div className="field"><label htmlFor="current-password">{copy.currentPassword}</label><input id="current-password" name="currentPassword" type="password" autoComplete="current-password" maxLength={128} disabled={pending} required /></div> : <p className="muted-copy">{copy.createPasswordNote}</p>}
       <div className="client-form-grid">
         <div className="field"><label htmlFor="new-password">{copy.newPassword}</label><input id="new-password" name="newPassword" type="password" autoComplete="new-password" minLength={8} maxLength={128} aria-describedby="password-hint" disabled={pending} required /></div>

@@ -16,12 +16,12 @@ export default async function EditDesignPage({
 }) {
   const artistId = await requireArtistId();
   const { id } = await params;
-  const { dictionary } = await getDictionary();
+  const { locale, dictionary } = await getDictionary();
   const libraryQuery = normalizeDesignQuery((await searchParams).libraryQuery);
 
   const design = await prisma.design.findFirst({
     where: { id, artistId },
-    select: { id: true, title: true, notes: true },
+    select: { id: true, title: true, notes: true, updatedAt: true },
   });
 
   if (!design) notFound();
@@ -33,7 +33,8 @@ export default async function EditDesignPage({
         <DesignMetadataForm
           action={updateDesign.bind(null, design.id)}
           copy={dictionary.designs}
-          design={design}
+          locale={locale}
+          design={{ ...design, expectedVersion: design.updatedAt.toISOString() }}
           libraryQuery={libraryQuery}
         />
         <form action={deleteDesign.bind(null, design.id)} className="form-actions">

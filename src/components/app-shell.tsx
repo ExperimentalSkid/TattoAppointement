@@ -6,6 +6,7 @@ import type { Dictionary } from "@/i18n/dictionaries";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { NavLinks } from "@/components/nav-links";
 import { SignOutButton } from "@/components/sign-out-button";
+import { WorkspaceSync } from "@/components/workspace-sync";
 
 export function AppShell({
   children,
@@ -13,12 +14,14 @@ export function AppShell({
   locale,
   userName,
   studioName,
+  syncRevision,
 }: {
   children: ReactNode;
   dictionary: Dictionary;
   locale: Locale;
   userName: string;
   studioName?: string | null;
+  syncRevision: string;
 }) {
   const es = locale === "es";
   const studio = studioName?.trim() || (es ? "Tu estudio" : "Your studio");
@@ -60,7 +63,7 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="app-content" id="main-content" tabIndex={-1}>{children}</main>
+        <main className="app-content" id="main-content" tabIndex={-1}><WorkspaceSync revision={syncRevision} locale={locale} />{children}</main>
         <NavLinks copy={dictionary.nav} variant="mobile" />
       </div>
     </div>

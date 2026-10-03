@@ -30,7 +30,7 @@ export type AppointmentConflict = {
 };
 
 export type AppointmentFormState = {
-  error: AppointmentFieldError | "overlap" | "save" | null;
+  error: AppointmentFieldError | "overlap" | "stale" | "save" | null;
   fieldErrors?: Partial<Record<AppointmentFormField, AppointmentFieldError>>;
   conflicts?: AppointmentConflict[];
 };

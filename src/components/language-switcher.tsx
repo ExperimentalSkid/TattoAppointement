@@ -33,8 +33,8 @@ export function LanguageSwitcher({
         throw new Error("Could not update language");
       }
 
-      if (pathname === "/settings") {
-        // Refresh the translated Settings content while retaining its form drafts.
+      if (!["/sign-in", "/sign-up", "/forgot-password", "/reset-password"].includes(pathname)) {
+        // Merge translated workspace content without discarding unsaved form state.
         startTransition(() => router.refresh());
         setPending(false);
       } else {

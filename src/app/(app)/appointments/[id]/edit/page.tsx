@@ -56,6 +56,7 @@ export default async function EditAppointmentPage({
         bookingPath={`/appointments/${appointment.id}/edit`}
         locale={locale}
         initial={{
+          expectedVersion: appointment.updatedAt.toISOString(),
           clientId: appointment.clientId,
           startsAtIso: appointment.startsAt.toISOString(),
           notes: appointment.notes,

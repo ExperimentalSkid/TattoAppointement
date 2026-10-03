@@ -31,7 +31,7 @@ export function PaymentForm({
   }, [state]);
 
   return (
-    <form action={formAction} className="payment-entry-form">
+    <form data-sync-protect data-sync-dirty={Boolean(amount)} data-sync-pending={pending} action={formAction} className="payment-entry-form">
       <div className="payment-entry-heading">
         <h3>{copy.recordPayment}</h3>
         <p className="muted-copy" id="payment-entry-help">{copy.manualPaymentHelp}</p>

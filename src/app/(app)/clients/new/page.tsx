@@ -9,7 +9,7 @@ export default async function NewClientPage({
 }: {
   searchParams: Promise<{ returnTo?: string | string[] }>;
 }) {
-  const { dictionary } = await getDictionary();
+  const { locale, dictionary } = await getDictionary();
   const returnTo = validateAppointmentReturn((await searchParams).returnTo);
   const action = returnTo ? createClientForAppointment.bind(null, returnTo) : createClient;
 
@@ -22,7 +22,7 @@ export default async function NewClientPage({
         </div>
       </div>
       <div className="client-panel">
-        <ClientForm action={action} copy={dictionary.clients} cancelHref={returnTo ?? "/clients"} />
+        <ClientForm action={action} copy={dictionary.clients} locale={locale} cancelHref={returnTo ?? "/clients"} />
       </div>
     </section>
   );

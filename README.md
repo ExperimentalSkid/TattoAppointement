@@ -22,6 +22,7 @@ The dark editorial interface uses six shared layout primitives, open sections an
 - Appointments with optional references, a final design, price, deposit and manual payment history. Date and time use the studio's Madrid timezone.
 - Booking drafts survive adding a client or importing artwork. Field-specific errors preserve entered values; focused rescheduling identifies conflicts before an explicit override. Confirmed cancellation frees the calendar slot and preserves history.
 - Studio profile, artist preferences and persistent language selection.
+- Saved changes update other open devices automatically. Visible online pages check the private workspace revision every three seconds and catch up on focus or reconnection. Unsaved edits stay intact; stale saves are rejected before they can overwrite a newer record.
 - Optional manual WhatsApp appointment reminders with a customizable template in Settings. Client, date, time and studio placeholders fill in appointment details; the artist reviews the message and presses Send in WhatsApp. No WhatsApp API account or messaging fees are required.
 - A private download of the artist's client, appointment, design metadata and payment records.
 - Responsive desktop workspace and mobile navigation; installable PWA metadata and static asset caching.
@@ -49,6 +50,8 @@ npm run db:deploy
 
 For an existing PostgreSQL installation, set `DATABASE_URL` to its own empty application database. Prisma's configuration is `prisma.config.ts`. `db:deploy` applies checked-in migrations; `db:migrate` is only for authoring migrations during development.
 
+When updating an existing studio, back up its database and artwork first, then run `db:deploy`. The workspace revision migrations add change tracking and cover Google account connection changes while preserving existing studio records. Do not reset the database to apply them.
+
 ## Verification
 
 ```sh
@@ -66,6 +69,8 @@ GitHub Actions installs the locked dependencies, audits advisories, migrates Pos
 ## Production
 
 See [the launch guide](docs/launch.md) for Docker deployment, HTTPS, persistent artwork storage, registration closure, backups and release checks. A Node.js server and persistent disk are required. Static hosting cannot serve authentication, server actions or the database.
+
+All devices access the same server database and private artwork storage. Google identifies the owner; records are not stored in Google Drive. A private HTTPS deployment is needed to test a phone and computer against the same workspace. Saving requires a connection; offline status pauses refresh checks and catches up after reconnection.
 
 `GET /api/health` returns `200 {"status":"ready"}` when the database and migrated user table are available, or `503 {"status":"unavailable"}`. It does not expose records or connection information. Design images require a current artist session and use `private, no-store` caching.
 

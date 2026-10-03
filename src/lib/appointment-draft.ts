@@ -2,6 +2,7 @@ import { APPOINTMENT_NOTES_MAX_LENGTH } from "./appointment-form-model";
 import { isAppointmentStatus, type AppointmentStatusValue } from "./appointments";
 
 export type AppointmentDraft = {
+  expectedVersion?: string;
   clientId: string; date: string; time: string; status: AppointmentStatusValue;
   designIds: string[]; finalDesignId: string; notes: string; agreedPrice: string;
   depositRequired: string; initialPayment: string; moneyOpen: boolean;
@@ -23,6 +24,7 @@ export function parseAppointmentDraft(raw: string | null, bookingPath: string): 
       if (typeof value[field] !== "string" || value[field].length > 128) return null;
     }
     if (typeof value.notes !== "string" || value.notes.length > APPOINTMENT_NOTES_MAX_LENGTH || typeof value.moneyOpen !== "boolean") return null;
+    if (value.expectedVersion !== undefined && (typeof value.expectedVersion !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value.expectedVersion))) return null;
     return value as AppointmentDraft;
   } catch { return null; }
 }

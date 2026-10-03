@@ -4,11 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireArtistId } from "@/lib/session";
+import { nextRecordVersion, readRecordVersion } from "@/lib/record-version";
 import { removeDesignFiles } from "@/lib/design-storage";
 import { designDetailPath, designLibraryPath, normalizeDesignQuery } from "@/lib/design-navigation";
 
 export type DesignFormState = {
-  error: "title" | "notes" | "save" | null;
+  error: "title" | "notes" | "stale" | "save" | null;
 };
 
 export async function updateDesign(
@@ -17,6 +18,8 @@ export async function updateDesign(
   formData: FormData,
 ): Promise<DesignFormState> {
   const artistId = await requireArtistId();
+  const expectedVersion = readRecordVersion(formData.get("expectedVersion"));
+  if (!expectedVersion) return { error: "stale" };
   const title = String(formData.get("title") ?? "").trim();
   const notesText = String(formData.get("notes") ?? "").trim();
 
@@ -30,21 +33,23 @@ export async function updateDesign(
 
   const existing = await prisma.design.findFirst({
     where: { id: designId, artistId },
-    select: { id: true },
+    select: { id: true, updatedAt: true },
   });
 
-  if (!existing) {
-    return { error: "save" };
+  if (!existing || existing.updatedAt.getTime() !== expectedVersion.getTime()) {
+    return { error: "stale" };
   }
 
   try {
-    await prisma.design.update({
-      where: { id: designId },
+    const updated = await prisma.design.updateMany({
+      where: { id: designId, artistId, updatedAt: expectedVersion },
       data: {
+        updatedAt: nextRecordVersion(expectedVersion),
         title,
         notes: notesText || null,
       },
     });
+    if (updated.count !== 1) return { error: "stale" };
   } catch {
     return { error: "save" };
   }

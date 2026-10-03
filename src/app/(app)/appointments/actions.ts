@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireArtistId } from "@/lib/session";
+import { nextRecordVersion, readRecordVersion, StaleRecordError } from "@/lib/record-version";
 import {
   appointmentEnd,
   appointmentsOverlap,
@@ -220,8 +221,10 @@ export async function createAppointment(_previousState: AppointmentFormState, fo
 
 export async function updateAppointment(appointmentId: string, _previousState: AppointmentFormState, formData: FormData): Promise<AppointmentFormState> {
   const artistId = await requireArtistId();
+  const expectedVersion = readRecordVersion(formData.get("expectedVersion"));
+  if (!expectedVersion) return { error: "stale" };
   const existing = await prisma.appointment.findFirst({ where: { id: appointmentId, artistId }, include: { designs: { select: { designId: true } } } });
-  if (!existing) return { error: "save" };
+  if (!existing || existing.updatedAt.getTime() !== expectedVersion.getTime()) return { error: "stale" };
   const parsed = parseInput(formData, existing.durationMinutes);
   if ("error" in parsed) return parsed;
   const ownershipError = await validateOwnership(artistId, parsed);
@@ -230,13 +233,16 @@ export async function updateAppointment(appointmentId: string, _previousState: A
   try {
     await prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${artistId}, 0))`;
+      const current = await tx.appointment.findFirst({ where: { id: appointmentId, artistId, updatedAt: expectedVersion }, select: { id: true } });
+      if (!current) throw new StaleRecordError();
       if (!parsed.allowOverlap) {
         const conflicts = await scheduleConflicts(tx, artistId, parsed, appointmentId);
         if (conflicts.length) throw new ScheduleConflictError(conflicts);
       }
-      await tx.appointment.update({
-        where: { id: appointmentId },
+      const updated = await tx.appointment.updateMany({
+        where: { id: appointmentId, artistId, updatedAt: expectedVersion },
         data: {
+          updatedAt: nextRecordVersion(expectedVersion),
           clientId: parsed.clientId,
           startsAt: parsed.startsAt,
           durationMinutes: parsed.durationMinutes,
@@ -246,6 +252,7 @@ export async function updateAppointment(appointmentId: string, _previousState: A
           depositRequired: centsToDecimal(parsed.depositRequiredCents),
         },
       });
+      if (updated.count !== 1) throw new StaleRecordError();
       await tx.appointmentDesign.deleteMany({ where: { appointmentId } });
       if (parsed.designIds.length) {
         await tx.appointmentDesign.createMany({
@@ -254,6 +261,7 @@ export async function updateAppointment(appointmentId: string, _previousState: A
       }
     });
   } catch (error) {
+    if (error instanceof StaleRecordError) return { error: "stale" };
     if (error instanceof ScheduleConflictError) return { error: "overlap", conflicts: error.conflicts };
     return { error: "save" };
   }
@@ -268,6 +276,8 @@ class InactiveAppointmentError extends Error {}
 
 export async function rescheduleAppointment(appointmentId: string, _previousState: AppointmentFormState, formData: FormData): Promise<AppointmentFormState> {
   const artistId = await requireArtistId();
+  const expectedVersion = readRecordVersion(formData.get("expectedVersion"));
+  if (!expectedVersion) return { error: "stale" };
   const fieldErrors: FieldErrors = {};
   const startsAt = parseSchedule(formData, fieldErrors);
   if (Object.keys(fieldErrors).length) return validationState(fieldErrors);
@@ -280,9 +290,9 @@ export async function rescheduleAppointment(appointmentId: string, _previousStat
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${artistId}, 0))`;
       const appointment = await tx.appointment.findFirst({
         where: { id: appointmentId, artistId },
-        select: { clientId: true, status: true, durationMinutes: true, designs: { select: { designId: true } } },
+        select: { clientId: true, status: true, durationMinutes: true, updatedAt: true, designs: { select: { designId: true } } },
       });
-      if (!appointment) throw new Error("Appointment is unavailable.");
+      if (!appointment || appointment.updatedAt.getTime() !== expectedVersion.getTime()) throw new StaleRecordError();
       if (appointment.status !== "PLANNED" && appointment.status !== "CONFIRMED") throw new InactiveAppointmentError();
       if (!allowOverlap) {
         const conflicts = await scheduleConflicts(tx, artistId, {
@@ -292,10 +302,12 @@ export async function rescheduleAppointment(appointmentId: string, _previousStat
         }, appointmentId);
         if (conflicts.length) throw new ScheduleConflictError(conflicts);
       }
-      await tx.appointment.update({ where: { id: appointmentId }, data: { startsAt } });
+      const updated = await tx.appointment.updateMany({ where: { id: appointmentId, artistId, updatedAt: expectedVersion }, data: { startsAt, updatedAt: nextRecordVersion(expectedVersion) } });
+      if (updated.count !== 1) throw new StaleRecordError();
       return { clientId: appointment.clientId, designIds: appointment.designs.map((design) => design.designId) };
     });
   } catch (error) {
+    if (error instanceof StaleRecordError) return { error: "stale" };
     if (error instanceof ScheduleConflictError) return { error: "overlap", conflicts: error.conflicts };
     if (error instanceof InactiveAppointmentError) return { error: "status", fieldErrors: { status: "status" } };
     return { error: "save" };
@@ -312,7 +324,7 @@ export async function cancelAppointment(appointmentId: string) {
     if (!existing) return null;
     await tx.appointment.updateMany({
       where: { id: existing.id, artistId, status: { in: ["PLANNED", "CONFIRMED"] } },
-      data: { status: "CANCELLED" },
+      data: { status: "CANCELLED", updatedAt: nextRecordVersion(existing.updatedAt) },
     });
     return existing;
   });

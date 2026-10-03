@@ -13,9 +13,9 @@ Copy `.env.example` to `.env` and configure:
 | `BETTER_AUTH_URL` | The exact HTTPS origin, for example `https://studio.example.com` |
 | `BETTER_AUTH_SECRET` | A unique, random secret of at least 32 characters; keep it across releases |
 | `POSTGRES_PASSWORD` | A separate random hex password; hexadecimal avoids URL-encoding ambiguity |
-| `STUDIO_OWNER_EMAIL` | Required: the single artist's email; Google must verify the same address |
-| `DISABLE_SIGN_UP` | `false` to permit the first password account; registration closes automatically once the owner exists |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional Google Web application OAuth credentials; both are required to show Google sign-in |
+| `STUDIO_OWNER_EMAIL` | Optional: restrict setup and access to this artist's email; leave blank to let the first artist account claim the workspace. A malformed nonempty value denies access |
+| `DISABLE_SIGN_UP` | `false` to permit the first password or Google account; registration closes automatically once the owner exists |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional Google Web application OAuth credentials; both are required to enable Google sign-in |
 | `RESEND_API_KEY` | A Resend API key permitted to send recovery messages; optional until email recovery is enabled |
 | `EMAIL_FROM` | A sender on a verified domain, such as `Tinta <accounts@studio.example.com>` |
 
@@ -49,20 +49,27 @@ Compose creates two named volumes: `database` for PostgreSQL and `designs` for p
 
 ## Studio setup and access
 
-1. Set `STUDIO_OWNER_EMAIL` before opening the site. Create that artist's account, then choose the studio name and preferred language in Settings.
+1. On an empty installation, the first successful Google sign-in or password registration creates the artist account. Google requires a verified email. Choose the studio name and preferred language in Settings. For a controlled private launch, optionally set `STUDIO_OWNER_EMAIL` before opening the site to restrict setup and access to that artist's email.
 2. Check a client, upload a design, create a Madrid-time appointment and record a deposit. Sign out and sign back in to confirm persistence.
 3. Confirm additional account creation is rejected and `/sign-up` returns to sign-in. The database enforces a single owner even for simultaneous registration attempts. You may additionally set `DISABLE_SIGN_UP=true` and recreate the app with `docker compose up -d app`.
 4. Use a password manager and retain a documented support route for artist account recovery. Configure and verify email recovery before relying on it for account access.
 
 ## Google sign-in
 
-Google login is optional and belongs to the same owner account. Set the exact owner's email in `STUDIO_OWNER_EMAIL`; other Google accounts and unverified identities are rejected. The Google button is hidden unless both credentials and the owner email are configured.
+Google login is optional and belongs to the same owner account. Both OAuth credentials enable the prominent Google button on the sign-in page; **Sign in with email here** expands the password form below it. Without Google credentials, the button explains that Google access is unavailable and the password form remains open. With `STUDIO_OWNER_EMAIL` blank, the first verified Google account claims an empty installation. Once an owner exists, a different Google email is rejected. Set `STUDIO_OWNER_EMAIL` only when you also want to restrict setup and access to a specific artist. Nonempty invalid configuration denies access rather than opening registration.
 
 1. Create/select a project in [Google Cloud Console](https://console.cloud.google.com/). Configure Google Auth Platform's branding and audience. For a personal Gmail owner, use an External audience and add the artist as a test user while the project is in Testing. Follow the console's production/verification requirements before changing the publishing state.
-2. Create an OAuth client with application type **Web application**. Register the exact authorized redirect URI `https://studio.example.com/api/auth/callback/google`. For local testing, separately register the origin you actually use, such as `http://127.0.0.1:3000/api/auth/callback/google` or `http://localhost:3000/api/auth/callback/google`; these hosts are distinct.
+2. Create an OAuth client with application type **Web application**. Register its exact callback under **Authorized redirect URIs**, and use the matching origin for `BETTER_AUTH_URL`. This server-side redirect flow does not require an Authorized JavaScript origin:
+
+   | Environment | `BETTER_AUTH_URL` | Authorized redirect URI |
+   | --- | --- | --- |
+   | Production example | `https://studio.example.com` | `https://studio.example.com/api/auth/callback/google` |
+   | Separate local Google test | `http://127.0.0.1:3003` | `http://127.0.0.1:3003/api/auth/callback/google` |
+
+   Use the actual production domain. If testing the default development server, use `http://localhost:3000` as the origin and register `http://localhost:3000/api/auth/callback/google` instead. `localhost` and `127.0.0.1`, and different ports, are distinct origins; register the exact callback used by the app.
 3. Put its client ID and secret in `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. Keep the secret server-side. `BETTER_AUTH_URL` must match the registered artist-facing origin. Recreate the app container after changing these values.
 4. If the owner first registered with a password, sign in with that password, then use **Connect with Google** in Settings. This authenticated connection preserves the account and its records without trusting an unverified local email for automatic linking. If the owner first registered with Google, add a password in Settings if desired; it adds a credential to the existing account.
-5. Test Google login, logout/login persistence, cancellation/error feedback and rejection of a different Google account. This live verification requires the artist's OAuth credentials and consent and is not simulated by local browser tests.
+5. Test Google login, first-account creation, logout/login persistence, cancellation/error feedback and rejection of a different Google account. This live verification requires the artist's OAuth credentials and their interaction with Google's account/consent screen. Automated authentication tests replace only Google's remote token/JWKS transport and exercise the real handler, PKCE, signature verification and single-owner checks; they do not establish that the live Google console configuration or consent screen works.
 
 The application requests identity access, not Gmail, Drive or calendar access. Google's [Web application OAuth guide](https://developers.google.com/identity/protocols/oauth2/web-server) describes client setup and exact redirect matching; [Better Auth's Google guide](https://better-auth.com/docs/authentication/google) describes the callback and provider integration. The local button uses official Google branding assets and a small Google Sans font subset.
 

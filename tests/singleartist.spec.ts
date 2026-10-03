@@ -60,8 +60,33 @@ test("one artist owns the installation and later account creation stays closed",
   await anonymousPage.goto("/sign-up");
   await expect(anonymousPage).toHaveURL(/\/sign-in/);
   await expect(anonymousPage.locator("a[href='/sign-up']")).toHaveCount(0);
-  const googleConfigured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.STUDIO_OWNER_EMAIL);
-  await expect(anonymousPage.locator(".google-auth-button")).toHaveCount(googleConfigured ? 1 : 0);
+  if (await anonymousPage.locator(".auth-language .language-select").inputValue() !== "en") {
+    await Promise.all([anonymousPage.waitForEvent("load"), anonymousPage.locator(".auth-language .language-select").selectOption("en")]);
+  }
+  const googleConfigured = Boolean(process.env.GOOGLE_CLIENT_ID?.trim() && process.env.GOOGLE_CLIENT_SECRET?.trim());
+  const googleButton = anonymousPage.getByRole("button", { name: "Sign in with Google", exact: true });
+  await expect(googleButton).toBeVisible();
+  if (googleConfigured) {
+    await expect(googleButton).toBeEnabled();
+    await expect(anonymousPage.locator("#email")).toBeHidden();
+  } else {
+    await expect(googleButton).toBeDisabled();
+    const explanation = anonymousPage.locator(".google-auth-unavailable");
+    await expect(explanation).toContainText("isn’t available yet");
+    await expect(googleButton).toHaveAttribute("aria-describedby", await explanation.getAttribute("id") ?? "");
+    await anonymousPage.locator("#email").fill(ownerEmail);
+    await anonymousPage.locator("#password").fill(ownerPassword);
+    const emailOption = anonymousPage.locator(".auth-email-option > summary");
+    await emailOption.focus();
+    await anonymousPage.keyboard.press("Enter");
+    await expect(anonymousPage.locator("#email")).toBeHidden();
+    await anonymousPage.keyboard.press("Space");
+    await expect(anonymousPage.locator("#email")).toBeVisible();
+    await expect(anonymousPage.locator("#email")).toHaveValue(ownerEmail);
+    await expect(anonymousPage.locator("#password")).toHaveValue(ownerPassword);
+    await anonymousPage.setViewportSize({ width: 360, height: 800 });
+    expect(await anonymousPage.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+  }
   await anonymousPage.goto("/sign-in?error=oauth");
   await expect(anonymousPage.locator(".auth-card [role=alert]")).toContainText(/Google/);
   expect((await anonymous.request.get("/api/account/export")).status()).toBe(401);

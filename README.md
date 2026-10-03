@@ -8,7 +8,7 @@ The dark editorial interface uses six shared layout primitives, open sections an
 
 ## Product scope
 
-- One private artist account per installation, with email/password and optional Google sign-in.
+- One private artist account per installation, with email/password and optional Google sign-in. The first successful sign-in with a verified Google account can create the artist workspace without a preconfigured owner email.
 - Optional password recovery by email through Resend, with single-use reset links and session revocation.
 - Successful account access reaches the calendar even if saving the language preference fails. Sign-in and recovery lock submitted fields while pending, retain values after failures and focus clear feedback for correction or recovery.
 - Day, week and month calendars with client details, appointment status and overlap confirmation.
@@ -35,7 +35,7 @@ Next.js 16 · React 19 · TypeScript · PostgreSQL 17 · Prisma 7 · Better Auth
 
 ## Run locally
 
-1. Copy `.env.example` to `.env`. Generate a secret with `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`, then replace `BETTER_AUTH_SECRET`. Set `STUDIO_OWNER_EMAIL` to the artist's actual email. Keep `.env` private.
+1. Copy `.env.example` to `.env`. Generate a secret with `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`, then replace `BETTER_AUTH_SECRET`. Leave `STUDIO_OWNER_EMAIL` blank for first-account setup, or set the artist's actual email to restrict who can create and access this private workspace. Keep `.env` private.
 2. Run PostgreSQL 17. With Docker installed, `docker compose -f compose.dev.yaml up -d --wait` creates an isolated development database at `localhost:5432` matching the example URL.
 3. Install and prepare the database:
 
@@ -71,6 +71,6 @@ See [the launch guide](docs/launch.md) for Docker deployment, HTTPS, persistent 
 
 Set `RESEND_API_KEY` and `EMAIL_FROM` to enable password recovery. Without a configured mail provider, the recovery link is hidden and the recovery page explains that email recovery is unavailable. Email unit checks use a mocked transport and never send messages.
 
-For Google, configure `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and the owner's `STUDIO_OWNER_EMAIL`. A password-created owner connects Google in Settings after signing in. A Google-created owner can add a password in Settings. See the launch guide for Google Cloud callback configuration.
+For Google, configure `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. The prominent Google button is then enabled above the expandable **Sign in with email here** option. With no configured owner email, the first verified Google account creates the artist workspace; later Google sign-ins must match that owner. `STUDIO_OWNER_EMAIL` is an optional restriction, and an invalid nonempty value denies access. A password-created owner connects same-email Google in Settings after signing in. A Google-created owner can add a password in Settings. Automated Google checks replace the remote token/JWKS transport while exercising the real authentication handler and token verification; they do not verify Google's live consent screen. See the launch guide for Google Cloud callback configuration and the separate live check.
 
 The dependency overrides for Prisma's `mysql2` and `deepmerge-ts` pin patched transitive versions. Revisit the overrides when Prisma updates its own dependency pins. Keep Node, container base images and the lockfile maintained.

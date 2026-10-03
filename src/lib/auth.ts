@@ -2,14 +2,14 @@ import { prismaAdapter } from "@better-auth/prisma-adapter";
 import { betterAuth } from "better-auth/minimal";
 import { nextCookies } from "better-auth/next-js";
 import { APIError } from "better-auth/api";
-import { google } from "better-auth/social-providers";
+import { google, verifyGoogleIdToken } from "better-auth/social-providers";
 import { prisma } from "@/lib/prisma";
 import { isPasswordRecoveryConfigured, sendPasswordResetEmail } from "@/lib/email";
-import { isAllowedGoogleIdentity, isAllowedStudioEmail, isGoogleSignInConfigured } from "@/lib/studio-access";
+import { isAllowedGoogleIdentity, isAllowedStudioEmail, isGoogleSignInConfigured, STUDIO_OWNER_SLOT } from "@/lib/studio-access";
 
 const googleOptions = {
-  clientId: process.env.GOOGLE_CLIENT_ID ?? "",
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+  clientId: process.env.GOOGLE_CLIENT_ID?.trim() ?? "",
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET?.trim() ?? "",
 };
 const verifiedGoogleProvider = isGoogleSignInConfigured() ? google(googleOptions) : null;
 
@@ -23,8 +23,18 @@ export const auth = betterAuth({
       ...googleOptions,
       disableSignUp: process.env.DISABLE_SIGN_UP === "true",
       getUserInfo: async (token) => {
+        if (!token.idToken) return null;
+        const claims = await verifyGoogleIdToken({ token: token.idToken, audience: googleOptions.clientId });
+        if (!claims || typeof claims.sub !== "string") return null;
         const info = await verifiedGoogleProvider.getUserInfo(token);
-        return isAllowedGoogleIdentity(info?.user) ? info : null;
+        if (!info) return null;
+        const user = { ...info.user, id: claims.sub };
+        if (!isAllowedGoogleIdentity(user)) return null;
+        const owner = await prisma.user.findUnique({
+          where: { ownerSlot: STUDIO_OWNER_SLOT },
+          select: { email: true },
+        });
+        return isAllowedGoogleIdentity(user, owner?.email) ? { ...info, user } : null;
       },
     },
   } : {},

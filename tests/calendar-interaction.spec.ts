@@ -65,9 +65,10 @@ test("mobile selected days persist through reload, views and keyboard navigation
   await page.goto("/calendar?view=week&anchor=2026-10-07");
   await page.locator("#calendar-tab-2026-10-09").click();
   await expectCalendarUrl(page, "week", "2026-10-09");
-  await expect(page.locator("#calendar-tab-2026-10-09")).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator(".calendar-mobile-days")).toHaveAttribute("role", "group");
+  await expect(page.locator("#calendar-tab-2026-10-09")).toHaveAttribute("aria-pressed", "true");
   await page.reload();
-  await expect(page.locator("#calendar-tab-2026-10-09")).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator("#calendar-tab-2026-10-09")).toHaveAttribute("aria-pressed", "true");
   for (const view of ["day", "month", "week"]) {
     await page.locator(".calendar-view-switch").getByRole("button", { name: new RegExp(`^${view}$`, "i") }).click();
     await expectCalendarUrl(page, view, "2026-10-09");
@@ -76,7 +77,7 @@ test("mobile selected days persist through reload, views and keyboard navigation
   await page.keyboard.press("ArrowRight");
   await expectCalendarUrl(page, "week", "2026-10-10");
   await expect(page.locator("#calendar-tab-2026-10-10")).toBeFocused();
-  await expect(page.locator("#calendar-tab-2026-10-10")).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator("#calendar-tab-2026-10-10")).toHaveAttribute("aria-pressed", "true");
   await page.keyboard.press("ArrowLeft");
   await expectCalendarUrl(page, "week", "2026-10-09");
   await expect(page.locator("#calendar-tab-2026-10-09")).toBeFocused();

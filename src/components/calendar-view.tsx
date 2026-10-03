@@ -176,7 +176,7 @@ function CalendarAppointmentCard({
 }
 
 function CalendarDayAgenda({
-  dayKey, heading, appointmentsByDay, conflictIds, fullDateFormatter, timeFormatter, copy, statuses, tabPanel,
+  dayKey, heading, appointmentsByDay, conflictIds, fullDateFormatter, timeFormatter, copy, statuses,
 }: {
   dayKey: string;
   heading?: boolean;
@@ -186,11 +186,10 @@ function CalendarDayAgenda({
   timeFormatter: Intl.DateTimeFormat;
   copy: CalendarCopy;
   statuses: StatusCopy;
-  tabPanel?: boolean;
 }) {
   const values = appointmentsByDay.get(dayKey) ?? [];
   return (
-    <section className="calendar-agenda" id={tabPanel ? "calendar-day-panel" : undefined} role={tabPanel ? "tabpanel" : undefined} aria-labelledby={tabPanel ? `calendar-tab-${dayKey}` : undefined}>
+    <section className="calendar-agenda">
       {heading ? <h2>{fullDateFormatter.format(dateFromKey(dayKey))}</h2> : null}
       {values.length ? <div className="calendar-agenda-list">{values.map((appointment) => <CalendarAppointmentCard key={appointment.id} appointment={appointment} conflicted={conflictIds.has(appointment.id)} timeFormatter={timeFormatter} copy={copy} statuses={statuses} />)}</div> : (
         <div className="calendar-empty calendar-empty-featured">
@@ -280,6 +279,9 @@ export function CalendarView({
   const timelineHeight = hours.length * hourHeight;
   const weekEvents = new Map(weekDays.map(day => [dateKey(day), scheduleEvents(appointmentsByDay.get(dateKey(day)) ?? [])]));
   const denseDays = weekDays.filter(day => weekEvents.get(dateKey(day))?.some(event => event.lanes > 1));
+  const bookedDays = (mode === "month" ? monthDays.filter(day => dateKey(day).startsWith(anchor.slice(0, 7))) : weekDays)
+    .filter(day => appointmentsByDay.get(dateKey(day))?.length);
+  const periodAgenda = bookedDays.map(day => <CalendarDayAgenda key={dateKey(day)} dayKey={dateKey(day)} heading appointmentsByDay={appointmentsByDay} conflictIds={conflictIds} fullDateFormatter={fullDateFormatter} timeFormatter={timeFormatter} copy={copy} statuses={statuses} />);
 
   useEffect(() => {
     if (mode !== "week" || !weekScrollRef.current) return;
@@ -365,12 +367,12 @@ export function CalendarView({
           {denseDays.length ? <section className="calendar-week-dense-agenda" aria-label={text.denseWeek}><h2>{text.denseWeek}</h2>{denseDays.map(day => <CalendarDayAgenda key={dateKey(day)} dayKey={dateKey(day)} heading appointmentsByDay={appointmentsByDay} conflictIds={conflictIds} fullDateFormatter={fullDateFormatter} timeFormatter={timeFormatter} copy={copy} statuses={statuses} />)}</section> : null}
 
           <div className="calendar-mobile-week">
-            <div className="calendar-mobile-days" role="tablist" aria-label={periodLabel}>{weekDays.map((day, index) => {
+            <div className="calendar-mobile-days" role="group" aria-label={periodLabel}>{weekDays.map((day, index) => {
               const key = dateKey(day);
               const count = appointmentsByDay.get(key)?.length ?? 0;
-              return <button key={key} id={`calendar-tab-${key}`} type="button" role="tab" aria-label={`${fullDateFormatter.format(day)}${count ? `, ${count} ${copy.sessions}` : ""}`} aria-selected={selectedDay === key} aria-controls="calendar-day-panel" tabIndex={selectedDay === key ? 0 : -1} data-active={selectedDay === key} data-today={key === todayKey} onKeyDown={(event) => handleDayTabKey(event, index)} onClick={() => selectWeekDay(key)}><span>{weekdayFormatter.format(day)}</span><strong>{day.getUTCDate()}</strong><span className="calendar-tab-dot" data-booked={count > 0} aria-hidden="true" /></button>;
+              return <button key={key} id={`calendar-tab-${key}`} type="button" aria-label={`${fullDateFormatter.format(day)}${count ? `, ${count} ${copy.sessions}` : ""}`} aria-pressed={selectedDay === key} tabIndex={selectedDay === key ? 0 : -1} data-active={selectedDay === key} data-today={key === todayKey} onKeyDown={(event) => handleDayTabKey(event, index)} onClick={() => selectWeekDay(key)}><span>{weekdayFormatter.format(day)}</span><strong>{day.getUTCDate()}</strong><span className="calendar-tab-dot" data-booked={count > 0} aria-hidden="true" /></button>;
             })}</div>
-            <CalendarDayAgenda dayKey={selectedDay} heading tabPanel appointmentsByDay={appointmentsByDay} conflictIds={conflictIds} fullDateFormatter={fullDateFormatter} timeFormatter={timeFormatter} copy={copy} statuses={statuses} />
+            <div className="calendar-period-agenda">{periodAgenda.length ? periodAgenda : <CalendarDayAgenda dayKey={selectedDay} heading appointmentsByDay={appointmentsByDay} conflictIds={conflictIds} fullDateFormatter={fullDateFormatter} timeFormatter={timeFormatter} copy={copy} statuses={statuses} />}</div>
           </div>
         </> : null}
 
@@ -387,6 +389,8 @@ export function CalendarView({
             </section>;
           })}
         </div> : null}
+
+        {mode === "month" && periodAgenda.length ? <div className="calendar-month-agenda calendar-period-agenda">{periodAgenda}</div> : null}
 
         <div className="calendar-legend" aria-label={text.legend}>{(["PLANNED", "CONFIRMED", "COMPLETED", "NO_SHOW"] as const).map((status) => <span key={status} data-status={status}><i aria-hidden="true" />{statuses[status]}</span>)}</div>
       </section>

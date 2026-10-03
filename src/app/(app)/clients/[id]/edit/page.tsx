@@ -12,7 +12,7 @@ export default async function EditClientPage({
   params: Promise<{ id: string }>;
 }) {
   const artistId = await requireArtistId();
-  const { dictionary } = await getDictionary();
+  const { locale, dictionary } = await getDictionary();
   const { id } = await params;
 
   const client = await prisma.client.findFirst({
@@ -23,6 +23,7 @@ export default async function EditClientPage({
       phone: true,
       email: true,
       notes: true,
+      updatedAt: true,
     },
   });
 
@@ -42,6 +43,8 @@ export default async function EditClientPage({
         <ClientForm
           action={action}
           copy={dictionary.clients}
+          locale={locale}
+          expectedVersion={client.updatedAt.toISOString()}
           initial={client}
           cancelHref={`/clients/${client.id}`}
         />

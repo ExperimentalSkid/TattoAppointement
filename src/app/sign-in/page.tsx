@@ -1,31 +1,39 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth-form";
-import { LanguageSwitcher } from "@/components/language-switcher";
+import { AuthShell } from "@/components/auth-shell";
 import { getDictionary } from "@/i18n";
 import { getSession } from "@/lib/session";
+import { isPasswordRecoveryConfigured } from "@/lib/email";
+import { GoogleSignInButton } from "@/components/google-sign-in-button";
+import { isGoogleSignInConfigured } from "@/lib/studio-access";
 
-export default async function SignInPage() {
+export default async function SignInPage({ searchParams }: { searchParams: Promise<{ error?: string | string[] }> }) {
   const session = await getSession();
   if (session) {
     redirect("/calendar");
   }
 
   const { locale, dictionary } = await getDictionary();
+  const query = await searchParams;
+  const canCreateWorkspace = process.env.DISABLE_SIGN_UP !== "true";
+  const googleConfigured = isGoogleSignInConfigured();
 
   return (
-    <div className="auth-shell">
-      <section className="auth-card">
-        <div className="language-row auth-language">
-          <LanguageSwitcher locale={locale} label={dictionary.language} />
-        </div>
+    <AuthShell locale={locale} languageLabel={dictionary.language}>
+        <p className="eyebrow">{locale === "es" ? "BIENVENIDO A TU ESTUDIO" : "WELCOME TO YOUR STUDIO"}</p>
         <h1>{dictionary.auth.signIn}</h1>
-        <p>{dictionary.appName}</p>
-        <AuthForm mode="sign-in" copy={dictionary.auth} locale={locale} />
-        <div className="auth-switch">
+        <p>{locale === "es" ? "Todo listo para tu próxima sesión." : "Everything ready for your next session."}</p>
+        {query.error ? <p className="form-error" role="alert">{locale === "es" ? "No se pudo iniciar sesión con Google. Inténtalo de nuevo o entra con tu contraseña." : "Google sign-in did not complete. Try again or sign in with your password."}</p> : null}
+        <GoogleSignInButton locale={locale} available={googleConfigured} prominent />
+        <details className="auth-email-option" open={!googleConfigured || Boolean(query.error)}>
+          <summary>{locale === "es" ? "Inicia sesión con tu correo aquí" : "Sign in with email here"}</summary>
+          <AuthForm mode="sign-in" copy={dictionary.auth} locale={locale} />
+          {isPasswordRecoveryConfigured() ? <Link href="/forgot-password" className="auth-recovery-link">{locale === "es" ? "¿Olvidaste tu contraseña?" : "Forgot your password?"}</Link> : null}
+        </details>
+        {canCreateWorkspace ? <div className="auth-switch">
           {dictionary.auth.noAccount} <Link href="/sign-up">{dictionary.auth.signUp}</Link>
-        </div>
-      </section>
-    </div>
+        </div> : null}
+    </AuthShell>
   );
 }

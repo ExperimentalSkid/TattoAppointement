@@ -1,0 +1,56 @@
+const recoveryCopy = {
+  en: {
+    eyebrow: "BACK TO YOUR STUDIO",
+    forgotTitle: "Forgot your password?",
+    forgotDescription: "Enter your artist account email and we’ll help you get back in.",
+    email: "Email",
+    send: "Send recovery link",
+    sending: "Sending…",
+    sent: "If an account uses this email, you’ll receive a recovery link. Check your inbox and spam folder.",
+    unavailable: "Email recovery is unavailable. Contact your studio administrator for help accessing your account.",
+    error: "Could not request a recovery link. Try again in a moment.",
+    back: "Back to sign in",
+    resetTitle: "A fresh start",
+    resetDescription: "Choose a new password for your artist account.",
+    password: "New password",
+    confirm: "Confirm new password",
+    help: "At least 8 characters. Choose a password you have not used elsewhere.",
+    mismatch: "The passwords do not match.",
+    invalid: "This recovery link is invalid or has expired. Request a new link to continue.",
+    retry: "Request a new link",
+    reset: "Save new password",
+    resetting: "Saving…",
+    success: "Your password has changed. Sign in with your new password.",
+    resetError: "Could not change your password. Try again or request a new recovery link.",
+  },
+  es: {
+    eyebrow: "VUELVE A TU ESTUDIO",
+    forgotTitle: "¿Olvidaste tu contraseña?",
+    forgotDescription: "Introduce el correo de tu cuenta de artista y te ayudamos a volver.",
+    email: "Correo electrónico",
+    send: "Enviar enlace de recuperación",
+    sending: "Enviando…",
+    sent: "Si existe una cuenta con este correo, recibirás un enlace de recuperación. Revisa tu bandeja de entrada y spam.",
+    unavailable: "La recuperación por correo no está disponible. Contacta con quien administra tu estudio para recuperar el acceso.",
+    error: "No se pudo solicitar el enlace. Vuelve a intentarlo en un momento.",
+    back: "Volver a iniciar sesión",
+    resetTitle: "Un nuevo comienzo",
+    resetDescription: "Elige una nueva contraseña para tu cuenta de artista.",
+    password: "Nueva contraseña",
+    confirm: "Confirmar nueva contraseña",
+    help: "Al menos 8 caracteres. Elige una contraseña que no uses en otros sitios.",
+    mismatch: "Las contraseñas no coinciden.",
+    invalid: "El enlace de recuperación no es válido o ha caducado. Solicita uno nuevo para continuar.",
+    retry: "Solicitar un nuevo enlace",
+    reset: "Guardar nueva contraseña",
+    resetting: "Guardando…",
+    success: "Tu contraseña ha cambiado. Inicia sesión con tu nueva contraseña.",
+    resetError: "No se pudo cambiar la contraseña. Inténtalo de nuevo o solicita otro enlace.",
+  },
+} as const;
+
+export type PasswordRecoveryCopy = { [Key in keyof typeof recoveryCopy.en]: string };
+
+export function getPasswordRecoveryCopy(locale: "en" | "es"): PasswordRecoveryCopy {
+  return recoveryCopy[locale];
+}

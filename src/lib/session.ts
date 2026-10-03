@@ -1,11 +1,22 @@
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { isAllowedStudioEmail } from "@/lib/studio-access";
 
 export async function getSession() {
-  return auth.api.getSession({
-    headers: await headers(),
+  // Server Actions can rotate cookies before their UI is rendered again.
+  const sessionHeaders = new Headers(await headers());
+  sessionHeaders.set("cookie", (await cookies()).toString());
+  const session = await auth.api.getSession({
+    headers: sessionHeaders,
   });
+  if (!session) return null;
+  const artist = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { email: true },
+  });
+  return artist && isAllowedStudioEmail(artist.email) ? session : null;
 }
 
 export async function requireSession() {

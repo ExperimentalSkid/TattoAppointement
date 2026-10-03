@@ -2,15 +2,17 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireArtistId } from "@/lib/session";
 import { getDictionary } from "@/i18n";
+import { designDetailPath, normalizeDesignQuery } from "@/lib/design-navigation";
+import { studioTimeZone } from "@/lib/studio-time";
 
 export default async function DesignsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string | string[] }>;
 }) {
   const artistId = await requireArtistId();
   const { locale, dictionary } = await getDictionary();
-  const query = String((await searchParams).q ?? "").trim();
+  const query = normalizeDesignQuery((await searchParams).q);
 
   const designs = await prisma.design.findMany({
     where: {
@@ -35,14 +37,15 @@ export default async function DesignsPage({
 
   const dateFormatter = new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", {
     dateStyle: "medium",
+    timeZone: studioTimeZone,
   });
 
   return (
     <section>
       <div className="page-title-row">
-        <h1 className="page-heading">{dictionary.pages.designsTitle}</h1>
+        <div><p className="eyebrow">{locale === "es" ? "DEL BOCETO A LA PIEL" : "FROM SKETCH TO SKIN"}</p><h1 className="page-heading">{dictionary.pages.designsTitle}</h1><p className="page-subtitle">{locale === "es" ? "Tu archivo creativo, listo para la próxima sesión." : "Your creative archive, ready for the next session."}</p></div>
         <Link className="primary-button button-link" href="/designs/new">
-          {dictionary.designs.uploadDesign}
+          <span aria-hidden="true">＋</span>{dictionary.designs.uploadDesign}
         </Link>
       </div>
 
@@ -50,6 +53,7 @@ export default async function DesignsPage({
         <input
           name="q"
           type="search"
+          maxLength={500}
           defaultValue={query}
           placeholder={dictionary.designs.searchPlaceholder}
           aria-label={dictionary.designs.searchPlaceholder}
@@ -67,7 +71,7 @@ export default async function DesignsPage({
       {designs.length ? (
         <div className="design-grid">
           {designs.map((design) => (
-            <Link className="design-card" href={`/designs/${design.id}`} key={design.id}>
+            <Link className="design-card artwork-object" href={designDetailPath(design.id, query)} key={design.id}>
               <div className="design-card-image">
                 {/* Authenticated image routes cannot use the public Next image optimizer. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -75,7 +79,7 @@ export default async function DesignsPage({
               </div>
               <div className="design-card-body">
                 <strong>{design.title}</strong>
-                <span>{dateFormatter.format(design.createdAt)}</span>
+                <span><time dateTime={design.createdAt.toISOString()}>{dateFormatter.format(design.createdAt)}</time></span>
                 {design.notes ? <p>{design.notes}</p> : null}
               </div>
             </Link>
@@ -83,7 +87,10 @@ export default async function DesignsPage({
         </div>
       ) : (
         <div className="empty-state">
-          <p>{query ? dictionary.designs.noResults : dictionary.designs.empty}</p>
+          <svg className="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><path d="M4 3h16v18H4zM7 16l4-4 3 3 3-6M8 7h.01" /></svg>
+          <h2>{query ? dictionary.designs.noResults : locale === "es" ? "Dale espacio a tus ideas" : "Make room for your ideas"}</h2>
+          <p>{query ? (locale === "es" ? "Prueba otro título o una palabra de tus notas." : "Try another title or a word from your notes.") : locale === "es" ? "Importa un boceto o una referencia y vincúlalo a cualquier cita." : "Import a sketch or a reference and connect it to any appointment."}</p>
+          <Link href={query ? "/designs" : "/designs/new"} className="secondary-button button-link">{query ? dictionary.designs.clearSearch : dictionary.designs.uploadDesign}</Link>
         </div>
       )}
     </section>

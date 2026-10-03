@@ -16,23 +16,33 @@ enum AppointmentStatus {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  name          String
-  email         String   @unique
-  emailVerified Boolean  @default(false)
-  image         String?
-  language      String   @default("en")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                       String   @id @default(cuid())
+  name                     String
+  email                    String   @unique
+  emailVerified            Boolean  @default(false)
+  image                    String?
+  studioName               String?
+  whatsappReminderTemplate String?
+  language                 String   @default("es")
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
 
-  sessions     Session[]
-  accounts     Account[]
-  clients      Client[]
-  designs      Design[]
-  appointments Appointment[]
-  payments     Payment[]
+  sessions          Session[]
+  accounts          Account[]
+  clients           Client[]
+  designs           Design[]
+  appointments      Appointment[]
+  payments          Payment[]
+  workspaceRevision WorkspaceRevision?
 
   @@map("user")
+}
+
+model WorkspaceRevision {
+  artistId String @id
+  revision BigInt @default(0)
+
+  artist User @relation(fields: [artistId], references: [id], onDelete: Cascade)
 }
 
 model Session {

@@ -1,0 +1,13 @@
+.git
+.github
+node_modules
+.next
+.env
+.env.*
+!.env.example
+.tmp
+storage
+test-results
+playwright-report
+*.log
+*.tsbuildinfo

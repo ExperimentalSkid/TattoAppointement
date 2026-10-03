@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   calculateMoneySummary,
   centsToDecimal,
+  formatEuro,
   MAX_MONEY_CENTS,
   parseMoneyInput,
 } from "../src/lib/money.ts";
@@ -16,6 +17,18 @@ assert.equal(parseMoneyInput("-1"), undefined);
 assert.equal(parseMoneyInput("99999999.99"), MAX_MONEY_CENTS);
 assert.equal(parseMoneyInput("100000000.00"), undefined);
 assert.equal(centsToDecimal(10050), "100.50");
+assert.equal(formatEuro(35050, "es").replace(/\s/g, " "), "350,50 €");
+assert.equal(formatEuro(35050, "en"), "€350.50");
+assert.equal(formatEuro(null, "es"), "—");
+assert.equal(
+  calculateMoneySummary({ agreedPriceCents: 0, depositRequiredCents: 0, paymentsCents: [] }).paymentState,
+  "PAID",
+  "an appointment with a zero agreed price has no unpaid balance",
+);
+assert.equal(
+  calculateMoneySummary({ agreedPriceCents: 0, depositRequiredCents: 0, paymentsCents: [1] }).paymentState,
+  "OVERPAID",
+);
 
 assert.deepEqual(
   calculateMoneySummary({

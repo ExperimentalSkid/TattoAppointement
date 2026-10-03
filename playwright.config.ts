@@ -10,9 +10,10 @@ export default defineConfig({
   use: {
     baseURL: "http://127.0.0.1:3000",
     trace: "retain-on-failure",
+    timezoneId: "Europe/Madrid",
   },
   webServer: {
-    command: "npm run start",
+    command: "node scripts/start.mjs",
     url: "http://127.0.0.1:3000/sign-in",
     reuseExistingServer: false,
     timeout: 120_000,

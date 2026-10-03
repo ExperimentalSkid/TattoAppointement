@@ -1,6 +1,6 @@
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { dictionaries } from "@/i18n/dictionaries";
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
 export const locales = ["en", "es"] as const;
@@ -13,11 +13,11 @@ export function isLocale(value: string | undefined | null): value is Locale {
 async function getCookieLocale(): Promise<Locale> {
   const cookieStore = await cookies();
   const value = cookieStore.get("tattoo-language")?.value;
-  return isLocale(value) ? value : "en";
+  return isLocale(value) ? value : "es";
 }
 
 export async function getLocale(): Promise<Locale> {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getSession();
 
   if (session?.user.id) {
     const artist = await prisma.user.findUnique({

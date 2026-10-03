@@ -1,0 +1,56 @@
+/* Appointment workflows share the existing editorial spacing and surface tokens. */
+.appointment-detail-header { display: grid; gap: var(--space-small); min-width: 0; }
+.appointment-detail-header .page-heading { overflow-wrap: anywhere; }
+.appointment-record-meta, .appointment-record-actions, .appointment-inline-actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-small) var(--space-group); }
+.appointment-record-meta { color: var(--muted); font-size: 14px; }
+.appointment-record-meta .status-pill { font-size: 12px; }
+.appointment-record-meta a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.appointment-record-actions { align-items: flex-start; row-gap: 0; }
+.appointment-record-actions > a { max-width: 100%; }
+.appointment-reminder-help { flex: 1 0 100%; margin: 0; font-size: 12px; order: 2; }
+.appointment-reschedule { min-width: 0; }
+.appointment-reschedule[data-expanded="true"] { flex: 1 0 100%; order: 1; }
+.appointment-reschedule-form { display: grid; gap: var(--space-group); max-width: 680px; padding-block: var(--space-group); border-block: 1px solid var(--rule); margin-block: var(--space-small); }
+.appointment-reschedule-form > p { margin: 0; }
+.appointment-form-feedback, .appointment-error-summary { display: grid; gap: var(--space-small); border-left: 2px solid var(--accent); padding-left: var(--space-group); min-width: 0; }
+.appointment-form-feedback:focus, .appointment-error-summary:focus { outline: 2px solid var(--accent); outline-offset: 6px; }
+.appointment-conflict-list { display: grid; gap: var(--space-small); list-style: none; padding: 0; margin: 0; }
+.appointment-conflict-list a { display: inline-block; overflow-wrap: anywhere; }
+.appointment-overlap-choice { display: flex; align-items: flex-start; gap: var(--space-small); font-size: 13px; cursor: pointer; }
+.appointment-overlap-choice input { flex: 0 0 auto; width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--accent); }
+.field :is(input, select, textarea)[aria-invalid="true"] { border-color: var(--danger); }
+.field-error { margin: 0; color: var(--danger); font-size: 13px; }
+.appointment-error-summary h2 { margin: 0; font-size: 18px; font-weight: 500; }
+.appointment-error-summary ul { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+.appointment-error-summary a { text-decoration: underline; text-underline-offset: 3px; }
+.appointment-money-disclosure > summary { cursor: pointer; font: 400 25px/1.25 Georgia, serif; letter-spacing: -.025em; }
+.appointment-money-disclosure > summary::marker { color: var(--accent); font-size: 16px; }
+.appointment-money-disclosure > p { margin: var(--space-small) 0 var(--space-group); font-size: 13px; }
+.appointment-money-disclosure[open] > .appointment-form-grid { margin-top: var(--space-group); }
+.appointment-form-section h2 > .field-optional, .appointment-money-disclosure summary > .field-optional { font: 400 12px/1.5 var(--font-sans, Arial, sans-serif); letter-spacing: 0; color: var(--muted); }
+.appointment-form-section:focus { outline: 2px solid var(--accent); outline-offset: 8px; }
+.appointment-artwork-empty { display: grid; gap: var(--space-small); max-width: 46ch; }
+.appointment-artwork-empty p { margin: 0; }
+.appointment-money-overview.money-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-group); }
+.appointment-money-overview.money-summary-grid > div { padding: 0; }
+.appointment-money-overview.money-summary-grid > div dd { font: 400 clamp(24px, 2.5vw, 36px)/1.35 Georgia, serif; font-variant-numeric: tabular-nums; color: var(--text); overflow-wrap: anywhere; }
+.appointment-deposit-summary { display: flex; flex-wrap: wrap; gap: 6px var(--space-group); margin: 0; color: var(--muted); font-size: 13px; }
+.payment-entry-form, .payment-history { border-color: var(--rule); padding-top: var(--space-group); }
+.payment-entry-heading { grid-column: 1 / -1; }
+.payment-entry-heading h3 { font-size: 15px; font-weight: 500; margin: 0 0 6px; }
+.payment-entry-heading p { font-size: 13px; margin: 0; }
+.payment-entry-form .field .form-error { grid-column: auto; }
+.payment-history-list li { border-color: var(--rule); }
+.appointment-history-actions { align-items: center; gap: var(--space-group); border-top: 1px solid var(--rule); padding-top: var(--space-group); }
+.appointment-delete-action { margin-left: auto !important; }
+.appointment-delete-action .danger-button { font-size: 12px; font-weight: 400; }
+@media (max-width: 650px) {
+  .appointment-record-meta { gap: 8px var(--space-small); font-size: 13px; }
+  .appointment-record-actions { column-gap: 20px; }
+  .appointment-money-overview.money-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-group); }
+  .appointment-money-overview > div:last-child { grid-column: 1 / -1; }
+  .appointment-inline-actions { align-items: flex-start; }
+  .appointment-history-actions { display: flex; align-items: flex-start; }
+  .appointment-history-actions form { width: auto; }
+  .appointment-delete-action { margin-left: 0 !important; }
+}

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireArtistId } from "@/lib/session";
 import { getDictionary } from "@/i18n";
 import type { AppointmentStatusValue } from "@/lib/appointments";
+import { studioLocalInputValue, studioTimezoneOffset } from "@/lib/studio-time";
 
 function validDateKey(value: string | undefined) {
   if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
@@ -23,6 +24,11 @@ function utcDateKey(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
+function studioMidnight(date: Date) {
+  const wallTime = `${utcDateKey(date)}T00:00`;
+  return new Date(Date.parse(`${wallTime}:00.000Z`) + studioTimezoneOffset(wallTime) * 60_000);
+}
+
 export default async function CalendarPage({
   searchParams,
 }: {
@@ -33,21 +39,23 @@ export default async function CalendarPage({
   const params = await searchParams;
   const mode = params.view === "day" || params.view === "month" ? params.view : "week";
   const requestedAnchor = validDateKey(params.anchor);
-  const anchor = requestedAnchor ?? utcDateKey(new Date());
+  const today = studioLocalInputValue(new Date().toISOString()).slice(0, 10);
+  const anchor = requestedAnchor ?? today;
   const anchorUtc = new Date(`${anchor}T12:00:00.000Z`);
   const monthStart = new Date(Date.UTC(anchorUtc.getUTCFullYear(), anchorUtc.getUTCMonth(), 1, 12));
   const monthOffset = (monthStart.getUTCDay() + 6) % 7;
   const monthRangeStart = new Date(monthStart.getTime() - monthOffset * 24 * 60 * 60 * 1000);
   const rangeStart = mode === "month"
-    ? monthRangeStart
-    : new Date(anchorUtc.getTime() - 8 * 24 * 60 * 60 * 1000);
+    ? studioMidnight(monthRangeStart)
+    : studioMidnight(new Date(anchorUtc.getTime() - 8 * 24 * 60 * 60 * 1000));
   const rangeEnd = mode === "month"
-    ? new Date(monthRangeStart.getTime() + 42 * 24 * 60 * 60 * 1000)
-    : new Date(anchorUtc.getTime() + 9 * 24 * 60 * 60 * 1000);
+    ? studioMidnight(new Date(monthRangeStart.getTime() + 42 * 24 * 60 * 60 * 1000))
+    : studioMidnight(new Date(anchorUtc.getTime() + 9 * 24 * 60 * 60 * 1000));
 
   const appointments = await prisma.appointment.findMany({
     where: {
       artistId,
+      status: { not: "CANCELLED" },
       startsAt: {
         gte: rangeStart,
         lt: rangeEnd,
@@ -79,6 +87,7 @@ export default async function CalendarPage({
         client: appointment.client,
       }))}
       anchor={anchor}
+      today={today}
       anchorProvided={Boolean(requestedAnchor)}
       mode={mode}
       locale={locale}

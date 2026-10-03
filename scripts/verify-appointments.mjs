@@ -24,5 +24,10 @@ assert.equal(
 
 assert.equal(parseLocalDateTime("bad-value", -120, "Europe/Madrid"), null);
 assert.equal(parseLocalDateTime("2026-10-05T10:00", 9999, "Europe/Madrid"), null);
+assert.equal(parseLocalDateTime("2026-02-31T10:00", -60), null);
+assert.equal(parseLocalDateTime("2026-04-31T10:00", -120), null);
+assert.equal(parseLocalDateTime("2026-10-05T10:00", -120.5, "Europe/Madrid"), null);
+assert.equal(parseLocalDateTime("2026-02-29T10:00", -60), null);
+assert.equal(parseLocalDateTime("2028-02-29T10:00", -60)?.toISOString(), "2028-02-29T09:00:00.000Z");
 
 console.log("Appointment date/time checks passed");

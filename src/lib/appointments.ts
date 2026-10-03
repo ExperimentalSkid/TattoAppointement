@@ -33,10 +33,12 @@ export function parseLocalDateTime(
   timezoneName?: string | null,
 ) {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return null;
-  if (!Number.isFinite(timezoneOffsetMinutes) || Math.abs(timezoneOffsetMinutes) > 14 * 60) return null;
+  if (!Number.isInteger(timezoneOffsetMinutes) || Math.abs(timezoneOffsetMinutes) > 14 * 60) return null;
 
   const pseudoUtc = Date.parse(`${value}:00.000Z`);
   if (!Number.isFinite(pseudoUtc)) return null;
+  // Date.parse normalizes impossible dates such as 31 February.
+  if (new Date(pseudoUtc).toISOString().slice(0, 16) !== value) return null;
 
   const date = new Date(pseudoUtc + timezoneOffsetMinutes * 60_000);
   if (Number.isNaN(date.getTime())) return null;

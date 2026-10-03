@@ -19,7 +19,6 @@ model User {
   id                       String   @id @default(cuid())
   name                     String
   email                    String   @unique
-  ownerSlot                String   @unique @default("studio-owner")
   emailVerified            Boolean  @default(false)
   image                    String?
   studioName               String?

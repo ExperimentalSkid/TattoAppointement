@@ -102,7 +102,7 @@ async function expectPrivateRoute404(page: Page, path: string) {
   expect(response?.status(), `${path} must be unavailable when the record does not exist`).toBe(404);
 }
 
-async function verifySingleArtistAccess(browser: Browser, ownerPage: Page, paths: {
+async function verifyPrivateArtistAccess(browser: Browser, ownerPage: Page, paths: {
   clientPath: string;
   designPath: string;
   appointmentPath: string;
@@ -112,13 +112,9 @@ async function verifySingleArtistAccess(browser: Browser, ownerPage: Page, paths
     viewport: { width: 390, height: 844 },
   });
   const page = await context.newPage();
-  const deniedRegistration = await context.request.post("/api/auth/sign-up/email", {
-    data: { name: "Second account", email: `second-${unique}@example.com`, password: "SecondAccount-2026!" },
-  });
-  expect(deniedRegistration.ok()).toBe(false);
   await page.goto("/sign-up");
-  await expect(page).toHaveURL(/\/sign-in/);
-  await expect(page.locator("a[href='/sign-up']")).toHaveCount(0);
+  await expect(page).toHaveURL(/\/sign-up$/);
+  await expect(page.locator("#name")).toBeVisible();
 
   for (const path of [paths.clientPath, paths.designPath, paths.appointmentPath]) {
     await page.goto(path);
@@ -129,6 +125,17 @@ async function verifySingleArtistAccess(browser: Browser, ownerPage: Page, paths
   const imageResponse = await context.request.get(`/api/designs/${designId}/image`);
   expect(imageResponse.status()).toBe(401);
   expect((await context.request.get("/api/account/export")).status()).toBe(401);
+  const registration = await context.request.post("/api/auth/sign-up/email", {
+    data: { name: "Second tattoo artist", email: `second-${unique}@example.com`, password: "SecondAccount-2026!" },
+  });
+  expect(registration.status()).toBe(200);
+  for (const path of [paths.clientPath, paths.designPath, paths.appointmentPath]) {
+    await expectPrivateRoute404(page, path);
+  }
+  expect((await context.request.get(`/api/designs/${designId}/image`)).status()).toBe(404);
+  const secondExport = await context.request.get("/api/account/export");
+  expect(secondExport.status()).toBe(200);
+  expect((await secondExport.json()).clients).toEqual([]);
   await expectPrivateRoute404(ownerPage, "/clients/unknown-client");
   await expectPrivateRoute404(ownerPage, "/designs/unknown-design");
   await expectPrivateRoute404(ownerPage, "/appointments/unknown-appointment");
@@ -249,12 +256,12 @@ test("Pass 8 workflows A-F, persistence, errors, and ownership boundaries", asyn
   await page.reload();
   await expect(page.locator(".app-topbar .language-select")).toHaveValue("en");
 
-  // Saved data survives login; registration stays closed after the single owner exists.
+  // Saved data survives login and remains private when another artist registers.
   await page.goto(appointmentPath!);
   await expect(page.getByText("Workflow A connected appointment", { exact: true })).toBeVisible();
   await expect(page.getByText("Final QA Design", { exact: true }).first()).toBeVisible();
 
-  await verifySingleArtistAccess(
+  await verifyPrivateArtistAccess(
     browser,
     page,
     { clientPath, designPath, appointmentPath: appointmentPath! },

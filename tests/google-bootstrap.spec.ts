@@ -111,11 +111,11 @@ test("an unverified Google email leaves artist setup available", async () => {
   expect(await prisma.session.count()).toBe(0);
 });
 
-test("Google can claim an empty installation without an owner email and reopens the same workspace", async () => {
+test("each verified Google artist gets a separate workspace and reopens their saved records", async () => {
   const identity = { subject: "local-google-artist-one", email: "artist-one@example.com" };
   const first = await googleFlow(identity);
   expect(first.headers.get("location")).toBe(`${origin}/calendar`);
-  const owner = await prisma.user.findUniqueOrThrow({ where: { ownerSlot: "studio-owner" } });
+  const owner = await prisma.user.findUniqueOrThrow({ where: { email: identity.email } });
   expect(owner.email).toBe(identity.email);
   expect(owner.emailVerified).toBe(true);
   await prisma.user.update({ where: { id: owner.id }, data: { studioName: "Existing tattoo studio" } });
@@ -131,24 +131,64 @@ test("Google can claim an empty installation without an owner email and reopens 
   expect((await prisma.client.findUniqueOrThrow({ where: { id: client.id } })).artistId).toBe(owner.id);
 
   const other = await googleFlow({ subject: "local-other-google-artist", email: "other-artist@example.com" });
-  expect(other.headers.get("location")).toContain("/sign-in?error=oauth");
-  expect(await prisma.user.count()).toBe(1);
-  expect(await prisma.account.count()).toBe(1);
+  expect(other.headers.get("location")).toBe(`${origin}/calendar`);
+  const otherSession = await request("/get-session", undefined, cookiesFrom(other));
+  const otherArtist = (await otherSession.json()).user;
+  expect(otherArtist.id).not.toBe(owner.id);
+  expect(otherArtist.email).toBe("other-artist@example.com");
+  expect(await prisma.client.count({ where: { artistId: otherArtist.id } })).toBe(0);
+  expect(await prisma.user.count()).toBe(2);
+  expect(await prisma.account.count()).toBe(2);
+  expect(await prisma.workspaceRevision.count()).toBe(2);
+  const reopened = await googleFlow(identity);
+  expect(reopened.headers.get("location")).toBe(`${origin}/calendar`);
+  expect((await (await request("/get-session", undefined, cookiesFrom(reopened))).json()).user.id).toBe(owner.id);
+  expect(await prisma.client.count({ where: { artistId: owner.id } })).toBe(1);
+  expect((await prisma.user.findUniqueOrThrow({ where: { id: owner.id } })).studioName).toBe("Existing tattoo studio");
   expect(tokenRequests).toBeGreaterThanOrEqual(3);
   expect(jwksRequests).toBeGreaterThan(0);
 });
 
-test("simultaneous Google bootstrap leaves exactly one database owner", async () => {
+test("different Google artists can create independent workspaces simultaneously", async () => {
   const results = await Promise.all([
     googleFlow({ subject: "local-concurrent-google-one", email: "concurrent-one@example.com" }),
     googleFlow({ subject: "local-concurrent-google-two", email: "concurrent-two@example.com" }),
   ]);
-  expect(results.filter((response) => response.headers.get("location") === `${origin}/calendar`)).toHaveLength(1);
+  expect(results.filter((response) => response.headers.get("location") === `${origin}/calendar`)).toHaveLength(2);
+  expect(await prisma.user.count()).toBe(2);
+  expect(await prisma.account.count()).toBe(2);
+  expect(await prisma.workspaceRevision.count()).toBe(2);
+  expect(await prisma.session.count()).toBe(2);
+});
+
+test("simultaneous sign-in with the same Google identity never creates duplicate artist records", async () => {
+  const identity = { subject: "local-concurrent-google-same", email: "same-artist@example.com" };
+  const results = await Promise.all([googleFlow(identity), googleFlow(identity)]);
+  expect(results.some(response => response.headers.get("location") === `${origin}/calendar`)).toBe(true);
+  const artist = await prisma.user.findUniqueOrThrow({ where: { email: identity.email } });
   expect(await prisma.user.count()).toBe(1);
+  expect(await prisma.account.count({ where: { providerId: "google", accountId: identity.subject, userId: artist.id } })).toBe(1);
   expect(await prisma.account.count()).toBe(1);
-  expect(await prisma.session.count()).toBe(1);
-  const owner = await prisma.user.findUniqueOrThrow({ where: { ownerSlot: "studio-owner" } });
-  expect(["concurrent-one@example.com", "concurrent-two@example.com"]).toContain(owner.email);
+  expect(await prisma.workspaceRevision.count()).toBe(1);
+  const reopened = await googleFlow(identity);
+  expect(reopened.headers.get("location")).toBe(`${origin}/calendar`);
+  expect((await (await request("/get-session", undefined, cookiesFrom(reopened))).json()).user.id).toBe(artist.id);
+});
+
+test("an operator's explicit email restriction still rejects other Google and password artists", async () => {
+  process.env.STUDIO_OWNER_EMAIL = "allowed-artist@example.com";
+  try {
+    const rejected = await googleFlow({ subject: "local-restricted-other", email: "other-artist@example.com" });
+    expect(rejected.headers.get("location")).toContain("/sign-in?error=oauth");
+    const passwordSignup = await request("/sign-up/email", {
+      name: "Restricted artist", email: "other-artist@example.com", password: "LocalArtistAccount-2026!",
+    });
+    expect(passwordSignup.status).toBe(403);
+    expect(await prisma.user.count()).toBe(0);
+    const accepted = await googleFlow({ subject: "local-restricted-allowed", email: "allowed-artist@example.com" });
+    expect(accepted.headers.get("location")).toBe(`${origin}/calendar`);
+    expect(await prisma.user.count()).toBe(1);
+  } finally { process.env.STUDIO_OWNER_EMAIL = ""; }
 });
 
 test("a password artist explicitly connects same-email Google while retaining existing studio records", async () => {
@@ -156,7 +196,7 @@ test("a password artist explicitly connects same-email Google while retaining ex
     name: "Password artist", email: "password-artist@example.com", password: "LocalArtistAccount-2026!",
   });
   expect(signup.status).toBe(200);
-  const owner = await prisma.user.findUniqueOrThrow({ where: { ownerSlot: "studio-owner" } });
+  const owner = await prisma.user.findUniqueOrThrow({ where: { email: "password-artist@example.com" } });
   await prisma.user.update({ where: { id: owner.id }, data: { studioName: "Owner chosen studio" } });
   const client = await prisma.client.create({ data: { artistId: owner.id, name: "Existing tattoo client", phone: "+34600000002" } });
   const identity = { subject: "local-password-google-artist", email: owner.email };

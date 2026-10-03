@@ -21,11 +21,13 @@ export default async function ProtectedAppLayout({
 
   return (
     <AppShell
+      key={session.user.id}
       dictionary={dictionary}
       locale={locale}
       userName={artist.name}
       studioName={artist.studioName}
       syncRevision={syncRevision}
+      workspaceId={session.user.id}
     >
       {children}
     </AppShell>

@@ -7,6 +7,7 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { NavLinks } from "@/components/nav-links";
 import { SignOutButton } from "@/components/sign-out-button";
 import { WorkspaceSync } from "@/components/workspace-sync";
+import { WorkspaceAccess } from "@/components/workspace-access";
 
 export function AppShell({
   children,
@@ -15,6 +16,7 @@ export function AppShell({
   userName,
   studioName,
   syncRevision,
+  workspaceId,
 }: {
   children: ReactNode;
   dictionary: Dictionary;
@@ -22,12 +24,14 @@ export function AppShell({
   userName: string;
   studioName?: string | null;
   syncRevision: string;
+  workspaceId: string;
 }) {
   const es = locale === "es";
   const studio = studioName?.trim() || (es ? "Tu estudio" : "Your studio");
   const initials = userName.trim().split(/\s+/).slice(0, 2).map(word => word[0]).join("").toUpperCase();
   const date = new Intl.DateTimeFormat(es ? "es-ES" : "en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Madrid" }).format(new Date());
   return (
+    <WorkspaceAccess key={workspaceId} locale={locale}>
     <div className="app-shell">
       <a className="skip-link" href="#main-content">{es ? "Saltar al contenido" : "Skip to content"}</a>
       <aside className="desktop-sidebar">
@@ -63,9 +67,10 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="app-content" id="main-content" tabIndex={-1}><WorkspaceSync revision={syncRevision} locale={locale} />{children}</main>
+        <main className="app-content" id="main-content" tabIndex={-1}><WorkspaceSync workspaceId={workspaceId} revision={syncRevision} locale={locale} />{children}</main>
         <NavLinks copy={dictionary.nav} variant="mobile" />
       </div>
     </div>
+    </WorkspaceAccess>
   );
 }

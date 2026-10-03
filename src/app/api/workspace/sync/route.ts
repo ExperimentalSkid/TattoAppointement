@@ -12,5 +12,5 @@ export async function GET() {
   }
 
   const revision = await getWorkspaceRevision(session.user.id);
-  return Response.json({ revision }, { headers: responseHeaders });
+  return Response.json({ workspaceId: session.user.id, revision }, { headers: responseHeaders });
 }

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { flushSync } from "react-dom";
+import { useClearWorkspace } from "@/components/workspace-access";
 import type { Locale } from "@/i18n";
 import "./workspace-sync.css";
 
@@ -21,8 +23,9 @@ function formSnapshot(form: HTMLFormElement) {
   }));
 }
 
-export function WorkspaceSync({ revision, locale }: { revision: string; locale: Locale }) {
+export function WorkspaceSync({ workspaceId, revision, locale }: { workspaceId: string; revision: string; locale: Locale }) {
   const router = useRouter();
+  const clearWorkspace = useClearWorkspace();
   const pathname = usePathname();
   const params = useSearchParams();
   const route = `${pathname}?${params}`;
@@ -128,6 +131,13 @@ export function WorkspaceSync({ revision, locale }: { revision: string; locale: 
       if (active && document.visibilityState === "visible") timer = setTimeout(() => void check(), delay);
     }
 
+    function leaveWorkspace(path: "/sign-in" | "/calendar") {
+      // Remove every private view, including profile and drafts, before waiting
+      // for document navigation. Draft protection applies only to this artist.
+      flushSync(clearWorkspace);
+      window.location.replace(path);
+    }
+
     async function check() {
       clearTimeout(timer);
       if (!active || controller || document.visibilityState !== "visible") return;
@@ -142,13 +152,23 @@ export function WorkspaceSync({ revision, locale }: { revision: string; locale: 
         });
         if (!active) return;
         if (response.status === 401 || response.status === 403) {
-          // A document navigation removes the old private React tree and cache.
-          window.location.replace("/sign-in");
+          leaveWorkspace("/sign-in");
           return;
         }
         if (!response.ok) throw new Error("Workspace refresh unavailable.");
         const body: unknown = await response.json();
-        if (!body || typeof body !== "object" || !("revision" in body)
+        if (!active) return;
+        if (!body || typeof body !== "object" || !("workspaceId" in body)
+          || typeof body.workspaceId !== "string" || !body.workspaceId || body.workspaceId.length > 128) {
+          throw new Error("Workspace identity response invalid.");
+        }
+        if (body.workspaceId !== workspaceId) {
+          // Different artists can have equal revision values. Account changes
+          // must clear the previous view even when it contains unsaved edits.
+          leaveWorkspace("/calendar");
+          return;
+        }
+        if (!("revision" in body)
           || typeof body.revision !== "string" || !/^(0|[1-9]\d{0,18})$/.test(body.revision)) {
           throw new Error("Workspace refresh response invalid.");
         }
@@ -186,6 +206,9 @@ export function WorkspaceSync({ revision, locale }: { revision: string; locale: 
       controller?.abort("offline");
       show("offline");
     }
+    function restored(event: PageTransitionEvent) {
+      if (event.persisted) catchUp();
+    }
     function formChanged(event: Event) {
       if (event.target instanceof HTMLElement && event.target.closest("[data-sync-protect]")) {
         if (event.type === "focusin" && event.target.matches("input,textarea,select")) lastField.current = event.target;
@@ -209,6 +232,7 @@ export function WorkspaceSync({ revision, locale }: { revision: string; locale: 
     window.addEventListener("focus", catchUp);
     window.addEventListener("online", catchUp);
     window.addEventListener("offline", offline);
+    window.addEventListener("pageshow", restored);
     void check();
     return () => {
       active = false;
@@ -227,8 +251,9 @@ export function WorkspaceSync({ revision, locale }: { revision: string; locale: 
       window.removeEventListener("focus", catchUp);
       window.removeEventListener("online", catchUp);
       window.removeEventListener("offline", offline);
+      window.removeEventListener("pageshow", restored);
     };
-  }, [router, route, startTransition]);
+  }, [router, route, startTransition, workspaceId, clearWorkspace]);
 
   const es = locale === "es";
   const message = status === "pending"

@@ -1,5 +1,3 @@
-export const STUDIO_OWNER_SLOT = "studio-owner";
-
 function normalizeEmail(email: unknown) {
   if (typeof email !== "string") return null;
   const value = email.trim().toLowerCase();
@@ -22,8 +20,8 @@ export function isGoogleSignInConfigured() {
   return Boolean(process.env.GOOGLE_CLIENT_ID?.trim() && process.env.GOOGLE_CLIENT_SECRET?.trim());
 }
 
-export function isAllowedGoogleIdentity(user: { id?: unknown; email?: unknown; emailVerified?: unknown } | null | undefined, ownerEmail?: unknown) {
+export function isAllowedGoogleIdentity(user: { id?: unknown; email?: unknown; emailVerified?: unknown } | null | undefined) {
   if (!user || !isGoogleSignInConfigured() || user.emailVerified !== true || !isAllowedStudioEmail(user.email)) return false;
   if (typeof user.id !== "string" || !user.id || user.id.trim() !== user.id) return false;
-  return ownerEmail === undefined || normalizeEmail(user.email) === normalizeEmail(ownerEmail);
+  return true;
 }

@@ -198,7 +198,7 @@ test("design edits retain every entered value after validation and preserve libr
   await notes.fill(validNotes);
 
   // A record disappearing in another tab is a real rejected-save path. Hide only this
-  // synthetic, unlinked design temporarily; retain the single-owner schema and restore it.
+  // synthetic, unlinked design temporarily; preserve ownership and restore it.
   const unavailableId = `unavailable-${id}`;
   await withTestDatabase(pool => pool.query('UPDATE "Design" SET id=$1 WHERE id=$2', [unavailableId, id]));
   try {

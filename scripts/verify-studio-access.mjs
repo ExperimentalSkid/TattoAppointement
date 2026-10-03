@@ -22,11 +22,8 @@ try {
   process.env.GOOGLE_CLIENT_SECRET = "test-secret";
   assert.equal(isGoogleSignInConfigured(), true);
   assert.equal(isAllowedGoogleIdentity(verifiedArtist), true);
-  assert.equal(isAllowedGoogleIdentity({ ...verifiedArtist, email: "other@example.com" }), true);
-  assert.equal(isAllowedGoogleIdentity(verifiedArtist, "ARTIST@example.com"), true);
-  assert.equal(isAllowedGoogleIdentity({ ...verifiedArtist, email: "other@example.com" }, "artist@example.com"), false);
-  assert.equal(isAllowedGoogleIdentity(verifiedArtist, null), false);
-  assert.equal(isAllowedGoogleIdentity(verifiedArtist, "invalid"), false);
+  // A different verified artist can create a separate private workspace.
+  assert.equal(isAllowedGoogleIdentity({ ...verifiedArtist, id: "google-subject-other", email: "other@example.com" }), true);
   assert.equal(isAllowedGoogleIdentity(null), false);
   for (const emailVerified of [false, undefined, null, "true", 1]) {
     assert.equal(isAllowedGoogleIdentity({ ...verifiedArtist, emailVerified }), false);
@@ -44,7 +41,6 @@ try {
   assert.equal(isGoogleSignInConfigured(), true);
   assert.equal(isAllowedGoogleIdentity(verifiedArtist), true);
   assert.equal(isAllowedGoogleIdentity({ ...verifiedArtist, email: "other@example.com" }), false);
-  assert.equal(isAllowedGoogleIdentity(verifiedArtist, "other@example.com"), false);
   process.env.STUDIO_OWNER_EMAIL = "invalid";
   assert.equal(getStudioOwnerEmail(), null);
   assert.equal(isGoogleSignInConfigured(), true);
@@ -67,4 +63,4 @@ try {
 } finally {
   for (const key of keys) if (original[key] === undefined) delete process.env[key]; else process.env[key] = original[key];
 }
-console.log("Single-owner and verified Google identity checks passed.");
+console.log("Independent artist access and verified Google identity checks passed.");

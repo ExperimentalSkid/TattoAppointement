@@ -5,7 +5,7 @@ import { APIError } from "better-auth/api";
 import { google, verifyGoogleIdToken } from "better-auth/social-providers";
 import { prisma } from "@/lib/prisma";
 import { isPasswordRecoveryConfigured, sendPasswordResetEmail } from "@/lib/email";
-import { isAllowedGoogleIdentity, isAllowedStudioEmail, isGoogleSignInConfigured, STUDIO_OWNER_SLOT } from "@/lib/studio-access";
+import { isAllowedGoogleIdentity, isAllowedStudioEmail, isGoogleSignInConfigured } from "@/lib/studio-access";
 
 const googleOptions = {
   clientId: process.env.GOOGLE_CLIENT_ID?.trim() ?? "",
@@ -30,11 +30,7 @@ export const auth = betterAuth({
         if (!info) return null;
         const user = { ...info.user, id: claims.sub };
         if (!isAllowedGoogleIdentity(user)) return null;
-        const owner = await prisma.user.findUnique({
-          where: { ownerSlot: STUDIO_OWNER_SLOT },
-          select: { email: true },
-        });
-        return isAllowedGoogleIdentity(user, owner?.email) ? { ...info, user } : null;
+        return { ...info, user };
       },
     },
   } : {},
@@ -52,10 +48,7 @@ export const auth = betterAuth({
       create: {
         before: async (user) => {
           if (!isAllowedStudioEmail(user.email)) {
-            throw new APIError("FORBIDDEN", { code: "STUDIO_ACCESS_DENIED", message: "This workspace is reserved for its artist." });
-          }
-          if (await prisma.user.count()) {
-            throw new APIError("FORBIDDEN", { code: "STUDIO_ALREADY_CONFIGURED", message: "This workspace already has an artist account." });
+            throw new APIError("FORBIDDEN", { code: "STUDIO_ACCESS_DENIED", message: "This account is not authorized for this installation." });
           }
         },
       },
@@ -64,12 +57,12 @@ export const auth = betterAuth({
       create: {
         before: async (session, context) => {
           // The internal adapter observes the current signup transaction.
-          // Every stored user occupies the database's unique owner slot.
-          const owner = context
+          // The authenticated user's ID is their private artist workspace.
+          const artist = context
             ? await context.context.internalAdapter.findUserById(session.userId)
             : await prisma.user.findUnique({ where: { id: session.userId }, select: { email: true } });
-          if (!owner || !isAllowedStudioEmail(owner.email)) {
-            throw new APIError("FORBIDDEN", { code: "STUDIO_ACCESS_DENIED", message: "This workspace is reserved for its artist." });
+          if (!artist || !isAllowedStudioEmail(artist.email)) {
+            throw new APIError("FORBIDDEN", { code: "STUDIO_ACCESS_DENIED", message: "This account is not authorized for this installation." });
           }
         },
       },

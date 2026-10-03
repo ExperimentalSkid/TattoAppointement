@@ -6,14 +6,13 @@ import { getDictionary } from "@/i18n";
 import { getSession } from "@/lib/session";
 import { GoogleSignInButton } from "@/components/google-sign-in-button";
 import { isGoogleSignInConfigured } from "@/lib/studio-access";
-import { prisma } from "@/lib/prisma";
 
 export default async function SignUpPage() {
   const session = await getSession();
   if (session) {
     redirect("/calendar");
   }
-  if (process.env.DISABLE_SIGN_UP === "true" || await prisma.user.count() > 0) {
+  if (process.env.DISABLE_SIGN_UP === "true") {
     redirect("/sign-in");
   }
 

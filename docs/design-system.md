@@ -81,7 +81,7 @@ Contact selection changes only the provided name and phone, preserving email and
 
 ## Account feedback
 
-Account access and recovery reuse a single focused text-feedback primitive. Errors retain the existing alert treatment, and terminal recovery outcomes announce status with a visible focus outline. Incorrect credentials remain a generic form error; password mismatch associates the explanation with confirmation. Editing clears stale feedback, and pending controls keep the submitted values stable. Successful authentication still opens the calendar when the separate language-preference request fails. This pass preserves the existing typography, palette, layout and single-owner account model.
+Account access and recovery reuse a single focused text-feedback primitive. Errors retain the existing alert treatment, and terminal recovery outcomes announce status with a visible focus outline. Incorrect credentials remain a generic form error; password mismatch associates the explanation with confirmation. Editing clears stale feedback, and pending controls keep the submitted values stable. Successful authentication still opens the calendar when the separate language-preference request fails. Each artist has their own private workspace; account isolation changes preserve the existing typography, palette and layout.
 
 ## Measured reduction
 

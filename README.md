@@ -8,7 +8,7 @@ The dark editorial interface uses six shared layout primitives, open sections an
 
 ## Product scope
 
-- One private artist account per installation, with email/password and optional Google sign-in. The first successful sign-in with a verified Google account can create the artist workspace without a preconfigured owner email.
+- One artist per private workspace, with email/password and optional Google sign-in. Each new verified Google identity creates its own empty workspace; returning on another device opens the same artist's records. An installation can host independent artists without sharing their data.
 - Optional password recovery by email through Resend, with single-use reset links and session revocation.
 - Successful account access reaches the calendar even if saving the language preference fails. Sign-in and recovery lock submitted fields while pending, retain values after failures and focus clear feedback for correction or recovery.
 - Day, week and month calendars with client details, appointment status and overlap confirmation.
@@ -28,7 +28,7 @@ The dark editorial interface uses six shared layout primitives, open sections an
 - Responsive desktop workspace and mobile navigation; installable PWA metadata and static asset caching.
 - Ownership checks on records and private image requests; authenticated responses are not publicly cached.
 
-Payments are a manual record of money received. This project does not charge cards, generate invoices, offer customer accounts/public booking or handle medical/consent records. A database constraint permits one artist account, and registration closes after that owner exists. Password and Google credentials link to that same account.
+Payments are a manual record of money received. This project does not charge cards, generate invoices, offer customer accounts/public booking or handle medical/consent records. Artists have separate clients, artwork, bookings, payments and settings. Password and Google credentials can belong to the same artist account through an explicit same-email connection in Settings.
 
 ## Stack
 
@@ -36,7 +36,7 @@ Next.js 16 · React 19 · TypeScript · PostgreSQL 17 · Prisma 7 · Better Auth
 
 ## Run locally
 
-1. Copy `.env.example` to `.env`. Generate a secret with `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`, then replace `BETTER_AUTH_SECRET`. Leave `STUDIO_OWNER_EMAIL` blank for first-account setup, or set the artist's actual email to restrict who can create and access this private workspace. Keep `.env` private.
+1. Copy `.env.example` to `.env`. Generate a secret with `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`, then replace `BETTER_AUTH_SECRET`. Leave `STUDIO_OWNER_EMAIL` blank to allow independent artists, or set an email to restrict the entire installation to that account. Keep `.env` private.
 2. Run PostgreSQL 17. With Docker installed, `docker compose -f compose.dev.yaml up -d --wait` creates an isolated development database at `localhost:5432` matching the example URL.
 3. Install and prepare the database:
 
@@ -50,7 +50,7 @@ npm run db:deploy
 
 For an existing PostgreSQL installation, set `DATABASE_URL` to its own empty application database. Prisma's configuration is `prisma.config.ts`. `db:deploy` applies checked-in migrations; `db:migrate` is only for authoring migrations during development.
 
-When updating an existing studio, back up its database and artwork first, then run `db:deploy`. The workspace revision migrations add change tracking and cover Google account connection changes while preserving existing studio records. Do not reset the database to apply them.
+When updating an existing studio, back up its database and artwork first, then run `db:deploy`. The workspace revision migrations add change tracking. The independent-workspaces migration removes the former installation-wide account limit while preserving existing artist IDs, accounts, sessions and studio records. Stop the old app before applying this migration; its generated database client expects the retired column. Do not reset the database.
 
 ## Verification
 
@@ -62,7 +62,7 @@ npm run build
 npm run test:integration
 ```
 
-Install the browser once with `npx playwright install chromium`. Browser tests require a disposable migrated database whose name ends in `_e2e`, `ALLOW_TEST_DB_RESET=true`, `STUDIO_OWNER_EMAIL=owner@example.com`, and `BETTER_AUTH_URL=http://127.0.0.1:3000`. Each test resets the disposable database to represent a fresh single-artist installation. The reset fixture rejects normal studio databases. Never point QA at a real studio; restore your normal `.env` before resuming development. Leave Google/Resend credentials blank in QA to avoid external authentication or mail. See the launch guide for the complete QA procedure.
+Install the browser once with `npx playwright install chromium`. Browser tests require a disposable migrated database whose name ends in `_e2e`, `ALLOW_TEST_DB_RESET=true`, a blank `STUDIO_OWNER_EMAIL`, and `BETTER_AUTH_URL=http://127.0.0.1:3000`. Each test resets the disposable database. The reset fixture rejects normal studio databases. Never point QA at a real studio; restore your normal `.env` before resuming development. Leave Google/Resend credentials blank in QA to avoid external authentication or mail. See the launch guide for the complete QA procedure.
 
 GitHub Actions installs the locked dependencies, audits advisories, migrates PostgreSQL, checks lint/types, builds the app, runs browser workflows and builds the application/migration container images. Failure traces are retained for seven days.
 
@@ -70,12 +70,12 @@ GitHub Actions installs the locked dependencies, audits advisories, migrates Pos
 
 See [the launch guide](docs/launch.md) for Docker deployment, HTTPS, persistent artwork storage, registration closure, backups and release checks. A Node.js server and persistent disk are required. Static hosting cannot serve authentication, server actions or the database.
 
-All devices access the same server database and private artwork storage. Google identifies the owner; records are not stored in Google Drive. A private HTTPS deployment is needed to test a phone and computer against the same workspace. Saving requires a connection; offline status pauses refresh checks and catches up after reconnection.
+All devices access the same server database and private artwork storage. Google identifies the artist and selects that account's workspace; records are not stored in Google Drive. An HTTPS deployment is needed to test a phone and computer against the same workspace. Saving requires a connection; offline status pauses refresh checks and catches up after reconnection. Changing accounts in another browser tab clears the previous artist's view and opens the new account's calendar, even when a form had unsaved edits.
 
 `GET /api/health` returns `200 {"status":"ready"}` when the database and migrated user table are available, or `503 {"status":"unavailable"}`. It does not expose records or connection information. Design images require a current artist session and use `private, no-store` caching.
 
 Set `RESEND_API_KEY` and `EMAIL_FROM` to enable password recovery. Without a configured mail provider, the recovery link is hidden and the recovery page explains that email recovery is unavailable. Email unit checks use a mocked transport and never send messages.
 
-For Google, configure `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. The prominent Google button is then enabled above the expandable **Sign in with email here** option. With no configured owner email, the first verified Google account creates the artist workspace; later Google sign-ins must match that owner. `STUDIO_OWNER_EMAIL` is an optional restriction, and an invalid nonempty value denies access. A password-created owner connects same-email Google in Settings after signing in. A Google-created owner can add a password in Settings. Automated Google checks replace the remote token/JWKS transport while exercising the real authentication handler and token verification; they do not verify Google's live consent screen. See the launch guide for Google Cloud callback configuration and the separate live check.
+For Google, configure `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. The prominent Google button is then enabled above the expandable **Sign in with email here** option. With registration open, each new verified Google identity creates its own workspace. Returning identities reuse their existing account. `STUDIO_OWNER_EMAIL` is an optional installation-wide restriction, and an invalid nonempty value denies access. A password-created artist connects same-email Google in Settings after signing in. A Google-created artist can add a password in Settings. Automated Google checks replace the remote token/JWKS transport while exercising the real authentication handler and token verification; they do not verify Google's live consent screen. See the launch guide for Google Cloud callback configuration and the separate live check.
 
 The dependency overrides for Prisma's `mysql2` and `deepmerge-ts` pin patched transitive versions. Revisit the overrides when Prisma updates its own dependency pins. Keep Node, container base images and the lockfile maintained.

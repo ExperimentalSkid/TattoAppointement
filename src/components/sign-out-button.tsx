@@ -1,18 +1,24 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { flushSync } from "react-dom";
 import { authClient } from "@/lib/auth-client";
+import { useClearWorkspace } from "@/components/workspace-access";
 
 export function SignOutButton({ label }: { label: string }) {
-  const router = useRouter();
+  const clearWorkspace = useClearWorkspace();
   const [pending, setPending] = useState(false);
 
   async function signOut() {
     setPending(true);
-    await authClient.signOut();
-    router.push("/sign-in");
-    router.refresh();
+    try {
+      const result = await authClient.signOut();
+      if (result.error) { setPending(false); return; }
+      flushSync(clearWorkspace);
+      window.location.replace("/sign-in");
+    } catch {
+      setPending(false);
+    }
   }
 
   return (

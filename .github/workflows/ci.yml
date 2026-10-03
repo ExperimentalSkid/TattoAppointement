@@ -29,7 +29,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tinta_e2e?schema=public
       ALLOW_TEST_DB_RESET: "true"
-      STUDIO_OWNER_EMAIL: owner@example.com
+      STUDIO_OWNER_EMAIL: ""
       BETTER_AUTH_SECRET: ci-only-secret-with-at-least-thirty-two-characters
       BETTER_AUTH_URL: http://127.0.0.1:3000
 

@@ -67,8 +67,9 @@ test("successful signup and sign-in reach the workspace when saving the language
 
   await signOut(page);
   await page.goto("/sign-up");
-  await expect(page).toHaveURL(/\/sign-in$/);
-  await expect(page.locator("a[href='/sign-up']")).toHaveCount(0);
+  await expect(page).toHaveURL(/\/sign-up$/);
+  await expect(page.locator("#name")).toBeVisible();
+  await page.goto("/sign-in");
   phase = "server";
   await page.locator("#email").fill(artist.email);
   await page.locator("#password").fill(artist.password);
@@ -76,8 +77,8 @@ test("successful signup and sign-in reach the workspace when saving the language
   await page.waitForURL(url => url.pathname === "/calendar");
   await expect(page.locator(".app-content")).toBeVisible();
   expect(preferences).toEqual(["en", "es"]);
-  const stillOneOwner = await withTestDatabase(pool => pool.query('SELECT count(*)::integer AS count FROM "user"'));
-  expect(stillOneOwner.rows[0].count).toBe(1);
+  const stillOneArtist = await withTestDatabase(pool => pool.query('SELECT count(*)::integer AS count FROM "user"'));
+  expect(stillOneArtist.rows[0].count).toBe(1);
 });
 
 test("sign-in preserves credentials after failure, focuses safe feedback and locks duplicate pending submissions", async ({ page }) => {

@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 
 try { process.loadEnvFile(".env"); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
 
-// Each test represents a fresh single-artist installation. Never reset a real studio.
+// Each test starts with an empty disposable app database. Never reset a real studio.
 export const test = base.extend<{ emptyStudio: void }>({
   emptyStudio: [async ({ context }, runTest, testInfo) => {
     const url = new URL(process.env.DATABASE_URL ?? "");

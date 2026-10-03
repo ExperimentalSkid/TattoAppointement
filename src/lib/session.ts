@@ -2,7 +2,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isAllowedStudioEmail, STUDIO_OWNER_SLOT } from "@/lib/studio-access";
+import { isAllowedStudioEmail } from "@/lib/studio-access";
 
 export async function getSession() {
   // Server Actions can rotate cookies before their UI is rendered again.
@@ -12,11 +12,11 @@ export async function getSession() {
     headers: sessionHeaders,
   });
   if (!session) return null;
-  const owner = await prisma.user.findUnique({
+  const artist = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { email: true, ownerSlot: true },
+    select: { email: true },
   });
-  return owner?.ownerSlot === STUDIO_OWNER_SLOT && isAllowedStudioEmail(owner.email) ? session : null;
+  return artist && isAllowedStudioEmail(artist.email) ? session : null;
 }
 
 export async function requireSession() {

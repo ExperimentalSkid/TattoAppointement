@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { unstable_rethrow } from "next/navigation";
 import { useActionState, useEffect, useRef, useState } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { AppointmentFormState } from "@/lib/appointment-form-model";
@@ -27,7 +28,14 @@ export function AppointmentRescheduleForm({ action, startsAtIso, expectedVersion
   const [expanded, setExpanded] = useState(initialExpanded);
   const [allowOverlap, setAllowOverlap] = useState(false);
   const [editedAfterError, setEditedAfterError] = useState(false);
-  const [state, formAction, pending] = useActionState(action, { error: null });
+  const [state, formAction, pending] = useActionState(async (previous: AppointmentFormState, formData: FormData): Promise<AppointmentFormState> => {
+    try {
+      return await action(previous, formData);
+    } catch (error) {
+      unstable_rethrow(error);
+      return { error: "save" };
+    }
+  }, { error: null });
   const dirty = date !== baseline.date || time !== baseline.time;
   const inactiveConflict = !isActive && dirty;
   if (!dirty && !pending && baseline.version !== expectedVersion) {

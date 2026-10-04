@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { unstable_rethrow } from "next/navigation";
 import { useActionState, useEffect, useRef, useState } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { DesignFormState } from "@/app/(app)/designs/actions";
@@ -27,7 +28,14 @@ export function DesignMetadataForm({
   libraryQuery?: string;
   locale: "en" | "es";
 }) {
-  const [state, formAction, pending] = useActionState(action, initialState);
+  const [state, formAction, pending] = useActionState(async (previous: DesignFormState, formData: FormData): Promise<DesignFormState> => {
+    try {
+      return await action(previous, formData);
+    } catch (error) {
+      unstable_rethrow(error);
+      return { error: "save" };
+    }
+  }, initialState);
   const [title, setTitle] = useState(design.title);
   const [notes, setNotes] = useState(design.notes ?? "");
   const [baseline, setBaseline] = useState({ version: design.expectedVersion, title: design.title, notes: design.notes ?? "" });

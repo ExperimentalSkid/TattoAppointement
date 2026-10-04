@@ -190,10 +190,11 @@ test("forms rendered for one artist cannot change their records after another ar
   try {
     await register(second, artistB);
     const baseline = await exportData(context);
-    const ownRevision = await revision(context);
     // Keep the already-rendered fixture available long enough to exercise the
     // server's ownership checks independently of automatic account-switch clearing.
-    await page.route("**/api/workspace/sync", route => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(ownRevision) }));
+    // Suspend polling rather than returning an artist identity that becomes
+    // incorrect once a guarded action renders the newly signed-in artist's shell.
+    await page.route("**/api/workspace/sync", route => route.request().method() === "GET" ? route.abort("failed") : route.continue());
     const submitAsOtherArtist = async (path: string, prepare: () => Promise<void>, button: () => Locator, confirm = false) => {
       await signIn(context, artistA);
       await page.goto(path);

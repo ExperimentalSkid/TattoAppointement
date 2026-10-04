@@ -1,5 +1,6 @@
 "use server";
 
+import { createHash } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireArtistId } from "@/lib/session";
@@ -20,6 +21,11 @@ export async function recordPayment(
   if (amountCents === undefined || amountCents === null || amountCents <= 0) {
     return { error: "amount", success: false };
   }
+  const submissionId = formData.get("submissionId");
+  if (submissionId !== null && (typeof submissionId !== "string"
+    || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(submissionId))) {
+    return { error: "save", success: false };
+  }
 
   const appointment = await prisma.appointment.findFirst({
     where: { id: appointmentId, artistId },
@@ -27,14 +33,27 @@ export async function recordPayment(
   });
   if (!appointment) return { error: "save", success: false };
 
+  const amount = centsToDecimal(amountCents);
   try {
-    await prisma.payment.create({
-      data: {
-        artistId,
-        appointmentId: appointment.id,
-        amount: centsToDecimal(amountCents),
-      },
-    });
+    const data = { artistId, appointmentId: appointment.id, amount };
+    if (submissionId === null) {
+      // Previously rendered forms did not provide a submission identity.
+      await prisma.payment.create({ data });
+    } else {
+      const id = `payment_${createHash("sha256")
+        .update(JSON.stringify([artistId, appointment.id, submissionId.toLowerCase()]))
+        .digest("hex")}`;
+      // The existing primary key makes concurrent retries atomic. Amount is
+      // intentionally excluded so changing an already saved intent fails safely.
+      const created = await prisma.payment.createMany({ data: [{ id, ...data }], skipDuplicates: true });
+      if (created.count === 0) {
+        const existing = await prisma.payment.findFirst({
+          where: { id, artistId, appointmentId: appointment.id, amount },
+          select: { id: true },
+        });
+        if (!existing) return { error: "save", success: false };
+      }
+    }
   } catch {
     return { error: "save", success: false };
   }

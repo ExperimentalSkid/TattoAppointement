@@ -180,7 +180,13 @@ button, a, input, textarea, select { touch-action: manipulation; }
   .auth-card h1 { font-size: 32px; }
   .auth-mobile-brand { margin-bottom: 32px; }
 }
-@media (max-width: 799px) { .workspace-date { display: none; } .topbar-actions .language-row label { display: none; } }
+@media (max-width: 799px) {
+  .workspace-date { display: none; }
+  .topbar-actions .language-row label { display: none; }
+  .app-topbar:has(.signout-error) { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; column-gap: 8px; row-gap: var(--space-small); }
+  .app-topbar:has(.signout-error) :is(.topbar-actions, .mobile-signout) { display: contents; }
+  .app-topbar .signout-error { grid-column: 1 / -1; min-width: 0; line-height: 1.5; }
+}
 @media (min-width: 800px) {
   .app-main-wrap { margin-left: 228px; }
   .app-topbar { display: flex; padding: 12px 36px; min-height: 73px; }

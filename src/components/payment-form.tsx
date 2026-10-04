@@ -1,5 +1,6 @@
 "use client";
 
+import { unstable_rethrow } from "next/navigation";
 import { useActionState, useEffect, useRef, useState } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { PaymentFormState } from "@/app/(app)/appointments/payment-actions";
@@ -20,10 +21,25 @@ export function PaymentForm({
 }) {
   const [amount, setAmount] = useState("");
   const amountRef = useRef<HTMLInputElement>(null);
+  const submissionId = useRef<string | null>(null);
+  const submitting = useRef(false);
   const [state, formAction, pending] = useActionState(async (previousState: PaymentFormState, formData: FormData) => {
-    const result = await action(previousState, formData);
-    if (result.success) setAmount("");
-    return result;
+    try {
+      // A retry of an unacknowledged payment must refer to the same receipt.
+      submissionId.current ??= window.crypto.randomUUID();
+      formData.set("submissionId", submissionId.current);
+      const result = await action(previousState, formData);
+      if (result.success) {
+        setAmount("");
+        submissionId.current = null;
+      }
+      return result;
+    } catch (error) {
+      unstable_rethrow(error);
+      return { error: "save", success: false } as PaymentFormState;
+    } finally {
+      submitting.current = false;
+    }
   }, initialState);
 
   useEffect(() => {
@@ -31,7 +47,10 @@ export function PaymentForm({
   }, [state]);
 
   return (
-    <form data-sync-protect data-sync-dirty={Boolean(amount)} data-sync-pending={pending} action={formAction} className="payment-entry-form">
+    <form data-sync-protect data-sync-dirty={Boolean(amount)} data-sync-pending={pending} action={formAction} className="payment-entry-form" onReset={event => event.preventDefault()} onSubmit={event => {
+      if (pending || submitting.current) event.preventDefault();
+      else submitting.current = true;
+    }}>
       <div className="payment-entry-heading">
         <h3>{copy.recordPayment}</h3>
         <p className="muted-copy" id="payment-entry-help">{copy.manualPaymentHelp}</p>

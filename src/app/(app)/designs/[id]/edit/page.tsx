@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { DesignMetadataForm } from "@/components/design-metadata-form";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import { ConfirmedActionForm } from "@/components/confirmed-action-form";
 import { prisma } from "@/lib/prisma";
 import { requireArtistId } from "@/lib/session";
 import { getDictionary } from "@/i18n";
@@ -37,12 +38,12 @@ export default async function EditDesignPage({
           design={{ ...design, expectedVersion: design.updatedAt.toISOString() }}
           libraryQuery={libraryQuery}
         />
-        <form action={deleteDesign.bind(null, design.id)} className="form-actions">
+        <ConfirmedActionForm action={deleteDesign.bind(null, design.id)} className="form-actions" locale={locale}>
           <input type="hidden" name="libraryQuery" value={libraryQuery} />
           <ConfirmSubmitButton className="danger-button" message={dictionary.designs.deleteConfirmation}>
             {dictionary.designs.deleteDesign}
           </ConfirmSubmitButton>
-        </form>
+        </ConfirmedActionForm>
       </div>
     </section>
   );

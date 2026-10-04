@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { unstable_rethrow, useRouter, useSearchParams } from "next/navigation";
 import { useActionState, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type MouseEvent } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { APPOINTMENT_NOTES_MAX_LENGTH, type AppointmentFormField, type AppointmentFormState, type AppointmentFieldError } from "@/lib/appointment-form-model";
@@ -71,7 +71,14 @@ export function AppointmentForm({ action, clients, designs, copy, initial, initi
     window.history.replaceState(null, "", `${bookingPath}${clean.size ? `?${clean}` : ""}${window.location.hash}`);
   }, [restoredDraft, draftKey, token, params, bookingPath]);
 
-  const [state, formAction, pending] = useActionState(action, { error: null });
+  const [state, formAction, pending] = useActionState(async (previous: AppointmentFormState, formData: FormData): Promise<AppointmentFormState> => {
+    try {
+      return await action(previous, formData);
+    } catch (error) {
+      unstable_rethrow(error);
+      return { error: "save" };
+    }
+  }, { error: null });
   const dirty = Boolean(restoredDraft) || JSON.stringify({ ...model, moneyOpen: false }) !== JSON.stringify({ ...baseline, moneyOpen: false });
   if (!dirty && !pending && model.expectedVersion !== initial?.expectedVersion) {
     const next = { ...initialModel(), moneyOpen: model.moneyOpen };

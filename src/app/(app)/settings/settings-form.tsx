@@ -1,5 +1,6 @@
 "use client";
 
+import { unstable_rethrow } from "next/navigation";
 import { useActionState, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { changePassword, updateProfile, updateReminderTemplate, type PasswordFormState, type ProfileFormState, type ReminderFormState } from "./actions";
 import type { SettingsCopy } from "./copy";
@@ -29,13 +30,18 @@ export function ReminderSettingsForm({ copy, locale, initialTemplate, storedTemp
   const selectionRef = useRef({ start: initialTemplate.length, end: initialTemplate.length });
   const caretRef = useRef<number | null>(null);
   const [state, action, pending] = useActionState(async (previous: ReminderFormState, formData: FormData) => {
-    const result = await updateReminderTemplate(previous, formData);
-    if (result.savedTemplate !== null) {
-      setBaseline(result.savedTemplate);
-      setTemplate(result.savedTemplate);
-      setExpectedTemplate(result.savedTemplate);
+    try {
+      const result = await updateReminderTemplate(previous, formData);
+      if (result.savedTemplate !== null) {
+        setBaseline(result.savedTemplate);
+        setTemplate(result.savedTemplate);
+        setExpectedTemplate(result.savedTemplate);
+      }
+      return result;
+    } catch (error) {
+      unstable_rethrow(error);
+      return { error: "save", savedTemplate: null } as ReminderFormState;
     }
-    return result;
   }, { error: null, savedTemplate: null } as ReminderFormState);
   const error = !pending && (state.error === "stale" || !edited) ? state.error : null;
   const dirty = template !== baseline;
@@ -145,15 +151,20 @@ export function StudioSettingsForm({ copy, locale, initial }: { copy: SettingsCo
   const [expectedProfile, setExpectedProfile] = useState({ name: initial.name, studioName: initial.studioName });
   const [edited, setEdited] = useState(false);
   const [state, action, pending] = useActionState(async (previous: ProfileFormState, formData: FormData) => {
-    const result = await updateProfile(previous, formData);
-    if (result.savedProfile) {
-      const saved = { name: result.savedProfile.name, studio: result.savedProfile.studioName ?? "" };
-      setName(saved.name);
-      setStudio(saved.studio);
-      setBaseline(saved);
-      setExpectedProfile(result.savedProfile);
+    try {
+      const result = await updateProfile(previous, formData);
+      if (result.savedProfile) {
+        const saved = { name: result.savedProfile.name, studio: result.savedProfile.studioName ?? "" };
+        setName(saved.name);
+        setStudio(saved.studio);
+        setBaseline(saved);
+        setExpectedProfile(result.savedProfile);
+      }
+      return result;
+    } catch (error) {
+      unstable_rethrow(error);
+      return { error: "save", saved: false, savedProfile: null } as ProfileFormState;
     }
-    return result;
   }, { error: null, saved: false, savedProfile: null } as ProfileFormState);
   const error = !pending && (state.error === "stale" || !edited) ? state.error : null;
   const dirty = name !== baseline.name || studio !== baseline.studio;
@@ -180,14 +191,30 @@ export function StudioSettingsForm({ copy, locale, initial }: { copy: SettingsCo
 }
 
 export function PasswordSettingsForm({ copy, hasPassword = true }: { copy: SettingsCopy; hasPassword?: boolean }) {
-  const [state, action, pending] = useActionState(changePassword, { error: null, saved: false } as PasswordFormState);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [state, action, pending] = useActionState(async (previous: PasswordFormState, formData: FormData) => {
+    try {
+      const result = await changePassword(previous, formData);
+      if (result.saved) {
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      }
+      return result;
+    } catch (error) {
+      unstable_rethrow(error);
+      return { error: "save", saved: false } as PasswordFormState;
+    }
+  }, { error: null, saved: false } as PasswordFormState);
   const [edited, setEdited] = useState(false);
   return (
-    <form data-sync-protect data-sync-pending={pending} action={action} className="client-form settings-form password-settings-form" onChange={() => setEdited(true)} onSubmit={() => setEdited(false)}>
-      {hasPassword ? <div className="field"><label htmlFor="current-password">{copy.currentPassword}</label><input id="current-password" name="currentPassword" type="password" autoComplete="current-password" maxLength={128} disabled={pending} required /></div> : <p className="muted-copy">{copy.createPasswordNote}</p>}
+    <form data-sync-protect data-sync-dirty={Boolean(currentPassword || newPassword || confirmPassword)} data-sync-pending={pending} action={action} className="client-form settings-form password-settings-form" onReset={event => event.preventDefault()} onChange={() => setEdited(true)} onSubmit={() => setEdited(false)}>
+      {hasPassword ? <div className="field"><label htmlFor="current-password">{copy.currentPassword}</label><input id="current-password" name="currentPassword" type="password" value={currentPassword} onChange={event => setCurrentPassword(event.target.value)} autoComplete="current-password" maxLength={128} disabled={pending} required /></div> : <p className="muted-copy">{copy.createPasswordNote}</p>}
       <div className="client-form-grid">
-        <div className="field"><label htmlFor="new-password">{copy.newPassword}</label><input id="new-password" name="newPassword" type="password" autoComplete="new-password" minLength={8} maxLength={128} aria-describedby="password-hint" disabled={pending} required /></div>
-        <div className="field"><label htmlFor="confirm-password">{copy.confirmPassword}</label><input id="confirm-password" name="confirmPassword" type="password" autoComplete="new-password" minLength={8} maxLength={128} disabled={pending} required /></div>
+        <div className="field"><label htmlFor="new-password">{copy.newPassword}</label><input id="new-password" name="newPassword" type="password" value={newPassword} onChange={event => setNewPassword(event.target.value)} autoComplete="new-password" minLength={8} maxLength={128} aria-describedby="password-hint" disabled={pending} required /></div>
+        <div className="field"><label htmlFor="confirm-password">{copy.confirmPassword}</label><input id="confirm-password" name="confirmPassword" type="password" value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} autoComplete="new-password" minLength={8} maxLength={128} disabled={pending} required /></div>
       </div>
       <p className="muted-copy" id="password-hint">{copy.passwordHint}</p>
       {state.error && !edited && !pending ? <p className="form-error" role="alert">{copy.passwordErrors[state.error]}</p> : null}

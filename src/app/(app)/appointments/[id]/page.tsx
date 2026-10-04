@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import { ConfirmedActionForm } from "@/components/confirmed-action-form";
 import { LocalDateTime } from "@/components/local-date-time";
 import { PaymentForm } from "@/components/payment-form";
 import { AppointmentRescheduleForm } from "@/components/appointment-reschedule-form";
@@ -164,14 +165,14 @@ export default async function AppointmentDetailPage({
                       <strong>{paymentAmount}</strong>
                       <LocalDateTime iso={payment.receivedAt.toISOString()} locale={locale} />
                     </div>
-                    <form action={deletePaymentAction}>
+                    <ConfirmedActionForm action={deletePaymentAction} locale={locale}>
                       <ConfirmSubmitButton
                         className="secondary-button payment-remove-button"
                         message={removePaymentConfirmation}
                       >
                         {removePaymentLabel}
                       </ConfirmSubmitButton>
-                    </form>
+                    </ConfirmedActionForm>
                   </li>
                 );
               })}
@@ -181,12 +182,12 @@ export default async function AppointmentDetailPage({
       </section>
 
       <footer className="appointment-actions-section appointment-history-actions">
-        {isActive ? <form action={cancelAction}><ConfirmSubmitButton className="secondary-button" message={dictionary.appointments.cancelConfirmation}>{dictionary.appointments.cancelAppointment}</ConfirmSubmitButton></form> : null}
-        <form className="appointment-delete-action" action={deleteAction}>
+        {isActive ? <ConfirmedActionForm action={cancelAction} locale={locale}><ConfirmSubmitButton className="secondary-button" message={dictionary.appointments.cancelConfirmation}>{dictionary.appointments.cancelAppointment}</ConfirmSubmitButton></ConfirmedActionForm> : null}
+        <ConfirmedActionForm className="appointment-delete-action" action={deleteAction} locale={locale}>
           <ConfirmSubmitButton className="danger-button" message={dictionary.appointments.deleteConfirmation}>
             {dictionary.appointments.deleteAppointment}
           </ConfirmSubmitButton>
-        </form>
+        </ConfirmedActionForm>
       </footer>
     </section>
   );

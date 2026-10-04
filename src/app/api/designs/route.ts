@@ -8,6 +8,7 @@ import {
   saveDesignImage,
 } from "@/lib/design-storage";
 import { readUploadFormData, UploadBodyError } from "@/lib/uploads";
+import { classifyDiagnosticError, writeDiagnostic } from "@/lib/diagnostics";
 
 export const runtime = "nodejs";
 
@@ -64,6 +65,7 @@ export async function POST(request: Request) {
       select: { id: true },
     });
 
+    await writeDiagnostic({ code: "design_upload_saved", artistId: session.user.id, outcome: "saved" });
     return NextResponse.json({ id: design.id }, { status: 201 });
   } catch (error) {
     if (stored) {
@@ -71,10 +73,11 @@ export async function POST(request: Request) {
     }
 
     if (error instanceof DesignImageError) {
+      await writeDiagnostic({ code: "design_upload_failed", artistId: session.user.id, outcome: "failed", reason: "validation", status: 400 });
       return NextResponse.json({ error: error.code }, { status: 400 });
     }
 
-    console.error("Could not store design image", error);
+    await writeDiagnostic({ code: "design_upload_failed", artistId: session.user.id, outcome: "failed", reason: "save", status: 500, errorKind: classifyDiagnosticError(error) });
     return NextResponse.json({ error: "save" }, { status: 500 });
   }
 }

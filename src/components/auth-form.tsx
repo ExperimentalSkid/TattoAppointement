@@ -6,6 +6,7 @@ import type { Locale } from "@/i18n";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { authClient } from "@/lib/auth-client";
 import { AuthFeedback } from "@/components/auth-feedback";
+import { emitDiagnostic } from "@/lib/client-diagnostics";
 
 export function AuthForm({
   mode,
@@ -49,6 +50,7 @@ export function AuthForm({
       if (mode === "sign-in") {
         const result = await authClient.signIn.email({ email, password });
         if (result.error) {
+          emitDiagnostic("auth_sign_in_failed", { outcome: "failed", reason: "response" });
           setError(copy.invalid);
           return;
         }
@@ -62,6 +64,7 @@ export function AuthForm({
         const name = String(formData.get("name") ?? "").trim();
         const result = await authClient.signUp.email({ name, email, password });
         if (result.error) {
+          emitDiagnostic("auth_sign_in_failed", { outcome: "failed", reason: "response" });
           setError(copy.signupError);
           return;
         }
@@ -71,6 +74,7 @@ export function AuthForm({
       window.location.replace("/calendar");
       leaving = true;
     } catch {
+      emitDiagnostic("auth_sign_in_failed", { outcome: "failed", reason: "network" });
       setError(locale === "es" ? "No se pudo conectar. Comprueba tu conexión e inténtalo de nuevo." : "Could not connect. Check your connection and try again.");
     } finally {
       if (!leaving) {

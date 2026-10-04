@@ -35,6 +35,8 @@ services:
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in .env}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:?Set BETTER_AUTH_URL in .env}
       DESIGN_STORAGE_DIR: /data/designs
+      DIAGNOSTICS_DIR: /data/diagnostics
+      TINTA_RELEASE: ${TINTA_RELEASE:-0.1.0}
       DISABLE_SIGN_UP: ${DISABLE_SIGN_UP:-false}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
@@ -45,6 +47,7 @@ services:
       - "127.0.0.1:3000:3000"
     volumes:
       - designs:/data/designs
+      - diagnostics:/data/diagnostics
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -52,3 +55,4 @@ services:
 volumes:
   database:
   designs:
+  diagnostics:

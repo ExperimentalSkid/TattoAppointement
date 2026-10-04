@@ -10,6 +10,7 @@ import { studioLocalInputValue, studioTimezoneOffset, studioTimeZone } from "@/l
 import { appointmentDraftKey, parseAppointmentDraft, readAppointmentDraft, removeAppointmentDraft, storeAppointmentDraft, type AppointmentDraft } from "@/lib/appointment-draft";
 import { LocalDateTime } from "@/components/local-date-time";
 import { SyncEditConflict } from "@/components/sync-edit-conflict";
+import { emitDiagnostic } from "@/lib/client-diagnostics";
 
 type AppointmentAction = (state: AppointmentFormState, formData: FormData) => Promise<AppointmentFormState>;
 type ClientOption = { id: string; name: string; phone: string };
@@ -73,9 +74,12 @@ export function AppointmentForm({ action, clients, designs, copy, initial, initi
 
   const [state, formAction, pending] = useActionState(async (previous: AppointmentFormState, formData: FormData): Promise<AppointmentFormState> => {
     try {
-      return await action(previous, formData);
+      const result = await action(previous, formData);
+      if (result.error === "save") emitDiagnostic("action_failed", { outcome: "failed", reason: "save" });
+      return result;
     } catch (error) {
       unstable_rethrow(error);
+      emitDiagnostic("action_failed", { outcome: "failed", reason: "unknown" });
       return { error: "save" };
     }
   }, { error: null });

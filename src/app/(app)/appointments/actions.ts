@@ -13,6 +13,7 @@ import {
   type AppointmentStatusValue,
 } from "@/lib/appointments";
 import { centsToDecimal, parseMoneyInput } from "@/lib/money";
+import { classifyDiagnosticError, writeDiagnostic } from "@/lib/diagnostics";
 import {
   APPOINTMENT_NOTES_MAX_LENGTH,
   type AppointmentConflict,
@@ -213,8 +214,10 @@ export async function createAppointment(_previousState: AppointmentFormState, fo
     appointmentId = appointment.id;
   } catch (error) {
     if (error instanceof ScheduleConflictError) return { error: "overlap", conflicts: error.conflicts };
+    await writeDiagnostic({ code: "appointment_create_failed", artistId, outcome: "failed", reason: "save", errorKind: classifyDiagnosticError(error) });
     return { error: "save" };
   }
+  await writeDiagnostic({ code: "appointment_create_saved", artistId, outcome: "saved" });
   await revalidateAppointmentRelations(appointmentId, parsed.clientId, parsed.designIds);
   redirect(`/appointments/${appointmentId}`);
 }
@@ -263,9 +266,11 @@ export async function updateAppointment(appointmentId: string, _previousState: A
   } catch (error) {
     if (error instanceof StaleRecordError) return { error: "stale" };
     if (error instanceof ScheduleConflictError) return { error: "overlap", conflicts: error.conflicts };
+    await writeDiagnostic({ code: "appointment_update_failed", artistId, outcome: "failed", reason: "save", errorKind: classifyDiagnosticError(error) });
     return { error: "save" };
   }
 
+  await writeDiagnostic({ code: "appointment_update_saved", artistId, outcome: "saved" });
   const previousDesignIds = existing.designs.map((item) => item.designId);
   await revalidateAppointmentRelations(appointmentId, parsed.clientId, Array.from(new Set([...previousDesignIds, ...parsed.designIds])));
   if (existing.clientId !== parsed.clientId) revalidatePath(`/clients/${existing.clientId}`);
@@ -310,8 +315,10 @@ export async function rescheduleAppointment(appointmentId: string, _previousStat
     if (error instanceof StaleRecordError) return { error: "stale" };
     if (error instanceof ScheduleConflictError) return { error: "overlap", conflicts: error.conflicts };
     if (error instanceof InactiveAppointmentError) return { error: "status", fieldErrors: { status: "status" } };
+    await writeDiagnostic({ code: "appointment_reschedule_failed", artistId, outcome: "failed", reason: "save", errorKind: classifyDiagnosticError(error) });
     return { error: "save" };
   }
+  await writeDiagnostic({ code: "appointment_reschedule_saved", artistId, outcome: "saved" });
   await revalidateAppointmentRelations(appointmentId, relations.clientId, relations.designIds);
   redirect(`/appointments/${appointmentId}`);
 }
@@ -322,13 +329,14 @@ export async function cancelAppointment(appointmentId: string) {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${artistId}, 0))`;
     const existing = await tx.appointment.findFirst({ where: { id: appointmentId, artistId }, include: { designs: { select: { designId: true } } } });
     if (!existing) return null;
-    await tx.appointment.updateMany({
+    const result = await tx.appointment.updateMany({
       where: { id: existing.id, artistId, status: { in: ["PLANNED", "CONFIRMED"] } },
       data: { status: "CANCELLED", updatedAt: nextRecordVersion(existing.updatedAt) },
     });
-    return existing;
+    return { ...existing, cancelled: result.count > 0 };
   });
   if (!appointment) redirect("/new-appointment");
+  if (appointment.cancelled) await writeDiagnostic({ code: "appointment_cancelled", artistId, outcome: "saved" });
   await revalidateAppointmentRelations(appointment.id, appointment.clientId, appointment.designs.map((item) => item.designId));
   redirect(`/appointments/${appointment.id}`);
 }

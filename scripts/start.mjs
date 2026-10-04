@@ -13,4 +13,5 @@ process.env.PORT ||= "3000";
 // The generated server changes cwd to .next/standalone. Keep artwork outside
 // the build directory so rebuilding cannot remove an installation's uploads.
 process.env.DESIGN_STORAGE_DIR = path.resolve(root, process.env.DESIGN_STORAGE_DIR || "storage/designs");
+process.env.DIAGNOSTICS_DIR = path.resolve(root, process.env.DIAGNOSTICS_DIR || ".data/diagnostics");
 await import(pathToFileURL(path.join(standalone, "server.js")).href);

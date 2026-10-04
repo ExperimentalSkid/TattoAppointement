@@ -12,6 +12,7 @@ import "./workspace.css";
 import "./appointment-workflows.css";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { getLocale } from "@/i18n";
+import { ProblemReports } from "@/components/problem-report";
 
 export const metadata: Metadata = {
   title: {
@@ -36,7 +37,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html lang={locale}>
       <body>
-        {children}
+        <ProblemReports locale={locale}>{children}</ProblemReports>
         <ServiceWorkerRegistration />
       </body>
     </html>

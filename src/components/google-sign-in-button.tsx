@@ -4,6 +4,7 @@ import { useId, useRef, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import type { Locale } from "@/i18n";
 import { AuthFeedback } from "@/components/auth-feedback";
+import { emitDiagnostic } from "@/lib/client-diagnostics";
 import "./google-sign-in.css";
 
 function GoogleButton({ locale, link = false, available = true, prominent = false }: { locale: Locale; link?: boolean; available?: boolean; prominent?: boolean }) {
@@ -23,11 +24,13 @@ function GoogleButton({ locale, link = false, available = true, prominent = fals
         ? await authClient.linkSocial({ provider: "google", callbackURL: "/settings", errorCallbackURL: "/settings?error=oauth" })
         : await authClient.signIn.social({ provider: "google", callbackURL: "/calendar", errorCallbackURL: "/sign-in?error=oauth" });
       if (result.error) {
+        emitDiagnostic("auth_sign_in_failed", { outcome: "failed", reason: "response" });
         setError(true);
         inFlightRef.current = false;
         setPending(false);
       }
     } catch {
+      emitDiagnostic("auth_sign_in_failed", { outcome: "failed", reason: "network" });
       setError(true);
       inFlightRef.current = false;
       setPending(false);

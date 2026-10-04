@@ -7,6 +7,7 @@ import type { Dictionary } from "@/i18n/dictionaries";
 import type { DesignFormState } from "@/app/(app)/designs/actions";
 import { designDetailPath } from "@/lib/design-navigation";
 import { SyncEditConflict } from "@/components/sync-edit-conflict";
+import { emitDiagnostic } from "@/lib/client-diagnostics";
 
 type DesignAction = (
   state: DesignFormState,
@@ -30,9 +31,12 @@ export function DesignMetadataForm({
 }) {
   const [state, formAction, pending] = useActionState(async (previous: DesignFormState, formData: FormData): Promise<DesignFormState> => {
     try {
-      return await action(previous, formData);
+      const result = await action(previous, formData);
+      if (result.error === "save") emitDiagnostic("action_failed", { outcome: "failed", reason: "save" });
+      return result;
     } catch (error) {
       unstable_rethrow(error);
+      emitDiagnostic("action_failed", { outcome: "failed", reason: "unknown" });
       return { error: "save" };
     }
   }, initialState);

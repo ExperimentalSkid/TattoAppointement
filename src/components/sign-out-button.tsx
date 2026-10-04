@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { authClient } from "@/lib/auth-client";
 import { useClearWorkspace } from "@/components/workspace-access";
+import { emitDiagnostic } from "@/lib/client-diagnostics";
 
 export function SignOutButton({ label }: { label: string }) {
   const clearWorkspace = useClearWorkspace();
@@ -22,6 +23,7 @@ export function SignOutButton({ label }: { label: string }) {
       flushSync(clearWorkspace);
       window.location.replace("/sign-in");
     } catch {
+      emitDiagnostic("action_failed", { outcome: "failed", reason: "response" });
       setError(document.documentElement.lang === "es" ? "No se pudo cerrar la sesión. Inténtalo de nuevo." : "Sign-out failed. Please try again.");
       setPending(false);
     } finally {

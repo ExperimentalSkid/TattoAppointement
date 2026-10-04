@@ -2,6 +2,7 @@
 
 import { unstable_rethrow } from "next/navigation";
 import { useActionState, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { emitDiagnostic } from "@/lib/client-diagnostics";
 import { changePassword, updateProfile, updateReminderTemplate, type PasswordFormState, type ProfileFormState, type ReminderFormState } from "./actions";
 import type { SettingsCopy } from "./copy";
 import { getDefaultReminderTemplate, renderReminderTemplate, REMINDER_TEMPLATE_MAX_LENGTH } from "@/lib/whatsapp-reminder";
@@ -32,6 +33,7 @@ export function ReminderSettingsForm({ copy, locale, initialTemplate, storedTemp
   const [state, action, pending] = useActionState(async (previous: ReminderFormState, formData: FormData) => {
     try {
       const result = await updateReminderTemplate(previous, formData);
+      if (result.error === "save") emitDiagnostic("action_failed", { outcome: "failed", reason: "save" });
       if (result.savedTemplate !== null) {
         setBaseline(result.savedTemplate);
         setTemplate(result.savedTemplate);
@@ -40,6 +42,7 @@ export function ReminderSettingsForm({ copy, locale, initialTemplate, storedTemp
       return result;
     } catch (error) {
       unstable_rethrow(error);
+      emitDiagnostic("action_failed", { outcome: "failed", reason: "unknown" });
       return { error: "save", savedTemplate: null } as ReminderFormState;
     }
   }, { error: null, savedTemplate: null } as ReminderFormState);
@@ -153,6 +156,7 @@ export function StudioSettingsForm({ copy, locale, initial }: { copy: SettingsCo
   const [state, action, pending] = useActionState(async (previous: ProfileFormState, formData: FormData) => {
     try {
       const result = await updateProfile(previous, formData);
+      if (result.error === "save") emitDiagnostic("action_failed", { outcome: "failed", reason: "save" });
       if (result.savedProfile) {
         const saved = { name: result.savedProfile.name, studio: result.savedProfile.studioName ?? "" };
         setName(saved.name);
@@ -163,6 +167,7 @@ export function StudioSettingsForm({ copy, locale, initial }: { copy: SettingsCo
       return result;
     } catch (error) {
       unstable_rethrow(error);
+      emitDiagnostic("action_failed", { outcome: "failed", reason: "unknown" });
       return { error: "save", saved: false, savedProfile: null } as ProfileFormState;
     }
   }, { error: null, saved: false, savedProfile: null } as ProfileFormState);
@@ -197,6 +202,7 @@ export function PasswordSettingsForm({ copy, hasPassword = true }: { copy: Setti
   const [state, action, pending] = useActionState(async (previous: PasswordFormState, formData: FormData) => {
     try {
       const result = await changePassword(previous, formData);
+      if (result.error === "save") emitDiagnostic("action_failed", { outcome: "failed", reason: "save" });
       if (result.saved) {
         setCurrentPassword("");
         setNewPassword("");
@@ -205,6 +211,7 @@ export function PasswordSettingsForm({ copy, hasPassword = true }: { copy: Setti
       return result;
     } catch (error) {
       unstable_rethrow(error);
+      emitDiagnostic("action_failed", { outcome: "failed", reason: "unknown" });
       return { error: "save", saved: false } as PasswordFormState;
     }
   }, { error: null, saved: false } as PasswordFormState);

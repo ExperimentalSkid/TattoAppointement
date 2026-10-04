@@ -2,11 +2,12 @@ import type { ReactNode } from "react";
 import { BrandMark } from "@/components/brand-mark";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import type { Locale } from "@/i18n";
+import { ReportProblemButton } from "@/components/problem-report";
 
 export function AuthShell({ children, locale, languageLabel }: { children: ReactNode; locale: Locale; languageLabel: string }) {
   const es = locale === "es";
   return (
-    <main className="auth-shell">
+    <main className="auth-shell" data-diagnostic-workspace="">
       <aside className="auth-story">
         <div className="auth-brand"><BrandMark /><span>Tinta<small>{es ? "EL ESPACIO DEL ARTISTA" : "THE ARTIST’S WORKSPACE"}</small></span></div>
         <div className="auth-story-copy">
@@ -33,7 +34,7 @@ export function AuthShell({ children, locale, languageLabel }: { children: React
         <p className="auth-story-footer">{es ? "Hecho para el ritmo de tu estudio." : "Made for the rhythm of your studio."}</p>
       </aside>
       <div className="auth-form-side">
-        <div className="auth-language"><LanguageSwitcher locale={locale} label={languageLabel} /></div>
+        <div className="auth-language"><ReportProblemButton locale={locale} compact /><LanguageSwitcher locale={locale} label={languageLabel} /></div>
         <div className="auth-mobile-brand"><BrandMark /><span>Tinta</span></div>
         <section className="auth-card">{children}</section>
         <p className="auth-footer">{es ? "Tu arte tiene su espacio. Tu gestión también." : "A place for your art. And everything around it."}</p>

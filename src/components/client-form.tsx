@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { useActionState, useEffect, useRef, useState } from "react";
+import { emitDiagnostic } from "@/lib/client-diagnostics";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { ClientFormState } from "@/app/(app)/clients/actions";
 import { CLIENT_FIELD_LIMITS, type ClientField } from "@/lib/client-fields";
@@ -73,9 +74,12 @@ export function ClientForm({
   const submittingRef = useRef(false);
   const [state, formAction, pending] = useActionState(async (previous: ClientFormState, formData: FormData) => {
     try {
-      return await action(previous, formData);
+      const result = await action(previous, formData);
+      if (result.error === "save") emitDiagnostic("action_failed", { outcome: "failed", reason: "save" });
+      return result;
     } catch (error) {
       unstable_rethrow(error);
+      emitDiagnostic("action_failed", { outcome: "failed", reason: "unknown" });
       return { error: "save" } as ClientFormState;
     } finally {
       submittingRef.current = false;

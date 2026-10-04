@@ -6,6 +6,7 @@ import { google, verifyGoogleIdToken } from "better-auth/social-providers";
 import { prisma } from "@/lib/prisma";
 import { isPasswordRecoveryConfigured, sendPasswordResetEmail } from "@/lib/email";
 import { isAllowedGoogleIdentity, isAllowedStudioEmail, isGoogleSignInConfigured } from "@/lib/studio-access";
+import { writeDiagnostic } from "@/lib/diagnostics";
 
 const googleOptions = {
   clientId: process.env.GOOGLE_CLIENT_ID?.trim() ?? "",
@@ -64,6 +65,9 @@ export const auth = betterAuth({
           if (!artist || !isAllowedStudioEmail(artist.email)) {
             throw new APIError("FORBIDDEN", { code: "STUDIO_ACCESS_DENIED", message: "This account is not authorized for this installation." });
           }
+        },
+        after: async (session) => {
+          await writeDiagnostic({ code: "auth_sign_in_success", artistId: session.userId, outcome: "saved" });
         },
       },
     },

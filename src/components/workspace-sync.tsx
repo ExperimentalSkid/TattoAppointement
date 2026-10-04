@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { flushSync } from "react-dom";
 import { useClearWorkspace } from "@/components/workspace-access";
 import type { Locale } from "@/i18n";
+import { emitDiagnostic } from "@/lib/client-diagnostics";
 import "./workspace-sync.css";
 
 type SyncStatus = "current" | "pending" | "offline" | "error" | "refreshing";
@@ -68,9 +69,11 @@ export function WorkspaceSync({ workspaceId, revision, locale }: { workspaceId: 
     let retryDelay = interval;
     let firstCheck = initialRefresh.current && !/(?:\/(?:new|edit)|^\/new-appointment)$/.test(route.split("?")[0]);
     let checked = false;
+    let reportedProblem: "error" | "offline" | null = null;
     const baselines = new WeakMap<HTMLFormElement, string>();
 
     function protectedDraft() {
+      if (document.body.dataset.problemReportOpen === "true") return true;
       const groups = Array.from(document.querySelectorAll<HTMLElement>("#main-content [data-sync-protect]"))
         .filter(group => group.getClientRects().length > 0);
       for (const group of groups) {
@@ -89,7 +92,17 @@ export function WorkspaceSync({ workspaceId, revision, locale }: { workspaceId: 
     }
 
     function show(next: SyncStatus) {
-      if (active) setStatus(current => current === next ? current : next);
+      if (!active) return;
+      if ((next === "error" || next === "offline") && next !== reportedProblem) {
+        emitDiagnostic(next === "offline" ? "sync_offline" : "sync_failed", {
+          outcome: "failed", reason: next === "offline" ? "offline" : "response",
+        });
+        reportedProblem = next;
+      } else if (next === "current" && reportedProblem) {
+        emitDiagnostic("sync_recovered", { outcome: "recovered" });
+        reportedProblem = null;
+      }
+      setStatus(current => current === next ? current : next);
     }
 
     function reconcile() {
@@ -152,6 +165,7 @@ export function WorkspaceSync({ workspaceId, revision, locale }: { workspaceId: 
         });
         if (!active) return;
         if (response.status === 401 || response.status === 403) {
+          emitDiagnostic("sync_session_expired", { outcome: "failed", status: response.status, reason: "unauthorized" });
           leaveWorkspace("/sign-in");
           return;
         }
@@ -233,6 +247,7 @@ export function WorkspaceSync({ workspaceId, revision, locale }: { workspaceId: 
     window.addEventListener("online", catchUp);
     window.addEventListener("offline", offline);
     window.addEventListener("pageshow", restored);
+    window.addEventListener("tinta:report-visibility", reconcile);
     void check();
     return () => {
       active = false;
@@ -252,6 +267,7 @@ export function WorkspaceSync({ workspaceId, revision, locale }: { workspaceId: 
       window.removeEventListener("online", catchUp);
       window.removeEventListener("offline", offline);
       window.removeEventListener("pageshow", restored);
+      window.removeEventListener("tinta:report-visibility", reconcile);
     };
   }, [router, route, startTransition, workspaceId, clearWorkspace]);
 

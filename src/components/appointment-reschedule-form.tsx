@@ -8,6 +8,7 @@ import type { AppointmentFormState } from "@/lib/appointment-form-model";
 import { LocalDateTime } from "@/components/local-date-time";
 import { studioLocalInputValue, studioTimezoneOffset, studioTimeZone } from "@/lib/studio-time";
 import { SyncEditConflict } from "@/components/sync-edit-conflict";
+import { emitDiagnostic } from "@/lib/client-diagnostics";
 
 type RescheduleAction = (state: AppointmentFormState, formData: FormData) => Promise<AppointmentFormState>;
 
@@ -30,9 +31,12 @@ export function AppointmentRescheduleForm({ action, startsAtIso, expectedVersion
   const [editedAfterError, setEditedAfterError] = useState(false);
   const [state, formAction, pending] = useActionState(async (previous: AppointmentFormState, formData: FormData): Promise<AppointmentFormState> => {
     try {
-      return await action(previous, formData);
+      const result = await action(previous, formData);
+      if (result.error === "save") emitDiagnostic("action_failed", { outcome: "failed", reason: "save" });
+      return result;
     } catch (error) {
       unstable_rethrow(error);
+      emitDiagnostic("action_failed", { outcome: "failed", reason: "unknown" });
       return { error: "save" };
     }
   }, { error: null });

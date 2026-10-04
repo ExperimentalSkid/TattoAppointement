@@ -4,6 +4,7 @@ import { unstable_rethrow } from "next/navigation";
 import { useActionState, useEffect, useRef, useState } from "react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { PaymentFormState } from "@/app/(app)/appointments/payment-actions";
+import { emitDiagnostic } from "@/lib/client-diagnostics";
 
 type PaymentAction = (
   state: PaymentFormState,
@@ -29,6 +30,7 @@ export function PaymentForm({
       submissionId.current ??= window.crypto.randomUUID();
       formData.set("submissionId", submissionId.current);
       const result = await action(previousState, formData);
+      if (result.error === "save") emitDiagnostic("action_failed", { outcome: "failed", reason: "save" });
       if (result.success) {
         setAmount("");
         submissionId.current = null;
@@ -36,6 +38,7 @@ export function PaymentForm({
       return result;
     } catch (error) {
       unstable_rethrow(error);
+      emitDiagnostic("action_failed", { outcome: "failed", reason: "unknown" });
       return { error: "save", success: false } as PaymentFormState;
     } finally {
       submitting.current = false;

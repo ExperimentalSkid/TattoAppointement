@@ -8,6 +8,7 @@ import { NavLinks } from "@/components/nav-links";
 import { SignOutButton } from "@/components/sign-out-button";
 import { WorkspaceSync } from "@/components/workspace-sync";
 import { WorkspaceAccess } from "@/components/workspace-access";
+import { ReportProblemButton } from "@/components/problem-report";
 
 export function AppShell({
   children,
@@ -32,7 +33,7 @@ export function AppShell({
   const date = new Intl.DateTimeFormat(es ? "es-ES" : "en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Madrid" }).format(new Date());
   return (
     <WorkspaceAccess key={workspaceId} locale={locale}>
-    <div className="app-shell">
+    <div className="app-shell" data-diagnostic-workspace={workspaceId}>
       <a className="skip-link" href="#main-content">{es ? "Saltar al contenido" : "Skip to content"}</a>
       <aside className="desktop-sidebar">
         <Link href="/calendar" className="desktop-brand" aria-label="Tinta">
@@ -61,6 +62,7 @@ export function AppShell({
             </span>
           </Link>
           <div className="topbar-actions">
+            <ReportProblemButton locale={locale} compact />
             <span className="workspace-date">{date}</span>
             <LanguageSwitcher locale={locale} label={dictionary.language} />
             <span className="mobile-signout"><SignOutButton label={dictionary.auth.signOut} /></span>

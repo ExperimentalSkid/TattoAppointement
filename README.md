@@ -68,6 +68,8 @@ GitHub Actions installs the locked dependencies, audits advisories, migrates Pos
 
 ## Production
 
+Problem reports and account-linked diagnostic logs are described in [the reporting guide](docs/problem-reports.md). Persist the private diagnostics volume and label each deployment with `TINTA_RELEASE`.
+
 See [the launch guide](docs/launch.md) for Docker deployment, HTTPS, persistent artwork storage, registration closure, backups and release checks. A Node.js server and persistent disk are required. Static hosting cannot serve authentication, server actions or the database.
 
 All devices access the same server database and private artwork storage. Google identifies the artist and selects that account's workspace; records are not stored in Google Drive. An HTTPS deployment is needed to test a phone and computer against the same workspace. Saving requires a connection; offline status pauses refresh checks and catches up after reconnection. Changing accounts in another browser tab clears the previous artist's view and opens the new account's calendar, even when a form had unsaved edits.

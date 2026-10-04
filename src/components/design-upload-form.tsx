@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { appointmentReturnWithSelection, validateAppointmentReturn } from "@/lib/appointment-return";
+import { emitDiagnostic } from "@/lib/client-diagnostics";
 
 export function DesignUploadForm({
   copy,
@@ -63,6 +64,7 @@ export function DesignUploadForm({
       }
 
       if (!response.ok || !result.id) {
+        emitDiagnostic("action_failed", { outcome: "failed", reason: response.status >= 500 ? "save" : "validation", ...(response.status >= 400 ? { status: response.status } : {}) });
         const message =
           result.error === "title"
             ? copy.titleError
@@ -82,6 +84,7 @@ export function DesignUploadForm({
       router.push(appointmentReturnWithSelection(appointmentReturn, "createdDesign", result.id) ?? `/designs/${result.id}`);
       router.refresh();
     } catch {
+      emitDiagnostic("action_failed", { outcome: "failed", reason: "network" });
       setError(copy.uploadError);
     } finally {
       setPending(false);

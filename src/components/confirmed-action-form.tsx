@@ -2,6 +2,7 @@
 
 import { unstable_rethrow } from "next/navigation";
 import { useActionState, type ReactNode } from "react";
+import { emitDiagnostic } from "@/lib/client-diagnostics";
 
 export function ConfirmedActionForm({ action, children, className, locale }: {
   action: (formData: FormData) => void | Promise<void>;
@@ -15,6 +16,7 @@ export function ConfirmedActionForm({ action, children, className, locale }: {
       return false;
     } catch (error) {
       unstable_rethrow(error);
+      emitDiagnostic("action_failed", { outcome: "failed", reason: "unknown" });
       return true;
     }
   }, false);

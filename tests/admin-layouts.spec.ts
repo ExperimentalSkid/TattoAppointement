@@ -81,6 +81,11 @@ test("admin sections and pending activation preserve the studio layout in both l
       for (const browserContext of [context, pendingContext, anonymousContext]) {
         await browserContext.addCookies([{ name: "tattoo-language", value: locale, url: origin }]);
       }
+      // Direct fixture language changes need a document reload; invitation
+      // fragments below must still exercise navigation within that document.
+      for (const joinPage of [pendingPage, anonymousPage]) {
+        if (new URL(joinPage.url()).pathname === "/join") await joinPage.reload();
+      }
       for (const viewport of [{ name: "phone", width: 360, height: 800 }, { name: "desktop", width: 1440, height: 1000 }]) {
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
         await pendingPage.setViewportSize({ width: viewport.width, height: viewport.height });

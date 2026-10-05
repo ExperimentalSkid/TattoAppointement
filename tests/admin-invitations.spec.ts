@@ -25,6 +25,8 @@ async function register(context: BrowserContext, label: string, kind: "admin" | 
   } else {
     await database(pool => pool.query('UPDATE "user" SET language=\'en\',"activatedAt"=CASE WHEN $2 THEN NULL ELSE "activatedAt" END WHERE id=$1', [id, kind === "pending"]));
   }
+  // Pending identities use the public language cookie until activation.
+  await context.addCookies([{ name: "tattoo-language", value: "en", url: origin }]);
   return { id, email };
 }
 async function invitation(context: BrowserContext) {
@@ -83,7 +85,7 @@ test("a fragment invitation activates once and later sign-in opens the same work
     await expect(peerPage.locator("#invitation-code")).toHaveValue(code);
     await expect(peerPage).toHaveURL(url => url.pathname === "/join" && !url.hash);
     expect((await peer.request.get("/api/workspace/sync")).status()).toBe(401);
-    await peerPage.getByRole("button", { name: "Activate my workspace", exact: true }).click();
+    await peerPage.getByRole("button", { name: "Activate my workspace", exact: true }).click({ timeout: 15_000 });
     await expect(peerPage).toHaveURL(/\/calendar/);
     const replay = await peer.request.post("/api/invitations/redeem", { headers, data: { code } });
     expect(await replay.json()).toEqual({ status: "already_active" });

@@ -7,6 +7,9 @@
     "node": ">=22.18.0"
   },
   "overrides": {
+    "@next/eslint-plugin-next": {
+      "fast-glob": "$fast-glob"
+    },
     "@prisma/config": {
       "deepmerge-ts": "8.0.0"
     },
@@ -21,6 +24,7 @@
     "lint": "eslint .",
     "typecheck": "prisma generate && tsc --noEmit",
     "verify:images": "node scripts/verify-image-processing.mjs",
+    "verify:eslint-glob": "node scripts/verify-eslint-root-glob.mjs",
     "verify:money": "node scripts/verify-money.mjs",
     "verify:appointments": "node scripts/verify-appointments.mjs",
     "test:unit": "node scripts/verify-money.mjs && node scripts/verify-appointments.mjs && node scripts/verify-uploads.mjs && node scripts/verify-studio-time.mjs && node scripts/verify-email.mjs && node scripts/verify-settings.mjs && node scripts/verify-studio-access.mjs && node scripts/verify-whatsapp-reminder.mjs && node scripts/verify-record-versions.mjs && node scripts/verify-diagnostics.mjs && node scripts/verify-privacy-minimization.mjs && node scripts/verify-login-preference.mjs && node scripts/verify-client-diagnostics-consent.mjs && node scripts/verify-privacy-maintenance.mjs",
@@ -49,6 +53,7 @@
     "sharp": "0.35.4"
   },
   "devDependencies": {
+    "fast-glob": "file:tools/eslint-root-glob",
     "@playwright/test": "^1.55.0",
     "@types/node": "^24.0.0",
     "@types/pg": "^8.15.5",

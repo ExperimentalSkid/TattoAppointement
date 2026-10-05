@@ -17,7 +17,8 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: tinta_e2e
+          POSTGRES_DB: tinta_utf8_e2e
+          TZ: UTC
         ports:
           - 5432:5432
         options: >-
@@ -27,11 +28,27 @@ jobs:
           --health-retries 5
 
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tinta_e2e?schema=public
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tinta_utf8_e2e?schema=public
       ALLOW_TEST_DB_RESET: "true"
       STUDIO_OWNER_EMAIL: ""
       BETTER_AUTH_SECRET: ci-only-secret-with-at-least-thirty-two-characters
       BETTER_AUTH_URL: http://127.0.0.1:3000
+      GOOGLE_CLIENT_ID: ""
+      GOOGLE_CLIENT_SECRET: ""
+      RESEND_API_KEY: ""
+      EMAIL_FROM: ""
+      TZ: UTC
+      DIAGNOSTICS_DIR: .tmp/diagnostics-e2e
+      PRIVACY_MAINTENANCE_ENABLED: "false"
+      # Synthetic facts for disposable QA only; never deployment configuration.
+      PRIVACY_OPERATOR_NAME: Isolated QA operator
+      PRIVACY_OPERATOR_ADDRESS: Isolated QA address, 1 test street
+      PRIVACY_OPERATOR_COUNTRY: ES
+      PRIVACY_CONTACT_EMAIL: privacy@tinta-qa.local
+      PRIVACY_SERVER_COUNTRY: ES
+      PRIVACY_TRANSFER_NOTICE: >-
+        Isolated test fixture only; no external authentication, email or hosting
+        provider participates in this QA environment.
 
     steps:
       - name: Checkout
@@ -58,6 +75,11 @@ jobs:
       - name: Unit tests
         run: npm run test:unit
 
+      - name: Verify privacy configuration validation and QA fixtures
+        run: |
+          npm run verify:privacy-config
+          npm run privacy:check
+
       - name: Generate Prisma client
         run: npm run db:generate
 
@@ -65,7 +87,9 @@ jobs:
         run: npm run db:deploy
 
       - name: Lint
-        run: npm run lint
+        run: |
+          npm run verify:eslint-glob
+          npm run lint
 
       - name: Type check
         run: npm run typecheck

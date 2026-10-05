@@ -1,0 +1,10 @@
+{
+  "name": "tinta-eslint-root-glob",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Directory glob compatibility for the installed Next.js ESLint plugin only",
+  "main": "index.cjs",
+  "dependencies": {
+    "tinyglobby": "0.2.15"
+  }
+}

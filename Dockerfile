@@ -5,6 +5,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-cert
 
 FROM base AS dependencies
 COPY package.json package-lock.json ./
+COPY tools/eslint-root-glob ./tools/eslint-root-glob
 RUN npm ci
 
 FROM base AS builder

@@ -37,14 +37,28 @@ export function JoinActivation({ locale, identity, googleAvailable, canSignUp }:
   const inFlight = useRef(false);
 
   useEffect(() => {
-    const invitation = capturePendingInvitation(identity?.id ?? null);
-    // Fragment access is a browser-only external source, after hydration.
-    const frame = requestAnimationFrame(() => {
-      setCode(invitation.code);
-      setPreserved(invitation.preserved);
-      setLoaded(true);
-    });
-    return () => cancelAnimationFrame(frame);
+    let frame: number | null = null;
+    function capture() {
+      const invitation = capturePendingInvitation(identity?.id ?? null);
+      if (frame !== null) cancelAnimationFrame(frame);
+      // Fragment access is a browser-only external source, after hydration.
+      frame = requestAnimationFrame(() => {
+        setCode(invitation.code);
+        setPreserved(invitation.preserved);
+        setLoaded(true);
+        setError(null);
+        frame = null;
+      });
+    }
+    function hashChanged() {
+      if (new URLSearchParams(window.location.hash.slice(1)).has("code")) capture();
+    }
+    window.addEventListener("hashchange", hashChanged);
+    capture();
+    return () => {
+      window.removeEventListener("hashchange", hashChanged);
+      if (frame !== null) cancelAnimationFrame(frame);
+    };
   }, [identity?.id]);
 
   async function redeem(event: FormEvent<HTMLFormElement>) {

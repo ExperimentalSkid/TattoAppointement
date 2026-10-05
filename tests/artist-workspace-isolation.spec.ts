@@ -220,7 +220,11 @@ test("forms rendered for one artist cannot change their records after another ar
 
     await signIn(context, artistA);
     const retained = await exportData(context);
-    for (const field of ["profile", "clients", "designs", "appointments", "payments"]) expect(retained[field]).toEqual(baseline[field]);
+    const { lastSignInAt: previousSignIn, ...originalProfile } = baseline.profile;
+    const { lastSignInAt: latestSignIn, ...retainedProfile } = retained.profile;
+    expect(retainedProfile).toEqual(originalProfile);
+    expect(Date.parse(latestSignIn)).toBeGreaterThan(Date.parse(previousSignIn));
+    for (const field of ["clients", "designs", "appointments", "payments"]) expect(retained[field]).toEqual(baseline[field]);
     expect((await context.request.get(`/api/designs/${designId}/image?variant=original`)).status()).toBe(200);
     const secondExport = await exportData(second);
     for (const field of ["clients", "designs", "appointments", "payments"]) expect(secondExport[field]).toEqual([]);

@@ -13,7 +13,7 @@ async function database<T>(work: (pool: Pool) => Promise<T>) {
   try { return await work(pool); } finally { await pool.end(); }
 }
 async function register(context: BrowserContext, label: string, kind: "admin" | "pending" | "artist" = "artist") {
-  const email = `${label}-${randomUUID()}@example.com`;
+  const email = `${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${randomUUID()}@example.com`;
   const response = await context.request.post("/api/auth/sign-up/email", { headers, data: { email, name: label, password } });
   expect(response.status()).toBe(200);
   let id = (await response.json()).user.id as string;
@@ -81,7 +81,7 @@ test("a fragment invitation activates once and later sign-in opens the same work
     const peerPage = await peer.newPage();
     await peerPage.goto(link);
     await expect(peerPage.locator("#invitation-code")).toHaveValue(code);
-    expect(new URL(peerPage.url()).hash).toBe("");
+    await expect(peerPage).toHaveURL(url => url.pathname === "/join" && !url.hash);
     expect((await peer.request.get("/api/workspace/sync")).status()).toBe(401);
     await peerPage.getByRole("button", { name: "Activate my workspace", exact: true }).click();
     await expect(peerPage).toHaveURL(/\/calendar/);

@@ -59,6 +59,10 @@ test("admin sections and pending activation preserve the studio layout in both l
     const invitationResponse = await context.request.post("/api/admin/invitations", { headers: originHeaders, data: { expiresInDays: 7 } });
     expect(invitationResponse.status()).toBe(201);
     const invitation = await invitationResponse.json() as { code: string };
+    const replacementResponse = await context.request.post("/api/admin/invitations", { headers: originHeaders, data: { expiresInDays: 7 } });
+    expect(replacementResponse.status()).toBe(201);
+    const replacement = await replacementResponse.json() as { code: string };
+    expect(replacement.code).not.toBe(invitation.code);
     const reportText = "The invitation page kept my place. <script>window.privateLayoutTest = true</script>\nThis text must appear as plain text, including its line break.";
     const reportResponse = await context.request.post("/api/reports", {
       headers: originHeaders,
@@ -100,7 +104,11 @@ test("admin sections and pending activation preserve the studio layout in both l
         await expect(pendingPage.getByRole("button", { name: locale === "es" ? "Activar mi estudio" : "Activate my workspace" })).toBeVisible();
         await expect(pendingPage.locator(".join-own-data summary")).toBeVisible();
         await expect(pendingPage.locator(".app-shell")).toHaveCount(0);
-        expect(new URL(pendingPage.url()).hash).toBe("");
+        await expect(pendingPage).toHaveURL(url => url.pathname === "/join" && url.hash === "");
+        // A second invitation can open in this same join document without remounting it.
+        await pendingPage.goto(`/join#code=${encodeURIComponent(replacement.code)}`);
+        await expect(pendingPage.locator("#invitation-code")).toHaveValue(replacement.code);
+        await expect(pendingPage).toHaveURL(url => url.pathname === "/join" && url.hash === "");
         await noHorizontalOverflow(pendingPage, `${locale} ${viewport.name} pending join`);
         await pendingPage.screenshot({ path: path.join(output, `${locale}-${viewport.name}-join-pending.png`), fullPage: true });
 
@@ -108,7 +116,7 @@ test("admin sections and pending activation preserve the studio layout in both l
         await expect(anonymousPage.locator(".google-auth-button")).toBeVisible();
         await expect(anonymousPage.locator(".join-invitation-ready")).toBeVisible();
         await expect(anonymousPage.locator("#invitation-code")).toHaveCount(0);
-        expect(new URL(anonymousPage.url()).hash).toBe("");
+        await expect(anonymousPage).toHaveURL(url => url.pathname === "/join" && url.hash === "");
         await noHorizontalOverflow(anonymousPage, `${locale} ${viewport.name} anonymous join`);
         await anonymousPage.screenshot({ path: path.join(output, `${locale}-${viewport.name}-join-anonymous.png`), fullPage: true });
       }

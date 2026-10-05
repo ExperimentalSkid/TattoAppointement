@@ -126,6 +126,8 @@ test("each verified Google artist gets a separate workspace and reopens their sa
   expect(owner.emailVerified).toBe(true);
   await prisma.user.update({ where: { id: owner.id }, data: { studioName: "Existing tattoo studio" } });
   const client = await prisma.client.create({ data: { artistId: owner.id, name: "Existing client", phone: "+34600000001" } });
+  const savedProfile = await prisma.user.findUniqueOrThrow({ where: { id: owner.id } });
+  const savedRevision = await prisma.workspaceRevision.findUniqueOrThrow({ where: { artistId: owner.id } });
 
   const second = await googleFlow(identity);
   expect(second.headers.get("location")).toBe(`${origin}/calendar`);
@@ -133,7 +135,11 @@ test("each verified Google artist gets a separate workspace and reopens their sa
   expect((await session.json()).user.id).toBe(owner.id);
   expect(await prisma.user.count()).toBe(1);
   expect(await prisma.account.count({ where: { providerId: "google", userId: owner.id } })).toBe(1);
-  expect((await prisma.user.findUniqueOrThrow({ where: { id: owner.id } })).studioName).toBe("Existing tattoo studio");
+  const reopenedProfile = await prisma.user.findUniqueOrThrow({ where: { id: owner.id } });
+  expect(reopenedProfile.studioName).toBe("Existing tattoo studio");
+  expect(reopenedProfile.lastSignInAt?.getTime()).toBeGreaterThan(savedProfile.lastSignInAt!.getTime());
+  expect(reopenedProfile.updatedAt.getTime()).toBe(savedProfile.updatedAt.getTime());
+  expect((await prisma.workspaceRevision.findUniqueOrThrow({ where: { artistId: owner.id } })).revision).toBe(savedRevision.revision);
   expect((await prisma.client.findUniqueOrThrow({ where: { id: client.id } })).artistId).toBe(owner.id);
 
   const other = await googleFlow({ subject: "local-other-google-artist", email: "other-artist@example.com" });

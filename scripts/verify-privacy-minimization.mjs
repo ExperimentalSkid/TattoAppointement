@@ -37,8 +37,20 @@ const fixtureModule = moduleUrl(`
   import { memoryAdapter } from ${JSON.stringify(installed("@better-auth/memory-adapter/dist/index.mjs"))};
   const state = globalThis.tintaPrivacyVerification;
   export const prismaAdapter = () => memoryAdapter(state.database);
-  export const prisma = { user: { findUnique: async ({ where }) => state.hideNewSignupUser ? null : state.database.user.find(user => user.id === where.id) ?? null,
-    updateMany: async ({ where, data }) => { const user = state.database.user.find(user => user.id === where.id); if (user) Object.assign(user, data); return { count: user ? 1 : 0 }; } } };
+  export const prisma = {
+    user: { findUnique: async ({ where }) => state.hideNewSignupUser ? null : state.database.user.find(user => user.id === where.id) ?? null },
+    $executeRaw: async (strings, ...parameters) => {
+      const statement = strings.join("?").replace(/\\s+/g, " ").trim();
+      if (statement !== 'UPDATE "user" SET "lastSignInAt" = ? WHERE "id" = ? AND "deletionRequestedAt" IS NULL'
+        || parameters.length !== 2 || !(parameters[0] instanceof Date) || typeof parameters[1] !== "string") {
+        throw new Error("Unexpected synthetic sign-in timestamp update");
+      }
+      const user = state.database.user.find(user => user.id === parameters[1] && !user.deletionRequestedAt);
+      if (!user) return 0;
+      user.lastSignInAt = parameters[0];
+      return 1;
+    },
+  };
   export const nextCookies = () => ({ id: "privacy-verification-next-cookie-bridge" });
   export const isPasswordRecoveryConfigured = () => false;
   export const sendPasswordResetEmail = async () => { throw new Error("Unexpected email delivery"); };
@@ -114,17 +126,24 @@ try {
   state.hideNewSignupUser = false;
   check(response.status, 200, "Signup remains valid before the new user is visible outside its transaction");
   loginCookies(response, false);
+  const defaultUser = state.database.user.find(user => user.email === "default@example.com");
+  const defaultProfileVersion = new Date(defaultUser.updatedAt).getTime();
+  const defaultSignInAt = new Date(defaultUser.lastSignInAt).getTime();
+  check(defaultUser.lastSignInAt != null, true, "A successful signup must not leave a null sign-in timestamp");
+  check(Number.isFinite(defaultSignInAt), true, "A successful signup records its sign-in timestamp");
   const defaultSession = state.database.session.at(-1);
   const defaultExpiry = new Date(defaultSession.expiresAt).getTime();
   defaultSession.updatedAt = new Date(Date.now() - 2 * 86_400_000);
   response = await request("/get-session", null, defaultJar);
   check(response.status, 200);
   check(new Date(defaultSession.expiresAt).getTime(), defaultExpiry, "Session-only marker prevents renewal into the persistent duration");
+  check(new Date(defaultUser.lastSignInAt).getTime(), defaultSignInAt, "Refreshing a session is not another sign-in");
   const persistentJar = new Map([["tinta-remember-login", "1"]]);
   response = await request("/sign-up/email", { name: "Remembered artist", email: "remembered@example.com", password }, persistentJar);
   check(response.status, 200); loginCookies(response, true);
   response = await request("/sign-in/email", { email: "default@example.com", password }, defaultJar);
   check(response.status, 200); loginCookies(response, false);
+  check(new Date(defaultUser.updatedAt).getTime(), defaultProfileVersion, "A new login does not change the profile edit version");
   defaultJar.set("tinta-remember-login", "1");
   response = await request("/sign-in/email", { email: "default@example.com", password, rememberMe: true }, defaultJar);
   check(response.status, 200); loginCookies(response, true);

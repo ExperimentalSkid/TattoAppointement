@@ -100,8 +100,12 @@ export const auth = betterAuth({
         after: async (session) => {
           // Better Auth queues database after hooks until its signup transaction
           // commits. Session refreshes update rows and do not count as sign-ins.
-          await prisma.user.updateMany({ where: { id: session.userId, deletionRequestedAt: null },
-            data: { lastSignInAt: new Date() } }).catch(() => console.error("Sign-in timestamp could not be saved."));
+          // A login is operational activity, not a profile edit. Update just
+          // this column atomically so another device's login cannot invalidate
+          // profile versions or overwrite a concurrent profile update.
+          await prisma.$executeRaw`UPDATE "user" SET "lastSignInAt" = ${new Date()}
+            WHERE "id" = ${session.userId} AND "deletionRequestedAt" IS NULL`
+            .catch(() => console.error("Sign-in timestamp could not be saved."));
           await writeDiagnostic({ code: "auth_sign_in_success", artistId: session.userId, outcome: "saved" });
         },
       },

@@ -33,8 +33,12 @@ def age_hours(value, now):
 
 
 def run(command):
-    return subprocess.run(command, check=True, capture_output=True, text=True,
-                          timeout=15).stdout.strip()
+    if command[0] != 'docker':
+        raise ValueError('unexpected_command')
+    return subprocess.run(['/usr/bin/docker', '--host', 'unix:///var/run/docker.sock', *command[1:]],
+                          check=True, capture_output=True, text=True, timeout=15,
+                          env={'PATH': '/usr/sbin:/usr/bin:/sbin:/bin', 'HOME': '/root',
+                               'LANG': 'C.UTF-8'}).stdout.strip()
 
 
 def private_json(path):

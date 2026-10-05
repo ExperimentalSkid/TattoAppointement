@@ -179,7 +179,7 @@ class Docker:
 
     def call(self, args, *, input_file=None, output_file=None, long=False):
         try:
-            result = subprocess.run([self.binary, *args], stdin=input_file, stdout=output_file or subprocess.PIPE,
+            result = subprocess.run([self.binary, "--host", "unix:///var/run/docker.sock", *args], stdin=input_file, stdout=output_file or subprocess.PIPE,
                                     stderr=subprocess.DEVNULL, check=False,
                                     timeout=self.copy_timeout if long else self.timeout,
                                     env={"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "HOME": "/root", "LANG": "C.UTF-8"})

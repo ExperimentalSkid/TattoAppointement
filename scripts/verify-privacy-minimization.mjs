@@ -91,6 +91,7 @@ try {
   }
   function loginCookies(response, remembered) {
     const issued = cookies(response).filter(cookie => /^(?:__Secure-)?better-auth\.session_token=/.test(cookie));
+    check(issued.length, 1, "New login delivers one valid token without an empty duplicate");
     const final = issued.at(-1);
     assert.ok(final, "A new login must issue a session cookie"); checks++;
     check(/;\s*Max-Age=2592000(?:;|$)/i.test(final), remembered, "Only the explicit device preference allows persistent login");

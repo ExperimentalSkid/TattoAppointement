@@ -114,9 +114,16 @@ export const auth = betterAuth({
       const nextSession = context.context.newSession;
       if (!nextSession) return;
       const remember = context.getCookie(LOGIN_PREFERENCE_COOKIE) === "1";
-      // The provider callback initially uses Better Auth's persistent default.
-      // Replace that pending cookie before applying the explicit device choice.
-      expireCookie(context, context.context.authCookies.sessionToken);
+      // Replace the provider's pending default with one final session cookie.
+      // Expiring it here would leave an empty duplicate before the valid token.
+      const cookieName = context.context.authCookies.sessionToken.name;
+      for (const responseHeaders of new Set([context.responseHeaders, context.context.responseHeaders])) {
+        if (!responseHeaders) continue;
+        const otherCookies = responseHeaders.getSetCookie().filter(cookie =>
+          !cookie.startsWith(`${cookieName}=`) && !cookie.startsWith(`${cookieName}.`));
+        responseHeaders.delete("set-cookie");
+        for (const cookie of otherCookies) responseHeaders.append("set-cookie", cookie);
+      }
       if (remember) expireCookie(context, context.context.authCookies.dontRememberToken);
       await setSessionCookie(context, nextSession, !remember);
     }),

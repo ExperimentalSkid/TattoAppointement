@@ -92,6 +92,8 @@ run on startup. First inspect a successful state, hashes, permissions and scratc
 cleanup. Never expose the backup directory through the app/proxy. Disabling the
 timer does not erase copies. Docker access is privileged even with service
 hardening; the backup identity must remain restricted to trusted administrators.
+Keep `production.env`, `backups/` and `ops/state/` excluded from both Git and
+Docker build contexts so a later image build cannot ingest private recovery data.
 
 ## Erasure and production restore barrier
 

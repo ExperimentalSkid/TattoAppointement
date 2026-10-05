@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { removeArtistDesignFiles, pruneUnreferencedDesignFiles } from "@/lib/design-storage";
 import { cleanupDiagnostics, purgeAccountDiagnostics } from "@/lib/diagnostics";
 import type { Prisma } from "@/generated/prisma/client";
+import { recordMaintenanceStatus } from "@/lib/maintenance-status";
+import { recordRecoveryErasure } from "@/lib/recovery-erasure";
 
 export async function assertAccountOwnership(tx: Prisma.TransactionClient, artistId: string) {
   const foreignReference = await tx.appointment.findFirst({ where: {
@@ -25,6 +27,7 @@ export async function completeAccountErasure(artistId: string) {
     const user = await tx.user.findUnique({ where: { id: artistId }, select: { deletionRequestedAt: true } });
     if (!user?.deletionRequestedAt) return false;
     await assertAccountOwnership(tx, artistId);
+    await recordRecoveryErasure("account", artistId);
     await removeArtistDesignFiles(artistId);
     if (!await purgeAccountDiagnostics(artistId)) throw new Error("private_cleanup_unavailable");
     await tx.verification.deleteMany({ where: { value: artistId } });
@@ -34,18 +37,21 @@ export async function completeAccountErasure(artistId: string) {
 }
 
 export async function runPrivacyMaintenance() {
+  let pendingFailures = 0;
   const withdrawn = await prisma.user.findMany({ where: { diagnosticsConsent: false, diagnosticsPurgeRequestedAt: { not: null }, deletionRequestedAt: null }, take: 10, select: { id: true } });
   for (const user of withdrawn) {
     await prisma.$transaction(async tx => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${user.id}, 0))`;
       await tx.$queryRaw`SELECT "id" FROM "user" WHERE "id" = ${user.id} FOR UPDATE`;
       const current = await tx.user.findFirst({ where: { id: user.id, diagnosticsConsent: false, diagnosticsPurgeRequestedAt: { not: null } }, select: { id: true } });
-      if (current && await purgeAccountDiagnostics(user.id, true)) await tx.user.update({ where: { id: user.id }, data: { diagnosticsPurgeRequestedAt: null } });
+      if (current) {
+        if (await purgeAccountDiagnostics(user.id, true)) await tx.user.update({ where: { id: user.id }, data: { diagnosticsPurgeRequestedAt: null } });
+        else pendingFailures++;
+      }
     }, { timeout: 15_000 });
   }
   const pending = await prisma.user.findMany({ where: { deletionRequestedAt: { not: null } },
     orderBy: { deletionRequestedAt: "asc" }, take: 10, select: { id: true } });
-  let pendingFailures = 0;
   for (const user of pending) {
     try { await completeAccountErasure(user.id); } catch { pendingFailures++; }
   }
@@ -66,7 +72,8 @@ export async function runPrivacyMaintenance() {
       select: { storageKey: true, previewKey: true } });
     return new Set(records.flatMap(record => [record.storageKey, record.previewKey].filter((key): key is string => Boolean(key))));
   });
-  if (pendingFailures) console.error("Tinta privacy maintenance: pending erasure requires retry or operator review.");
+  if (pendingFailures) console.error("Tinta privacy maintenance: pending cleanup requires retry or operator review.");
+  return { pendingFailures };
 }
 
 const state = globalThis as typeof globalThis & { tintaPrivacyTimer?: ReturnType<typeof setInterval>; tintaPrivacyRunning?: boolean };
@@ -75,8 +82,14 @@ export function startPrivacyMaintenance() {
   const tick = async () => {
     if (state.tintaPrivacyRunning) return;
     state.tintaPrivacyRunning = true;
-    try { await runPrivacyMaintenance(); }
-    catch { console.error("Tinta privacy maintenance: cleanup failed; will retry. Review private storage and database availability."); }
+    try {
+      const result = await runPrivacyMaintenance();
+      await recordMaintenanceStatus(result.pendingFailures ? "degraded" : "ok");
+    }
+    catch {
+      console.error("Tinta privacy maintenance: cleanup failed; will retry. Review private storage and database availability.");
+      await recordMaintenanceStatus("failed");
+    }
     finally { state.tintaPrivacyRunning = false; }
   };
   state.tintaPrivacyTimer = setInterval(() => { void tick(); }, 15 * 60_000);

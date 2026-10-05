@@ -91,6 +91,15 @@ Create a separate PostgreSQL database named `tinta_e2e`. In the QA environment s
 
 The shared Playwright fixture truncates the disposable user/verification tables and their related records before each test. It refuses to run unless the explicit reset flag is present and the database name ends in `_e2e`. QA covers independent account creation, duplicate identity protection, cross-artist record/image/export denial, account changes in shared browser tabs, anonymous private-resource denial, unknown-record handling and appointment/payment workflows. Keep the real studio database on its own name and credentials. Restore the normal environment before starting the studio app again.
 
+## Pilot backups and monitoring
+
+For the dedicated `/srv/tinta` pilot, use the reviewed scripts and systemd units
+in `ops/`, following [production backups](production-backups.md) and
+[production monitoring](production-monitoring.md). The current operator has only
+one server: local backups and journal/state monitoring do not provide off-server
+recovery or delivered alerts. Keep those capabilities explicitly pending until
+a separate destination and alert channel have been configured and verified.
+
 ## Password recovery email
 
 Verify a sending domain in Resend, set `RESEND_API_KEY` and `EMAIL_FROM`, then recreate the application container. See [Resend's send-email API reference](https://resend.com/docs/api-reference/emails/send-email). The sign-in screen displays the recovery link only when both values are configured. A missing configuration produces an explicit unavailable page and does not pretend to send mail.

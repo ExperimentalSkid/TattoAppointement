@@ -7,6 +7,7 @@ import { getSession } from "@/lib/session";
 import { GoogleSignInButton } from "@/components/google-sign-in-button";
 import { isGoogleSignInConfigured } from "@/lib/studio-access";
 import { RememberLoginChoice } from "@/components/remember-login-choice";
+import { BetaNotice } from "@/components/beta-notice";
 
 export default async function SignUpPage() {
   const session = await getSession();
@@ -24,6 +25,7 @@ export default async function SignUpPage() {
         <p className="eyebrow">{locale === "es" ? "UN NUEVO CAPÍTULO" : "A NEW CHAPTER"}</p>
         <h1>{locale === "es" ? "Tu cuenta de artista" : "Your artist account"}</h1>
         <p>{locale === "es" ? "Empieza con tu cuenta. Dale tu nombre al estudio en Ajustes." : "Start with your account. Make the studio yours in Settings."}</p>
+        <BetaNotice locale={locale} />
         <RememberLoginChoice locale={locale}>
         {isGoogleSignInConfigured() ? <><GoogleSignInButton locale={locale} /><div className="auth-method-divider">{locale === "es" ? "o con tu correo" : "or with your email"}</div></> : null}
         <AuthForm mode="sign-up" copy={dictionary.auth} locale={locale} />

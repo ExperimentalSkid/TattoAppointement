@@ -75,6 +75,11 @@ jobs:
       - name: Unit tests
         run: npm run test:unit
 
+      - name: Verify backup and monitoring failure handling
+        run: |
+          python3 -m unittest discover -s ops -p test_backup.py -v
+          python3 -m unittest discover -s ops/tests -v
+
       - name: Verify privacy configuration validation and QA fixtures
         run: |
           npm run verify:privacy-config

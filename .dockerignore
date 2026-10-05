@@ -12,3 +12,7 @@ test-results
 playwright-report
 *.log
 *.tsbuildinfo
+__pycache__
+production.env
+backups
+ops/state

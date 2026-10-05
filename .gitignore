@@ -15,3 +15,7 @@ storage/
 test-results/
 playwright-report/
 *.tsbuildinfo
+__pycache__/
+production.env
+backups/
+ops/state/

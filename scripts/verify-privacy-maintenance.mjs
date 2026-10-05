@@ -31,7 +31,7 @@ const state = {
   failStoragePath: null, failLogArtist: null, failRetention: false, failUserDelete: false,
   withdrawalRace: false, maintenanceGate: null, failDiscovery: false, ticks: [], unrefs: 0, errors: [],
 };
-const originalEnvironment = Object.fromEntries(["DESIGN_STORAGE_DIR", "PRIVACY_MAINTENANCE_ENABLED", "NEXT_RUNTIME"].map(name => [name, process.env[name]]));
+const originalEnvironment = Object.fromEntries(["DESIGN_STORAGE_DIR", "DIAGNOSTICS_DIR", "PRIVACY_MAINTENANCE_ENABLED", "NEXT_RUNTIME"].map(name => [name, process.env[name]]));
 const originalGlobals = Object.fromEntries(["tintaMaintenanceVerification", "tintaPrivacyTimer", "tintaPrivacyRunning", "setInterval"].map(name => [name, Object.getOwnPropertyDescriptor(globalThis, name)]));
 const originalConsoleError = console.error;
 globalThis.tintaMaintenanceVerification = state;
@@ -132,6 +132,7 @@ state.prisma = new Proxy({}, { get(_target, name) {
 
 try {
   process.env.DESIGN_STORAGE_DIR = storageRoot;
+  process.env.DIAGNOSTICS_DIR = path.join(fixtureRoot, "operational-status");
   const filesystemBridge = moduleUrl(`
     export { chmod, mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
     import { rm as remove } from "node:fs/promises";
@@ -155,7 +156,11 @@ try {
     export async function cleanupDiagnostics() { state.events.push("diagnostics.retention"); return !state.failRetention; }
   `);
   const prismaBridge = moduleUrl("export const prisma = globalThis.tintaMaintenanceVerification.prisma;");
-  const imports = { "@/lib/prisma": prismaBridge, "@/lib/design-storage": storageModule, "@/lib/diagnostics": diagnosticsBridge };
+  const statusModule = await sourceModule("src/lib/maintenance-status.ts");
+  const { recordMaintenanceStatus } = await import(statusModule);
+  const recoveryModule = await sourceModule("src/lib/recovery-erasure.ts");
+  const { recordRecoveryErasure } = await import(recoveryModule);
+  const imports = { "@/lib/prisma": prismaBridge, "@/lib/design-storage": storageModule, "@/lib/diagnostics": diagnosticsBridge, "@/lib/maintenance-status": statusModule, "@/lib/recovery-erasure": recoveryModule };
   const maintenanceModule = await sourceModule("src/lib/privacy-maintenance.ts", imports);
   const maintenance = await import(maintenanceModule);
   console.error = (...args) => state.errors.push(args.join(" "));
@@ -334,11 +339,51 @@ try {
   check(state.queries.filter(value => value.operation === "user.findMany").length, 1, "Timer ticks cannot overlap an unfinished pass");
   state.maintenanceGate = null; release();
   await waitMaintenance(); check(globalThis.tintaPrivacyRunning, false);
+  const heartbeatPath = path.join(process.env.DIAGNOSTICS_DIR, "maintenance-status.json");
+  const readHeartbeat = async () => JSON.parse(await readFile(heartbeatPath, "utf8"));
+  const successfulHeartbeat = await readHeartbeat();
+  check(successfulHeartbeat.status, "ok"); check(successfulHeartbeat.schemaVersion, 1);
+  check(successfulHeartbeat.lastSuccessfulAt, successfulHeartbeat.finishedAt);
+  check(Object.keys(successfulHeartbeat).sort(), ["finishedAt", "lastSuccessfulAt", "schemaVersion", "status"], "Operational state has no account identifiers or exception text");
+  if (process.platform !== "win32") check((await stat(heartbeatPath)).mode & 0o777, 0o600);
   state.failDiscovery = true; state.ticks[0].callback();
   await waitMaintenance(); check(globalThis.tintaPrivacyRunning, false); check(state.errors.at(-1).includes("will retry"), true);
+  check((await readHeartbeat()).status, "failed");
+  check((await readHeartbeat()).lastSuccessfulAt, successfulHeartbeat.lastSuccessfulAt, "A failed pass cannot advance last success");
   state.failDiscovery = false; state.ticks[0].callback();
   await waitMaintenance(); check(globalThis.tintaPrivacyRunning, false);
   check(state.events.includes("diagnostics.retention"), true);
+  user("status-withdrawal", false, { diagnosticsPurgeRequestedAt: new Date() });
+  state.failLogArtist = "status-withdrawal"; state.ticks[0].callback(); await waitMaintenance();
+  check((await readHeartbeat()).status, "degraded", "An unfinished withdrawal cannot produce a healthy heartbeat");
+  state.failLogArtist = null; state.ticks[0].callback(); await waitMaintenance(); check((await readHeartbeat()).status, "ok");
+  await writeFile(heartbeatPath, "x".repeat(4097));
+  check(await recordMaintenanceStatus("failed"), true); check((await readHeartbeat()).lastSuccessfulAt, null, "Oversized old state cannot invent a success");
+  const unavailableStatusRoot = path.join(fixtureRoot, "status-is-a-file"); await writeFile(unavailableStatusRoot, "fixture");
+  process.env.DIAGNOSTICS_DIR = unavailableStatusRoot;
+  check(await recordMaintenanceStatus("ok"), false, "Status-storage failure is explicit and does not leak filesystem exceptions");
+  check(state.errors.at(-1), "Tinta privacy maintenance: operational status could not be saved.");
+  process.env.DIAGNOSTICS_DIR = path.dirname(heartbeatPath);
+  const recoveryDirectory = path.join(process.env.DIAGNOSTICS_DIR, "recovery-erasures");
+  await recordRecoveryErasure("client", "fixture-client-recovery");
+  const { createHash } = await import("node:crypto");
+  const subjectHash = createHash("sha256").update("client:fixture-client-recovery").digest("hex");
+  const instructionPath = path.join(recoveryDirectory, `client-${subjectHash}.json`);
+  const instructionText = await readFile(instructionPath, "utf8");
+  const instruction = JSON.parse(instructionText);
+  check(Object.keys(instruction).sort(), ["kind", "recordedAt", "schemaVersion", "subjectHash"]);
+  check(instruction.subjectHash, subjectHash); check(instruction.kind, "client");
+  check(instructionText.includes("fixture-client-recovery"), false, "Recovery evidence omits raw identifiers and erased content");
+  await recordRecoveryErasure("client", "fixture-client-recovery");
+  check(await readFile(instructionPath, "utf8"), instructionText, "Retries preserve the first accepted instruction");
+  if (process.platform !== "win32") check((await stat(instructionPath)).mode & 0o777, 0o600);
+  for (const invalid of ["../outside", "", "a".repeat(129)]) await rejects(() => recordRecoveryErasure("client", invalid), /invalid_recovery_instruction/);
+  reset(); user("ledger-unavailable", true);
+  process.env.DIAGNOSTICS_DIR = unavailableStatusRoot;
+  await rejects(() => maintenance.completeAccountErasure("ledger-unavailable"), /recovery_instruction_unavailable/);
+  check(state.users.has("ledger-unavailable"), true, "An unavailable recovery instruction prevents irreversible account cleanup");
+  check(state.events.some(value => value.startsWith("file.remove:")), false);
+  process.env.DIAGNOSTICS_DIR = path.dirname(heartbeatPath);
   const registerBridge = moduleUrl("export function startPrivacyMaintenance() { globalThis.tintaMaintenanceVerification.registrations++; }");
   const unusedBridge = moduleUrl("export const auth = {}; export const isAllowedStudioEmail = () => false; export const writeDiagnostic = () => {}; export const classifyDiagnosticError = () => 'unknown'; export const defaultDiagnosticContext = () => ({}); export const normalizeDiagnosticPage = () => 'unknown';");
   const { register } = await import(await sourceModule("src/instrumentation.ts", {

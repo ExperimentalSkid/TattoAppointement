@@ -10,6 +10,7 @@ import { WorkspaceSync } from "@/components/workspace-sync";
 import { WorkspaceAccess } from "@/components/workspace-access";
 import { ReportProblemButton } from "@/components/problem-report";
 import { LegalLinks } from "@/components/legal-links";
+import { BetaNotice } from "@/components/beta-notice";
 
 export function AppShell({
   children,
@@ -72,7 +73,7 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="app-content" id="main-content" tabIndex={-1}><WorkspaceSync workspaceId={workspaceId} revision={syncRevision} locale={locale} />{children}<LegalLinks locale={locale} /></main>
+        <main className="app-content" id="main-content" tabIndex={-1}><BetaNotice locale={locale} expandable /><WorkspaceSync workspaceId={workspaceId} revision={syncRevision} locale={locale} />{children}<LegalLinks locale={locale} /></main>
         <NavLinks copy={dictionary.nav} variant="mobile" />
       </div>
     </div>

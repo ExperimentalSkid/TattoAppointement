@@ -8,6 +8,7 @@ import { isPasswordRecoveryConfigured } from "@/lib/email";
 import { GoogleSignInButton } from "@/components/google-sign-in-button";
 import { isGoogleSignInConfigured } from "@/lib/studio-access";
 import { RememberLoginChoice } from "@/components/remember-login-choice";
+import { BetaNotice } from "@/components/beta-notice";
 
 export default async function SignInPage({ searchParams }: { searchParams: Promise<{ error?: string | string[] }> }) {
   const session = await getSession();
@@ -25,6 +26,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
         <p className="eyebrow">{locale === "es" ? "BIENVENIDO A TU ESTUDIO" : "WELCOME TO YOUR STUDIO"}</p>
         <h1>{dictionary.auth.signIn}</h1>
         <p>{locale === "es" ? "Todo listo para tu próxima sesión." : "Everything ready for your next session."}</p>
+        <BetaNotice locale={locale} />
         {query.error ? <p className="form-error" role="alert">{locale === "es" ? "No se pudo iniciar sesión con Google. Inténtalo de nuevo o entra con tu contraseña." : "Google sign-in did not complete. Try again or sign in with your password."}</p> : null}
         <RememberLoginChoice locale={locale}>
         <GoogleSignInButton locale={locale} available={googleConfigured} prominent />

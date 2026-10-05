@@ -4,6 +4,7 @@ import { diagnosticSameOrigin, DiagnosticBodyError, readDiagnosticBody } from "@
 import { CLIENT_FIELD_LIMITS } from "@/lib/client-fields";
 import { readRecordVersion } from "@/lib/record-version";
 import { isPrivacyWriteConflict } from "@/lib/privacy-errors";
+import { recordRecoveryErasure } from "@/lib/recovery-erasure";
 
 export const runtime = "nodejs";
 const headers = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" };
@@ -57,6 +58,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         tx.appointmentDesign.findFirst({ where: { appointment: { clientId: id }, design: { artistId: { not: artistId } } }, select: { designId: true } }),
       ]);
       if (foreignAppointment || foreignPayment || foreignArtwork) throw new ReviewError("mixed_ownership");
+      await recordRecoveryErasure("client", id);
       await tx.payment.deleteMany({ where: { artistId, appointment: { clientId: id, artistId } } });
       await tx.appointment.deleteMany({ where: { clientId: id, artistId } });
       const removed = await tx.client.deleteMany({ where: { id, artistId, updatedAt: instruction.expectedVersion } });

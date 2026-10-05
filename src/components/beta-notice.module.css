@@ -1,0 +1,48 @@
+.notice {
+  margin: 0 0 var(--space-group);
+  padding-top: var(--space-small);
+  border-top: 1px solid var(--rule);
+}
+
+.title {
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.message {
+  max-width: 70ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.75;
+}
+
+.indicator {
+  min-width: 0;
+  margin: 0 0 var(--space-group);
+}
+
+.indicator > summary {
+  width: fit-content;
+  min-height: 44px;
+  padding-block: 12px;
+  color: var(--accent);
+  font-size: 12px;
+  line-height: 20px;
+  cursor: pointer;
+}
+
+.indicator > summary:hover {
+  color: var(--text);
+}
+
+.indicator > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.indicator[open] > .message {
+  margin-top: 4px;
+}

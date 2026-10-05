@@ -110,4 +110,22 @@ try {
   check(await restarted.cleanup(), true);
   check((await readdir(path.join(directory, "privacy"))).filter(file => /jsonl$|^\.erased-/.test(file)), [], "Idle cleanup expires records and minimal markers");
 }
+// Admin reads only submitted, bounded, recent reports through the same erasure queue.
+{
+  const adminStore = logger.createDiagnosticStore({ directory: path.join(directory, "admin-reader"), now: () => now });
+  for (let index = 0; index < 55; index++) {
+    const clickedAt = new Date(now.getTime() - index * 1000).toISOString();
+    check((await adminStore.saveReport({ ...report, reportId: randomUUID(), clickedAt, description: `Report ${index}` }, "qa-admin-reader")).ok, true);
+  }
+  const rows = await adminStore.readAdminReports();
+  check(rows.length, 50, "Admin reads at most fifty reports");
+  check(Object.keys(rows[0]).sort(), ["id", "artistId", "createdAt", "clickedAt", "message", "route", "pageview", "deviceCategory", "calendarAnchor", "appVersion"].sort());
+  check(JSON.stringify(rows).includes("idempotencyKey"), false);
+  check(JSON.stringify(rows).includes("fingerprint"), false);
+  await adminStore.purgeAccount("qa-admin-reader");
+  check(await adminStore.readAdminReports(), [], "Account erasure removes reports from the admin view");
+  check(await logger.createDiagnosticStore({ directory: interruptedDirectory }).readAdminReports(), null, "Corrupt storage reports unavailable rather than no reports");
+  check(context.normalizeDiagnosticPage("/join#code=SECRET"), "/join", "Invitation codes never enter canonical pages");
+  check(context.normalizeDiagnosticPage("/admin/artists?page=2"), "/admin/artists");
+}
 console.log(`Diagnostics storage, privacy, retry and intake validation: ${checks} checks passed.`);

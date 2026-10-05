@@ -17,7 +17,7 @@ export const test = base.extend<{ emptyStudio: void }>({
       // Production authentication rate limits remain enabled during browser QA.
       const address = createHash("sha256").update(testInfo.testId).digest();
       await context.setExtraHTTPHeaders({ "x-forwarded-for": `10.${address[0]}.${address[1]}.${address[2]}` });
-      await pool.query('TRUNCATE TABLE "user", "verification" CASCADE');
+      await pool.query('TRUNCATE TABLE "user", "verification", "beta_invitation" CASCADE');
       await runTest();
     } finally { await pool.end(); }
   }, { auto: true }],

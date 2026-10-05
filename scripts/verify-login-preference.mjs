@@ -93,6 +93,7 @@ try {
   const { RememberLoginChoice } = await import(choiceModule);
   const clientImports = { react: fixtures, "react/jsx-runtime": fixtures, "@/lib/auth-client": fixtures, "@/components/auth-feedback": fixtures,
     "@/lib/client-diagnostics": fixtures, "@/components/remember-login-choice": choiceModule, "@/lib/login-preference": preferenceModule };
+  clientImports["@/lib/invitation-browser"] = await sourceModule("src/lib/invitation-browser.ts");
   const { AuthForm } = await import(await sourceModule("src/components/auth-form.tsx", clientImports, true));
   const { GoogleSignInButton, GoogleLinkButton } = await import(await sourceModule("src/components/google-sign-in-button.tsx", clientImports, true));
   installGlobal("window", { location: { replace: path => state.events.push(`navigate:${path}`) } });

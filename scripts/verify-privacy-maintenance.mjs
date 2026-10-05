@@ -103,6 +103,7 @@ function adapter(memory, transactional = false) {
     session: { deleteMany: args => lazy("session.deleteMany", args, () => {
       memory.sessions = memory.sessions.filter(row => !(row.expiresAt < args.where.expiresAt.lt));
     }) },
+    invitation: { deleteMany: args => lazy("invitation.deleteMany", args, () => {}) },
     verification: { deleteMany: args => {
       const work = () => { memory.verifications = memory.verifications.filter(row => args.where.value !== undefined ? row.value !== args.where.value : !(row.expiresAt < args.where.expiresAt.lt)); };
       return transactional ? Promise.resolve().then(() => { query("verification.deleteMany", args); work(); }) : lazy("verification.deleteMany", args, work);
@@ -388,7 +389,7 @@ try {
   const unusedBridge = moduleUrl("export const auth = {}; export const isAllowedStudioEmail = () => false; export const writeDiagnostic = () => {}; export const classifyDiagnosticError = () => 'unknown'; export const defaultDiagnosticContext = () => ({}); export const normalizeDiagnosticPage = () => 'unknown';");
   const { register } = await import(await sourceModule("src/instrumentation.ts", {
     "@/lib/privacy-maintenance": registerBridge, "@/lib/diagnostics": unusedBridge, "@/lib/diagnostic-context": unusedBridge,
-    "@/lib/auth": unusedBridge, "@/lib/studio-access": unusedBridge,
+    "@/lib/auth": unusedBridge, "@/lib/studio-access": unusedBridge, "@/lib/prisma": prismaBridge,
   }));
   state.registrations = 0;
   for (const [runtime, enabled] of [["edge", "true"], [undefined, "true"], ["nodejs", "false"], ["nodejs", undefined]]) {

@@ -5,6 +5,7 @@ import { getLocale } from "@/i18n";
 import { requireSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { getWorkspaceRevision } from "@/lib/workspace-sync";
+import { isTintaAdminIdentity } from "@/lib/beta-access";
 
 export default async function ProtectedAppLayout({
   children,
@@ -29,6 +30,7 @@ export default async function ProtectedAppLayout({
       syncRevision={syncRevision}
       workspaceId={session.user.id}
       diagnosticsConsent={artist.diagnosticsConsent}
+      isTintaAdmin={isTintaAdminIdentity(session.user)}
     >
       {children}
     </AppShell>

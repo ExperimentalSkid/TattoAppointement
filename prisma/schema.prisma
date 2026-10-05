@@ -29,6 +29,8 @@ model User {
   diagnosticsConsentNoticeVersion String?
   diagnosticsPurgeRequestedAt DateTime?
   deletionRequestedAt      DateTime?
+  activatedAt              DateTime? @default(now())
+  lastSignInAt             DateTime?
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
 
@@ -39,8 +41,40 @@ model User {
   appointments      Appointment[]
   payments          Payment[]
   workspaceRevision WorkspaceRevision?
+  createdInvitations Invitation[] @relation("InvitationCreator")
+  redeemedInvitations Invitation[] @relation("InvitationRedeemer")
+  invitationAttemptWindow InvitationAttemptWindow?
 
   @@map("user")
+}
+
+model Invitation {
+  id           String   @id @default(cuid())
+  codeHash     String   @unique
+  createdById  String?
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  redeemedAt   DateTime?
+  redeemedById String?
+
+  createdBy User? @relation("InvitationCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  redeemedBy User? @relation("InvitationRedeemer", fields: [redeemedById], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([createdById])
+  @@index([redeemedById])
+  @@map("beta_invitation")
+}
+
+model InvitationAttemptWindow {
+  userId          String   @id
+  windowStartedAt DateTime
+  attempts        Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("invitation_attempt_window")
 }
 
 model WorkspaceRevision {

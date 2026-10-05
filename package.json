@@ -27,7 +27,7 @@
     "verify:eslint-glob": "node scripts/verify-eslint-root-glob.mjs",
     "verify:money": "node scripts/verify-money.mjs",
     "verify:appointments": "node scripts/verify-appointments.mjs",
-    "test:unit": "node scripts/verify-money.mjs && node scripts/verify-appointments.mjs && node scripts/verify-uploads.mjs && node scripts/verify-studio-time.mjs && node scripts/verify-email.mjs && node scripts/verify-settings.mjs && node scripts/verify-studio-access.mjs && node scripts/verify-whatsapp-reminder.mjs && node scripts/verify-record-versions.mjs && node scripts/verify-diagnostics.mjs && node scripts/verify-privacy-minimization.mjs && node scripts/verify-login-preference.mjs && node scripts/verify-client-diagnostics-consent.mjs && node scripts/verify-privacy-maintenance.mjs",
+    "test:unit": "node scripts/verify-money.mjs && node scripts/verify-appointments.mjs && node scripts/verify-uploads.mjs && node scripts/verify-studio-time.mjs && node scripts/verify-email.mjs && node scripts/verify-settings.mjs && node scripts/verify-studio-access.mjs && node scripts/verify-whatsapp-reminder.mjs && node scripts/verify-record-versions.mjs && node scripts/verify-diagnostics.mjs && node scripts/verify-privacy-minimization.mjs && node scripts/verify-login-preference.mjs && node scripts/verify-client-diagnostics-consent.mjs && node scripts/verify-privacy-maintenance.mjs && node scripts/verify-invitations.mjs",
     "privacy:check": "node scripts/check-privacy-config.mjs",
     "verify:privacy-config": "node scripts/verify-privacy-config.mjs",
     "test:privacy": "playwright test tests/account-privacy.spec.ts tests/client-privacy.spec.ts tests/diagnostics-consent.spec.ts tests/problem-reports.spec.ts",

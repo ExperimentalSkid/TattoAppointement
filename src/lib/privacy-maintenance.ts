@@ -56,9 +56,14 @@ export async function runPrivacyMaintenance() {
     try { await completeAccountErasure(user.id); } catch { pendingFailures++; }
   }
   const now = new Date();
+  const invitationCutoff = new Date(now.getTime() - 30 * 86_400_000);
   await prisma.$transaction([
     prisma.session.deleteMany({ where: { expiresAt: { lt: now } } }),
     prisma.verification.deleteMany({ where: { expiresAt: { lt: now } } }),
+    prisma.invitation.deleteMany({ where: { OR: [
+      { redeemedAt: { lt: invitationCutoff } }, { revokedAt: { lt: invitationCutoff } },
+      { redeemedAt: null, revokedAt: null, expiresAt: { lt: invitationCutoff } },
+    ] } }),
     prisma.account.updateMany({ where: { providerId: "google", OR: [
       { accessToken: { not: null } }, { refreshToken: { not: null } }, { idToken: { not: null } },
       { scope: { not: null } }, { accessTokenExpiresAt: { not: null } }, { refreshTokenExpiresAt: { not: null } },

@@ -15,11 +15,17 @@ Copy `.env.example` to `.env` and configure:
 | `POSTGRES_PASSWORD` | A separate random hex password; hexadecimal avoids URL-encoding ambiguity |
 | `STUDIO_OWNER_EMAIL` | Optional installation-wide email restriction; leave blank to allow independent artists. A malformed nonempty value denies access |
 | `DISABLE_SIGN_UP` | `false` to permit new password or Google accounts; `true` closes registration while existing artists can still sign in |
+| `REQUIRE_INVITATION` | `true` for Google/password sign-in followed by first-time invitation activation; existing artists retain access |
+| `TINTA_ADMIN_USER_ID` | Verified active operator's immutable existing User.id for the admin panel; unset grants nobody admin access |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional Google Web application OAuth credentials; both are required to enable Google sign-in |
 | `RESEND_API_KEY` | A Resend API key permitted to send recovery messages; optional until email recovery is enabled |
 | `EMAIL_FROM` | A sender on a verified domain, such as `Tinta <accounts@studio.example.com>` |
 
 Generate each secret independently with `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`. Do not commit real environment files. The `DATABASE_URL` and `DESIGN_STORAGE_DIR` in Compose are set for the containers; the local example values are not used there.
+
+See [Beta invitations](beta-invitations.md) for the Google-first activation flow,
+admin permissions, limited account statistics, report access and migration-aware
+rollback instructions. Leave `STUDIO_OWNER_EMAIL` blank for invited independent artists.
 
 ## Start and update
 

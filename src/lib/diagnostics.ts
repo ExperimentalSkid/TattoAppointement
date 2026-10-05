@@ -2,7 +2,7 @@ import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
 import { chmod, mkdir, open, readFile, readdir, rename, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
-  defaultDiagnosticContext, isDiagnosticWorkspace, parseSafeDiagnosticEvent,
+  defaultDiagnosticContext, isDiagnosticWorkspace, isDiagnosticTimestamp, isDiagnosticUuid, parseProblemReport, parseSafeDiagnosticEvent,
   type DiagnosticCode, type DiagnosticContext, type ProblemReport, type SafeDiagnosticEvent,
 } from "./diagnostic-context";
 
@@ -27,6 +27,11 @@ type ReportRecord = Omit<ProblemReport, "workspaceIdAtClick"> & {
   appVersion: string; idempotencyKey: string; fingerprint: string;
 };
 export type ReportSaveResult = { ok: true; reference: string } | { ok: false; error: "conflict" | "unavailable" };
+export type AdminReportRecord = {
+  id: string; artistId: string | null; createdAt: string; clickedAt: string;
+  message: string; route: DiagnosticContext["page"]; pageview: DiagnosticContext["view"];
+  deviceCategory: DiagnosticContext["deviceCategory"]; calendarAnchor: string | null; appVersion: string;
+};
 type StoreOptions = { directory: string; maxDiagnosticBytes?: number; maxReportBytes?: number; now?: () => Date };
 
 export function classifyDiagnosticError(error: unknown): ErrorKind {
@@ -235,10 +240,41 @@ export function createDiagnosticStore(options: StoreOptions) {
       return true;
     }, false);
   }
+  // Share the writer's queue with erasure: a panel read cannot race a purge or
+  // expose internal deduplication hashes. Only explicitly submitted reports are read.
+  function readAdminReports() {
+    return enqueue<AdminReportRecord[] | null>(async () => {
+      const date = now();
+      await prepare(date);
+      const reports: AdminReportRecord[] = [];
+      const today = date.toISOString().slice(0, 10);
+      for (const file of (await logFiles()).filter(file => file.startsWith("reports-") && file.slice(8, 18) <= today).reverse()) {
+        for (const row of await privateRows(file)) {
+          if (row.source !== "artist_report" || !isDiagnosticUuid(row.reference) || !isDiagnosticTimestamp(row.receivedAt)
+            || !isDiagnosticWorkspace(row.artistId) || typeof row.appVersion !== "string" || !/^[A-Za-z0-9._-]{1,80}$/.test(row.appVersion)) {
+            throw new Error("invalid_private_report");
+          }
+          if (!timeIsRecent(row.receivedAt, date)) continue;
+          const report = parseProblemReport({ reportId: row.reportId, clickedAt: row.clickedAt, description: row.description,
+            context: row.context, recentEvents: row.recentEvents, workspaceIdAtClick: null });
+          if (!report) throw new Error("invalid_private_report");
+          reports.push({ id: row.reference, artistId: row.artistId, createdAt: row.receivedAt, clickedAt: report.clickedAt,
+            message: report.description, route: report.context.page, pageview: report.context.view,
+            deviceCategory: report.context.deviceCategory, calendarAnchor: report.context.calendarAnchor ?? null,
+            appVersion: row.appVersion });
+        }
+        // Files are chronological, so older files cannot enter the latest fifty.
+        reports.sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id));
+        reports.length = Math.min(reports.length, 50);
+        if (reports.length === 50) break;
+      }
+      return reports;
+    }, null);
+  }
   function cleanup() {
     return enqueue(async () => { indexDay = ""; await prepare(now()); return true; }, false);
   }
-  return { writeEvent, saveReport, exportAccount, purgeAccount, cleanup };
+  return { writeEvent, saveReport, exportAccount, purgeAccount, readAdminReports, cleanup };
 }
 
 type DiagnosticStore = ReturnType<typeof createDiagnosticStore>;
@@ -268,6 +304,9 @@ export async function saveProblemReport(report: ProblemReport, artistId: string 
 export async function exportAccountDiagnostics(artistId: string) { return store().exportAccount(artistId); }
 export async function purgeAccountDiagnostics(artistId: string, optionalOnly = false) { return store().purgeAccount(artistId, optionalOnly); }
 export async function cleanupDiagnostics() { return store().cleanup(); }
+export async function readAdminProblemReports() {
+  return bounded<AdminReportRecord[] | null>(store().readAdminReports(), REPORT_TIMEOUT_MS, null);
+}
 
 export class DiagnosticBodyError extends Error {
   constructor(readonly code: "invalid_body" | "too_large") { super(code); }

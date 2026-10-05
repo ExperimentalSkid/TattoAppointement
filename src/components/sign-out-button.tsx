@@ -6,6 +6,7 @@ import { authClient } from "@/lib/auth-client";
 import { useClearWorkspace } from "@/components/workspace-access";
 import { emitDiagnostic } from "@/lib/client-diagnostics";
 import { clearAppointmentDrafts } from "@/lib/appointment-draft";
+import { clearPendingInvitation } from "@/lib/invitation-browser";
 
 export function SignOutButton({ label }: { label: string }) {
   const clearWorkspace = useClearWorkspace();
@@ -22,6 +23,7 @@ export function SignOutButton({ label }: { label: string }) {
       const result = await authClient.signOut();
       if (result.error) throw new Error("Sign-out failed");
       clearAppointmentDrafts();
+      clearPendingInvitation();
       flushSync(clearWorkspace);
       window.location.replace("/sign-in");
     } catch {

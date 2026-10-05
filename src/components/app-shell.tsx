@@ -11,6 +11,7 @@ import { WorkspaceAccess } from "@/components/workspace-access";
 import { ReportProblemButton } from "@/components/problem-report";
 import { LegalLinks } from "@/components/legal-links";
 import { BetaNotice } from "@/components/beta-notice";
+import { InvitationCleanup } from "@/components/invitation-cleanup";
 
 export function AppShell({
   children,
@@ -21,6 +22,7 @@ export function AppShell({
   syncRevision,
   workspaceId,
   diagnosticsConsent,
+  isTintaAdmin = false,
 }: {
   children: ReactNode;
   dictionary: Dictionary;
@@ -30,6 +32,7 @@ export function AppShell({
   syncRevision: string;
   workspaceId: string;
   diagnosticsConsent: boolean;
+  isTintaAdmin?: boolean;
 }) {
   const es = locale === "es";
   const studio = studioName?.trim() || (es ? "Tu estudio" : "Your studio");
@@ -48,7 +51,7 @@ export function AppShell({
         </Link>
         <div className="sidebar-workspace"><span className="studio-dot" /><span title={studio}>{studio}</span></div>
         <p className="sidebar-section-label">{es ? "TU ESPACIO" : "YOUR WORKSPACE"}</p>
-        <NavLinks copy={dictionary.nav} variant="desktop" />
+        <NavLinks copy={dictionary.nav} variant="desktop" isTintaAdmin={isTintaAdmin} />
         <div className="sidebar-note"><BrandMark /><p>{es ? "El arte es tuyo.\nEl orden, también." : "Your art.\nYour rhythm."}</p></div>
         <div className="desktop-sidebar-footer">
           <Link href="/settings" className="artist-profile"><span className="artist-avatar">{initials}</span><span><strong title={userName}>{userName}</strong><small>{es ? "Artista del estudio" : "Studio artist"}</small></span></Link>
@@ -73,8 +76,8 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="app-content" id="main-content" tabIndex={-1}><BetaNotice locale={locale} expandable /><WorkspaceSync workspaceId={workspaceId} revision={syncRevision} locale={locale} />{children}<LegalLinks locale={locale} /></main>
-        <NavLinks copy={dictionary.nav} variant="mobile" />
+        <main className="app-content" id="main-content" tabIndex={-1}><InvitationCleanup /><BetaNotice locale={locale} expandable /><WorkspaceSync workspaceId={workspaceId} revision={syncRevision} locale={locale} />{children}<LegalLinks locale={locale} /></main>
+        <NavLinks copy={dictionary.nav} variant="mobile" isTintaAdmin={isTintaAdmin} />
       </div>
     </div>
     </WorkspaceAccess>

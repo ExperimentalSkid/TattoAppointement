@@ -9,7 +9,7 @@ export const CLIENT_DIAGNOSTIC_CODES: readonly DiagnosticCode[] = ["auth_sign_in
   "unhandled_rejection", "action_failed", "sync_failed", "sync_recovered", "sync_offline", "sync_session_expired"];
 export const DIAGNOSTIC_PAGES = ["/", "/sign-in", "/sign-up", "/forgot-password", "/reset-password", "/calendar",
   "/new-appointment", "/clients", "/clients/new", "/clients/:id", "/clients/:id/edit", "/designs", "/designs/new",
-  "/designs/:id", "/designs/:id/edit", "/appointments/:id", "/appointments/:id/edit", "/settings", "/unknown"] as const;
+  "/designs/:id", "/designs/:id/edit", "/appointments/:id", "/appointments/:id/edit", "/settings", "/join", "/admin", "/admin/artists", "/admin/reports", "/unknown"] as const;
 export type DiagnosticPage = typeof DIAGNOSTIC_PAGES[number];
 export const DIAGNOSTIC_VIEWS = ["day", "week", "month", "list", "detail", "new", "edit", "settings", "auth"] as const;
 export type DiagnosticView = typeof DIAGNOSTIC_VIEWS[number] | null;

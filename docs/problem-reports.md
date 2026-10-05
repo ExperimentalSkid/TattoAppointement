@@ -30,8 +30,12 @@ Set `TINTA_RELEASE` to the deployed commit so events identify their release.
 Daily `diagnostics-YYYY-MM-DD.jsonl` files contain safe sign-in outcomes,
 appointment saves, upload outcomes, action/browser/page errors, sync failures
 and recovery. Daily `reports-YYYY-MM-DD.jsonl` files contain artist-written
-reports and their attached metadata. Only operators with filesystem access can
-read either stream: the two web endpoints support intake by POST, never reading.
+reports and their attached metadata. Filesystem operators can read either stream.
+The configured verified administrator can review recent explicitly submitted
+reports in `/admin/reports`, with page, times and reference. It does not expose raw
+security logs, internal deduplication hashes or other workspace contents. The two
+web intake endpoints support POST, never public reading. See
+[Beta invitations](beta-invitations.md) for admin identity and access controls.
 
 Optional browser diagnostics are off by default and require an authenticated
 account's explicit opt-in in Settings. Enabling is unavailable until verified

@@ -9,6 +9,7 @@ import { isPasswordRecoveryConfigured, sendPasswordResetEmail } from "@/lib/emai
 import { isAllowedGoogleIdentity, isAllowedStudioEmail, isGoogleSignInConfigured } from "@/lib/studio-access";
 import { writeDiagnostic } from "@/lib/diagnostics";
 import { LOGIN_PREFERENCE_COOKIE } from "@/lib/login-preference";
+import { invitationsRequired } from "@/lib/beta-access";
 
 const googleOptions = {
   clientId: process.env.GOOGLE_CLIENT_ID?.trim() ?? "",
@@ -71,7 +72,7 @@ export const auth = betterAuth({
           if (!isAllowedStudioEmail(user.email)) {
             throw new APIError("FORBIDDEN", { code: "STUDIO_ACCESS_DENIED", message: "This account is not authorized for this installation." });
           }
-          return { data: { image: null } };
+          return { data: { image: null, activatedAt: invitationsRequired() ? null : new Date(), lastSignInAt: null } };
         },
       },
       update: {
@@ -97,6 +98,10 @@ export const auth = betterAuth({
           }
         },
         after: async (session) => {
+          // Better Auth queues database after hooks until its signup transaction
+          // commits. Session refreshes update rows and do not count as sign-ins.
+          await prisma.user.updateMany({ where: { id: session.userId, deletionRequestedAt: null },
+            data: { lastSignInAt: new Date() } }).catch(() => console.error("Sign-in timestamp could not be saved."));
           await writeDiagnostic({ code: "auth_sign_in_success", artistId: session.userId, outcome: "saved" });
         },
       },
@@ -162,6 +167,17 @@ export const auth = betterAuth({
         type: "string",
         required: false,
         input: false,
+      },
+      activatedAt: {
+        type: "date",
+        required: false,
+        input: false,
+      },
+      lastSignInAt: {
+        type: "date",
+        required: false,
+        input: false,
+        returned: false,
       },
     },
   },

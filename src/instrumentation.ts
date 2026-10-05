@@ -17,12 +17,16 @@ export const onRequestError: Instrumentation.onRequestError = async (error, requ
     try {
       const { auth } = await import("@/lib/auth");
       const { isAllowedStudioEmail } = await import("@/lib/studio-access");
+      const { prisma } = await import("@/lib/prisma");
       const sessionHeaders = new Headers();
       for (const [name, value] of Object.entries(request.headers)) {
         if (value !== undefined) sessionHeaders.set(name, Array.isArray(value) ? value.join(", ") : value);
       }
       const session = await auth.api.getSession({ headers: sessionHeaders });
-      if (session && isAllowedStudioEmail(session.user.email)) artistId = session.user.id;
+      if (session && isAllowedStudioEmail(session.user.email)) {
+        const active = await prisma.user.findFirst({ where: { id: session.user.id, activatedAt: { not: null }, deletionRequestedAt: null }, select: { id: true } });
+        artistId = active?.id ?? null;
+      }
     } catch { /* An unavailable session keeps the error anonymous. */ }
   }
   const digest = error && typeof error === "object" && "digest" in error && typeof error.digest === "string"

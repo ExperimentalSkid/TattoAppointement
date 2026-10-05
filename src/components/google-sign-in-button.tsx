@@ -7,9 +7,10 @@ import { AuthFeedback } from "@/components/auth-feedback";
 import { emitDiagnostic } from "@/lib/client-diagnostics";
 import { useRememberLogin } from "@/components/remember-login-choice";
 import { persistLoginPreference } from "@/lib/login-preference";
+import { hasPendingInvitation } from "@/lib/invitation-browser";
 import "./google-sign-in.css";
 
-function GoogleButton({ locale, link = false, available = true, prominent = false }: { locale: Locale; link?: boolean; available?: boolean; prominent?: boolean }) {
+function GoogleButton({ locale, link = false, available = true, prominent = false, activation = false }: { locale: Locale; link?: boolean; available?: boolean; prominent?: boolean; activation?: boolean }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
   const inFlightRef = useRef(false);
@@ -26,7 +27,7 @@ function GoogleButton({ locale, link = false, available = true, prominent = fals
       if (!link) await persistLoginPreference(loginChoice?.remember ?? false);
       const result = link
         ? await authClient.linkSocial({ provider: "google", callbackURL: "/settings", errorCallbackURL: "/settings?error=oauth" })
-        : await authClient.signIn.social({ provider: "google", callbackURL: "/calendar", errorCallbackURL: "/sign-in?error=oauth" });
+        : await authClient.signIn.social({ provider: "google", callbackURL: activation || hasPendingInvitation() ? "/join" : "/calendar", errorCallbackURL: "/sign-in?error=oauth" });
       if (result.error) {
         emitDiagnostic("auth_sign_in_failed", { outcome: "failed", reason: "response" });
         setError(true);
@@ -57,8 +58,8 @@ function GoogleButton({ locale, link = false, available = true, prominent = fals
   );
 }
 
-export function GoogleSignInButton({ locale, available = true, prominent = false }: { locale: Locale; available?: boolean; prominent?: boolean }) {
-  return <GoogleButton locale={locale} available={available} prominent={prominent} />;
+export function GoogleSignInButton({ locale, available = true, prominent = false, activation = false }: { locale: Locale; available?: boolean; prominent?: boolean; activation?: boolean }) {
+  return <GoogleButton locale={locale} available={available} prominent={prominent} activation={activation} />;
 }
 
 export function GoogleLinkButton({ locale }: { locale: Locale }) {

@@ -1,0 +1,17 @@
+.join-activation { margin-top: 28px; }
+.join-step { margin: 0 0 12px; color: var(--accent); font-size: 10px; letter-spacing: .09em; }
+.join-activation > .muted-copy { font-size: 13px; line-height: 1.7; }
+.join-invitation-ready { color: var(--text); font-size: 12px; }
+.join-email-links { display: grid; gap: 12px; margin: 22px 0 0; font-size: 12px; }
+.join-account { display: grid; gap: 4px; color: var(--muted); font-size: 12px; margin-bottom: 24px; }
+.join-account strong { color: var(--text); font-weight: 400; overflow-wrap: anywhere; }
+.join-form input { letter-spacing: .07em; }
+.join-change-account { margin-top: 16px; }
+.join-no-code { margin-top: 24px; }
+.join-code-fallback { display: block; color: var(--text); font-family: monospace; overflow-wrap: anywhere; margin-top: 8px; }
+.join-own-data { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--rule); }
+.join-own-data h2 { font: 400 23px/1.3 Georgia, serif; margin: 0 0 12px; }
+.join-own-data .account-export { margin-bottom: 12px; }
+.join-own-data summary { min-height: 44px; font-size: 12px; cursor: pointer; display: flex; align-items: center; }
+.join-own-data details > p { font-size: 12px; line-height: 1.7; }
+.join-own-data .privacy-choice { font-size: 12px; }

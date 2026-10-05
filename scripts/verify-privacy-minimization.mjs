@@ -37,7 +37,8 @@ const fixtureModule = moduleUrl(`
   import { memoryAdapter } from ${JSON.stringify(installed("@better-auth/memory-adapter/dist/index.mjs"))};
   const state = globalThis.tintaPrivacyVerification;
   export const prismaAdapter = () => memoryAdapter(state.database);
-  export const prisma = { user: { findUnique: async ({ where }) => state.hideNewSignupUser ? null : state.database.user.find(user => user.id === where.id) ?? null } };
+  export const prisma = { user: { findUnique: async ({ where }) => state.hideNewSignupUser ? null : state.database.user.find(user => user.id === where.id) ?? null,
+    updateMany: async ({ where, data }) => { const user = state.database.user.find(user => user.id === where.id); if (user) Object.assign(user, data); return { count: user ? 1 : 0 }; } } };
   export const nextCookies = () => ({ id: "privacy-verification-next-cookie-bridge" });
   export const isPasswordRecoveryConfigured = () => false;
   export const sendPasswordResetEmail = async () => { throw new Error("Unexpected email delivery"); };
@@ -57,6 +58,7 @@ try {
       id_token: "mock-valid-google-id-token", expires_in: 3600, token_type: "Bearer", scope: "openid email profile" });
   });
   const accessModule = await sourceModule("src/lib/studio-access.ts");
+  const betaModule = await sourceModule("src/lib/beta-access.ts");
   const loginPreferenceModule = await sourceModule("src/lib/login-preference.ts");
   const authModule = await sourceModule("src/lib/auth.ts", {
     "@better-auth/prisma-adapter": fixtureModule,
@@ -68,6 +70,7 @@ try {
     "@/lib/prisma": fixtureModule, "@/lib/email": fixtureModule,
     "@/lib/studio-access": accessModule, "@/lib/diagnostics": fixtureModule,
     "@/lib/login-preference": loginPreferenceModule,
+    "@/lib/beta-access": betaModule,
   });
   const { auth } = await import(authModule);
   function cookies(response) { return response.headers.getSetCookie(); }
@@ -226,6 +229,7 @@ try {
   `);
   const uiImports = Object.fromEntries(["react", "react/jsx-runtime", "react-dom", "next/navigation", "@/lib/auth-client",
     "@/components/workspace-access", "@/lib/client-diagnostics", "@/lib/appointment-draft"].map(name => [name, uiModule]));
+  uiImports["@/lib/invitation-browser"] = await sourceModule("src/lib/invitation-browser.ts");
   const { SignOutButton } = await import(await sourceModule("src/components/sign-out-button.tsx", uiImports, true));
   drafts.storeAppointmentDraft(key, "/new-appointment", draft);
   state.signOutFails = true; state.events = [];

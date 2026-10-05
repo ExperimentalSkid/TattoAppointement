@@ -108,6 +108,7 @@
 .status-pill, .status-pill[data-status] { display: inline-flex; align-items: center; gap: 7px; border: 0; background: transparent; border-radius: 0; padding: 0; font-weight: 400; }
 .status-pill::before { content: ""; width: 4px; height: 4px; flex: 0 0 auto; border-radius: 50%; background: currentColor; }
 .desktop-nav a, .mobile-nav a { border-radius: 0; }
+.mobile-nav[data-admin="true"] { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .desktop-nav a[data-active="true"] { background: transparent; box-shadow: inset 2px 0 var(--accent); }
 .desktop-nav a[href="/new-appointment"][data-active="true"] { box-shadow: none; }
 .mobile-nav a[data-active="true"] { background: transparent; box-shadow: inset 0 -2px var(--accent); }

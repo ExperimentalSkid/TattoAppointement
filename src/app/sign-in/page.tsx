@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth-form";
 import { AuthShell } from "@/components/auth-shell";
 import { getDictionary } from "@/i18n";
-import { getSession } from "@/lib/session";
+import { getIdentitySession } from "@/lib/session";
 import { isPasswordRecoveryConfigured } from "@/lib/email";
 import { GoogleSignInButton } from "@/components/google-sign-in-button";
 import { isGoogleSignInConfigured } from "@/lib/studio-access";
@@ -11,9 +11,9 @@ import { RememberLoginChoice } from "@/components/remember-login-choice";
 import { BetaNotice } from "@/components/beta-notice";
 
 export default async function SignInPage({ searchParams }: { searchParams: Promise<{ error?: string | string[] }> }) {
-  const session = await getSession();
+  const session = await getIdentitySession();
   if (session) {
-    redirect("/calendar");
+    redirect(session.user.activatedAt ? "/calendar" : "/join");
   }
 
   const { locale, dictionary } = await getDictionary();

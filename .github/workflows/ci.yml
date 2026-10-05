@@ -31,6 +31,8 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tinta_utf8_e2e?schema=public
       ALLOW_TEST_DB_RESET: "true"
       STUDIO_OWNER_EMAIL: ""
+      TINTA_ADMIN_USER_ID: tinta-e2e-admin
+      REQUIRE_INVITATION: "false"
       BETTER_AUTH_SECRET: ci-only-secret-with-at-least-thirty-two-characters
       BETTER_AUTH_URL: http://127.0.0.1:3000
       GOOGLE_CLIENT_ID: ""
@@ -112,6 +114,14 @@ jobs:
           name: browser-test-results
           path: test-results/
           retention-days: 7
+      - name: Keep invitation and admin layout evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-invitation-layouts
+          path: .tmp/admin-layouts/
+          retention-days: 7
+          if-no-files-found: ignore
 
   container:
     runs-on: ubuntu-latest

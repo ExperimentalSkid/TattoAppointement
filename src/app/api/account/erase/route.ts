@@ -1,4 +1,4 @@
-import { getSession } from "@/lib/session";
+import { getIdentitySession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { diagnosticSameOrigin, DiagnosticBodyError, readDiagnosticBody } from "@/lib/diagnostics";
 import { assertAccountOwnership, completeAccountErasure } from "@/lib/privacy-maintenance";
@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 const headers = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" };
 export async function POST(request: Request) {
   try {
-    const session = await getSession();
+    const session = await getIdentitySession();
     if (!session) return Response.json({ error: "unauthorized" }, { status: 401, headers });
     if (!diagnosticSameOrigin(request)) return Response.json({ error: "forbidden" }, { status: 403, headers });
     const body = await readDiagnosticBody(request, 2 * 1024);

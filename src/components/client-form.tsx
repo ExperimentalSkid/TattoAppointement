@@ -8,6 +8,7 @@ import type { Dictionary } from "@/i18n/dictionaries";
 import type { ClientFormState } from "@/app/(app)/clients/actions";
 import { CLIENT_FIELD_LIMITS, type ClientField } from "@/lib/client-fields";
 import { SyncEditConflict } from "@/components/sync-edit-conflict";
+import { HealthDataHint } from "@/components/legal-links";
 
 type ClientAction = (
   state: ClientFormState,
@@ -250,6 +251,7 @@ export function ClientForm({
             {...fieldProps("notes")}
           />
           {fieldError("notes")}
+          <HealthDataHint locale={locale} />
         </div>
       </div>
 

@@ -24,7 +24,9 @@ function payload(artistId: string | null, description: string) {
     context: { page: "/calendar", view: "week", timezone: "Europe/Madrid", deviceCategory: "phone", syncState: "current", online: true, calendarAnchor: "2026-10-05" } };
 }
 
-test("a mobile sign-in report keeps its original context and safe errors after a lost response", async ({ page }, testInfo) => {
+test("a mobile sign-in report keeps its original context without automatic diagnostics after a lost response", async ({ page }, testInfo) => {
+  const optionalRequests: string[] = [];
+  page.on("request", request => { if (new URL(request.url()).pathname === "/api/diagnostics") optionalRequests.push(request.url()); });
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto("/sign-in");
   await page.evaluate(() => window.dispatchEvent(new ErrorEvent("error", { message: "PRIVATE_TEST_SECRET", error: new Error("PRIVATE_TEST_SECRET") })));
@@ -53,7 +55,8 @@ test("a mobile sign-in report keeps its original context and safe errors after a
   const stored = (await rows("reports")).filter(row => row.description === description);
   expect(stored).toHaveLength(1);
   expect(stored[0].artistId).toBeNull();
-  expect(stored[0].recentEvents.some((event: { code: string }) => event.code === "browser_error")).toBe(true);
+  expect(stored[0].recentEvents).toEqual([]);
+  expect(optionalRequests).toEqual([]);
   expect(stored[0].clickedAt).toBe(requests[0].clickedAt);
 });
 
@@ -79,6 +82,9 @@ test("report storage is session-bound, private and idempotent across independent
     expect((await context.request.post("/api/reports", { headers: { Origin: origin }, data: { ...report, artistId: artistB } })).status()).toBe(400);
     expect((await context.request.post("/api/reports", { headers: { Origin: origin }, data: { ...report, description: "x".repeat(25 * 1024) } })).status()).toBe(413);
     const diagnostic = { id: randomUUID(), occurredAt: new Date().toISOString(), code: "action_failed", outcome: "failed", context: report.context, workspaceIdAtClick: artistA };
+    expect((await context.request.post("/api/diagnostics", { headers: { Origin: origin }, data: diagnostic })).status()).toBe(403);
+    const consent = await context.request.post("/api/preferences/diagnostics", { headers: { Origin: origin }, data: { enabled: true } });
+    expect(consent.status(), "Explicit opt-in requires configured QA operator facts").toBe(200);
     expect((await context.request.post("/api/diagnostics", { headers: { Origin: origin }, data: diagnostic })).status()).toBe(202);
     expect((await second.request.post("/api/diagnostics", { headers: { Origin: origin }, data: diagnostic })).status()).toBe(409);
     expect((await rows("diagnostics")).find(row => row.id === diagnostic.id)?.artistId).toBe(artistA);

@@ -8,7 +8,7 @@ export default async function NewDesignPage({
 }: {
   searchParams: Promise<{ returnTo?: string | string[] }>;
 }) {
-  const { dictionary } = await getDictionary();
+  const { dictionary, locale } = await getDictionary();
   const returnTo = validateAppointmentReturn((await searchParams).returnTo);
 
   return (
@@ -20,7 +20,7 @@ export default async function NewDesignPage({
         </Link>
       </div>
       <div className="form-card">
-        <DesignUploadForm copy={dictionary.designs} returnTo={returnTo} />
+        <DesignUploadForm copy={dictionary.designs} returnTo={returnTo} locale={locale} />
       </div>
     </section>
   );

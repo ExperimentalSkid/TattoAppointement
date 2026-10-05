@@ -1,18 +1,30 @@
 import { prismaAdapter } from "@better-auth/prisma-adapter";
 import { betterAuth } from "better-auth/minimal";
 import { nextCookies } from "better-auth/next-js";
-import { APIError } from "better-auth/api";
+import { APIError, createAuthMiddleware } from "better-auth/api";
+import { expireCookie, setSessionCookie } from "better-auth/cookies";
 import { google, verifyGoogleIdToken } from "better-auth/social-providers";
 import { prisma } from "@/lib/prisma";
 import { isPasswordRecoveryConfigured, sendPasswordResetEmail } from "@/lib/email";
 import { isAllowedGoogleIdentity, isAllowedStudioEmail, isGoogleSignInConfigured } from "@/lib/studio-access";
 import { writeDiagnostic } from "@/lib/diagnostics";
+import { LOGIN_PREFERENCE_COOKIE } from "@/lib/login-preference";
 
 const googleOptions = {
   clientId: process.env.GOOGLE_CLIENT_ID?.trim() ?? "",
   clientSecret: process.env.GOOGLE_CLIENT_SECRET?.trim() ?? "",
 };
 const verifiedGoogleProvider = isGoogleSignInConfigured() ? google(googleOptions) : null;
+// Google is used only to verify identity during sign-in, never to call APIs later.
+// Explicit nulls are required because Better Auth merges before-hook data.
+const discardedOAuthData = {
+  accessToken: null,
+  refreshToken: null,
+  idToken: null,
+  accessTokenExpiresAt: null,
+  refreshTokenExpiresAt: null,
+  scope: null,
+};
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -29,7 +41,7 @@ export const auth = betterAuth({
         if (!claims || typeof claims.sub !== "string") return null;
         const info = await verifiedGoogleProvider.getUserInfo(token);
         if (!info) return null;
-        const user = { ...info.user, id: claims.sub };
+        const user = { ...info.user, id: claims.sub, image: undefined };
         if (!isAllowedGoogleIdentity(user)) return null;
         return { ...info, user };
       },
@@ -45,13 +57,25 @@ export const auth = betterAuth({
     },
   },
   databaseHooks: {
+    account: {
+      create: {
+        before: async () => ({ data: discardedOAuthData }),
+      },
+      update: {
+        before: async () => ({ data: discardedOAuthData }),
+      },
+    },
     user: {
       create: {
         before: async (user) => {
           if (!isAllowedStudioEmail(user.email)) {
             throw new APIError("FORBIDDEN", { code: "STUDIO_ACCESS_DENIED", message: "This account is not authorized for this installation." });
           }
+          return { data: { image: null } };
         },
+      },
+      update: {
+        before: async () => ({ data: { image: null } }),
       },
     },
     session: {
@@ -62,8 +86,14 @@ export const auth = betterAuth({
           const artist = context
             ? await context.context.internalAdapter.findUserById(session.userId)
             : await prisma.user.findUnique({ where: { id: session.userId }, select: { email: true } });
-          if (!artist || !isAllowedStudioEmail(artist.email)) {
+          // A new signup may exist only inside Better Auth's transaction.
+          // Existing accounts pending erasure must not receive another session.
+          const erasure = await prisma.user.findUnique({ where: { id: session.userId }, select: { deletionRequestedAt: true } });
+          if (!artist || !isAllowedStudioEmail(artist.email) || erasure?.deletionRequestedAt) {
             throw new APIError("FORBIDDEN", { code: "STUDIO_ACCESS_DENIED", message: "This account is not authorized for this installation." });
+          }
+          if (context?.getCookie(LOGIN_PREFERENCE_COOKIE) !== "1") {
+            return { data: { expiresAt: new Date(Math.min(session.expiresAt.getTime(), Date.now() + 86_400_000)) } };
           }
         },
         after: async (session) => {
@@ -71,6 +101,25 @@ export const auth = betterAuth({
         },
       },
     },
+  },
+  hooks: {
+    after: createAuthMiddleware(async (context) => {
+      if (context.path === "/sign-out") {
+        const result = context.context.returned;
+        if (result && typeof result === "object" && "success" in result && result.success === true) {
+          context.setCookie(LOGIN_PREFERENCE_COOKIE, "", { path: "/", httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", maxAge: 0 });
+        }
+        return;
+      }
+      const nextSession = context.context.newSession;
+      if (!nextSession) return;
+      const remember = context.getCookie(LOGIN_PREFERENCE_COOKIE) === "1";
+      // The provider callback initially uses Better Auth's persistent default.
+      // Replace that pending cookie before applying the explicit device choice.
+      expireCookie(context, context.context.authCookies.sessionToken);
+      if (remember) expireCookie(context, context.context.authCookies.dontRememberToken);
+      await setSessionCookie(context, nextSession, !remember);
+    }),
   },
   emailAndPassword: {
     enabled: true,

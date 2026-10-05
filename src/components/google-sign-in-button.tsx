@@ -5,6 +5,8 @@ import { authClient } from "@/lib/auth-client";
 import type { Locale } from "@/i18n";
 import { AuthFeedback } from "@/components/auth-feedback";
 import { emitDiagnostic } from "@/lib/client-diagnostics";
+import { useRememberLogin } from "@/components/remember-login-choice";
+import { persistLoginPreference } from "@/lib/login-preference";
 import "./google-sign-in.css";
 
 function GoogleButton({ locale, link = false, available = true, prominent = false }: { locale: Locale; link?: boolean; available?: boolean; prominent?: boolean }) {
@@ -13,13 +15,15 @@ function GoogleButton({ locale, link = false, available = true, prominent = fals
   const inFlightRef = useRef(false);
   const unavailableId = useId();
   const es = locale === "es";
+  const loginChoice = useRememberLogin();
 
   async function signIn() {
-    if (!available || inFlightRef.current) return;
+    if (!available || inFlightRef.current || (!link && loginChoice && !loginChoice.beginLogin())) return;
     inFlightRef.current = true;
     setPending(true);
     setError(false);
     try {
+      if (!link) await persistLoginPreference(loginChoice?.remember ?? false);
       const result = link
         ? await authClient.linkSocial({ provider: "google", callbackURL: "/settings", errorCallbackURL: "/settings?error=oauth" })
         : await authClient.signIn.social({ provider: "google", callbackURL: "/calendar", errorCallbackURL: "/sign-in?error=oauth" });
@@ -28,18 +32,20 @@ function GoogleButton({ locale, link = false, available = true, prominent = fals
         setError(true);
         inFlightRef.current = false;
         setPending(false);
+        if (!link) loginChoice?.endLogin();
       }
     } catch {
       emitDiagnostic("auth_sign_in_failed", { outcome: "failed", reason: "network" });
       setError(true);
       inFlightRef.current = false;
       setPending(false);
+      if (!link) loginChoice?.endLogin();
     }
   }
 
   return (
     <div className="google-auth-option" data-prominent={prominent || undefined}>
-      <button type="button" className="google-auth-button" disabled={pending || !available} onClick={signIn} aria-busy={pending} aria-describedby={!available ? unavailableId : undefined}>
+      <button type="button" className="google-auth-button" disabled={pending || !available || (!link && loginChoice?.pending)} onClick={signIn} aria-busy={pending} aria-describedby={!available ? unavailableId : undefined}>
         {/* Official Google brand asset; a fixed local icon needs no optimization. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/icons/google-g.png" width="20" height="20" alt="" />

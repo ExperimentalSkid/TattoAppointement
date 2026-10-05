@@ -14,9 +14,9 @@ export async function getSession() {
   if (!session) return null;
   const artist = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { email: true },
+    select: { email: true, deletionRequestedAt: true },
   });
-  return artist && isAllowedStudioEmail(artist.email) ? session : null;
+  return artist && !artist.deletionRequestedAt && isAllowedStudioEmail(artist.email) ? session : null;
 }
 
 export async function requireSession() {

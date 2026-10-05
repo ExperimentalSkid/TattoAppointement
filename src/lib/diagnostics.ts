@@ -1,5 +1,5 @@
 import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
-import { chmod, mkdir, open, readFile, readdir, stat, unlink } from "node:fs/promises";
+import { chmod, mkdir, open, readFile, readdir, rename, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
   defaultDiagnosticContext, isDiagnosticWorkspace, parseSafeDiagnosticEvent,
@@ -66,6 +66,18 @@ export function createDiagnosticStore(options: StoreOptions) {
   const reportIndex = new Map<string, { reference: string; fingerprint: string }>();
   const reportCounts = new Map<string, number>();
 
+  async function accountErased(artistId: string | null, date: Date) {
+    if (!artistId) return false;
+    try {
+      const marker = JSON.parse(await readFile(path.join(directory, `.erased-${hash(artistId)}.json`), "utf8"));
+      return Date.parse(marker.expiresAt) > date.getTime();
+    } catch (error) {
+      if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") return false;
+      // A malformed deletion marker must not allow data to reappear.
+      return true;
+    }
+  }
+
   function enqueue<T>(operation: () => Promise<T>, fallback: T): Promise<T> {
     if (pending >= MAX_PENDING_WRITES) return Promise.resolve(fallback);
     pending++;
@@ -83,6 +95,12 @@ export function createDiagnosticStore(options: StoreOptions) {
     reportCounts.clear();
     const files = await readdir(directory);
     for (const file of files) {
+      if (/^\.erased-[a-f0-9]{64}\.json$/.test(file)) {
+        const markerPath = path.join(directory, file);
+        const marker = JSON.parse(await readFile(markerPath, "utf8"));
+        if (Number.isFinite(Date.parse(marker.expiresAt)) && Date.parse(marker.expiresAt) <= date.getTime()) await unlink(markerPath);
+        continue;
+      }
       const match = /^(diagnostics|reports)-(\d{4}-\d{2}-\d{2})\.jsonl$/.exec(file);
       if (!match) continue;
       const filePath = path.join(/* turbopackIgnore: true */ directory, file);
@@ -139,6 +157,7 @@ export function createDiagnosticStore(options: StoreOptions) {
       const artistId = input.artistId ?? null;
       if (!event || !isDiagnosticWorkspace(artistId) || !timeIsRecent(event.occurredAt, date)) return false;
       await prepare(date);
+      if (await accountErased(artistId, date)) return false;
       const record: DiagnosticRecord = { ...event, receivedAt: date.toISOString(), artistId, source, appVersion: diagnosticAppVersion(),
         ...(source === "server" && input.errorKind && errorKinds.includes(input.errorKind) ? { errorKind: input.errorKind } : {}) };
       return append("diagnostics", record, date, maxDiagnosticBytes);
@@ -149,6 +168,7 @@ export function createDiagnosticStore(options: StoreOptions) {
       const date = now();
       if (!isDiagnosticWorkspace(artistId) || !timeIsRecent(report.clickedAt, date)) return { ok: false, error: "unavailable" };
       await prepare(date);
+      if (await accountErased(artistId, date)) return { ok: false, error: "unavailable" };
       const { workspaceIdAtClick: _expectedWorkspace, ...contents } = report;
       void _expectedWorkspace;
       const idempotencyKey = hash(JSON.stringify([artistId, report.reportId]));
@@ -166,7 +186,59 @@ export function createDiagnosticStore(options: StoreOptions) {
       return { ok: true, reference };
     }, { ok: false, error: "unavailable" });
   }
-  return { writeEvent, saveReport };
+  async function privateRows(file: string) {
+    const filename = path.join(directory, file);
+    const metadata = await stat(filename);
+    const bound = file.startsWith("reports-") ? MAX_REPORT_DAILY_BYTES : MAX_DIAGNOSTIC_DAILY_BYTES;
+    if (!metadata.isFile() || metadata.size > bound) throw new Error("invalid_private_log");
+    const contents = await readFile(filename, "utf8");
+    if (contents && !contents.endsWith("\n")) throw new Error("incomplete_private_log");
+    return contents.split("\n").filter(Boolean).map(line => JSON.parse(line) as Record<string, unknown>);
+  }
+  async function replaceRows(file: string, rows: Record<string, unknown>[]) {
+    const temporary = path.join(directory, `.privacy-${randomUUID()}.tmp`);
+    try {
+      await writeFile(temporary, rows.map(row => `${JSON.stringify(row)}\n`).join(""), { flag: "wx", mode: 0o600 });
+      await rename(temporary, path.join(directory, file));
+    } finally { await unlink(temporary).catch(() => {}); }
+  }
+  async function logFiles() { return (await readdir(directory)).filter(file => /^(diagnostics|reports)-\d{4}-\d{2}-\d{2}\.jsonl$/.test(file)).sort(); }
+  function exportAccount(artistId: string) {
+    return enqueue(async () => {
+      if (!isDiagnosticWorkspace(artistId) || !artistId) throw new Error("invalid_account");
+      await prepare(now());
+      const diagnostics: Record<string, unknown>[] = [], reports: Record<string, unknown>[] = [];
+      for (const file of await logFiles()) {
+        for (const row of await privateRows(file)) {
+          if (row.artistId !== artistId) continue;
+          const { idempotencyKey: _key, fingerprint: _fingerprint, ...personalData } = row;
+          void _key; void _fingerprint;
+          (file.startsWith("reports-") ? reports : diagnostics).push(personalData);
+        }
+      }
+      return { diagnostics, reports };
+    }, null);
+  }
+  function purgeAccount(artistId: string, optionalOnly = false) {
+    return enqueue(async () => {
+      if (!isDiagnosticWorkspace(artistId) || !artistId) return false;
+      await prepare(now());
+      if (!optionalOnly) await writeFile(path.join(directory, `.erased-${hash(artistId)}.json`), JSON.stringify({ expiresAt: new Date(now().getTime() + DIAGNOSTICS_RETENTION_DAYS * DAY).toISOString() }), { mode: 0o600 });
+      for (const file of await logFiles()) {
+        if (optionalOnly && !file.startsWith("diagnostics-")) continue;
+        const rows = await privateRows(file);
+        const retained = rows.filter(row => row.artistId !== artistId || (optionalOnly && row.source !== "client"));
+        if (retained.length !== rows.length) await replaceRows(file, retained);
+      }
+      indexDay = "";
+      await prepare(now());
+      return true;
+    }, false);
+  }
+  function cleanup() {
+    return enqueue(async () => { indexDay = ""; await prepare(now()); return true; }, false);
+  }
+  return { writeEvent, saveReport, exportAccount, purgeAccount, cleanup };
 }
 
 type DiagnosticStore = ReturnType<typeof createDiagnosticStore>;
@@ -192,6 +264,10 @@ export async function saveProblemReport(report: ProblemReport, artistId: string 
   try { return await bounded(store().saveReport(report, artistId), REPORT_TIMEOUT_MS, { ok: false, error: "unavailable" }); }
   catch { return { ok: false, error: "unavailable" }; }
 }
+
+export async function exportAccountDiagnostics(artistId: string) { return store().exportAccount(artistId); }
+export async function purgeAccountDiagnostics(artistId: string, optionalOnly = false) { return store().purgeAccount(artistId, optionalOnly); }
+export async function cleanupDiagnostics() { return store().cleanup(); }
 
 export class DiagnosticBodyError extends Error {
   constructor(readonly code: "invalid_body" | "too_large") { super(code); }

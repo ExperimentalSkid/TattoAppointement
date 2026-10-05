@@ -9,6 +9,7 @@ import { SignOutButton } from "@/components/sign-out-button";
 import { WorkspaceSync } from "@/components/workspace-sync";
 import { WorkspaceAccess } from "@/components/workspace-access";
 import { ReportProblemButton } from "@/components/problem-report";
+import { LegalLinks } from "@/components/legal-links";
 
 export function AppShell({
   children,
@@ -18,6 +19,7 @@ export function AppShell({
   studioName,
   syncRevision,
   workspaceId,
+  diagnosticsConsent,
 }: {
   children: ReactNode;
   dictionary: Dictionary;
@@ -26,6 +28,7 @@ export function AppShell({
   studioName?: string | null;
   syncRevision: string;
   workspaceId: string;
+  diagnosticsConsent: boolean;
 }) {
   const es = locale === "es";
   const studio = studioName?.trim() || (es ? "Tu estudio" : "Your studio");
@@ -33,7 +36,7 @@ export function AppShell({
   const date = new Intl.DateTimeFormat(es ? "es-ES" : "en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Madrid" }).format(new Date());
   return (
     <WorkspaceAccess key={workspaceId} locale={locale}>
-    <div className="app-shell" data-diagnostic-workspace={workspaceId}>
+    <div className="app-shell" data-diagnostic-workspace={workspaceId} data-diagnostic-consent={String(diagnosticsConsent)}>
       <a className="skip-link" href="#main-content">{es ? "Saltar al contenido" : "Skip to content"}</a>
       <aside className="desktop-sidebar">
         <Link href="/calendar" className="desktop-brand" aria-label="Tinta">
@@ -69,7 +72,7 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="app-content" id="main-content" tabIndex={-1}><WorkspaceSync workspaceId={workspaceId} revision={syncRevision} locale={locale} />{children}</main>
+        <main className="app-content" id="main-content" tabIndex={-1}><WorkspaceSync workspaceId={workspaceId} revision={syncRevision} locale={locale} />{children}<LegalLinks locale={locale} /></main>
         <NavLinks copy={dictionary.nav} variant="mobile" />
       </div>
     </div>

@@ -10,6 +10,7 @@ export type DiagnosticMetadata = Pick<SafeDiagnosticEvent, "outcome" | "digest" 
 type QueuedEvent = { event: SafeDiagnosticEvent; workspaceIdAtClick: string | null };
 const limit = 20;
 let workspace: string | null | undefined;
+let consent = false;
 let recent: SafeDiagnosticEvent[] = [];
 let queue: QueuedEvent[] = [];
 let sending = false;
@@ -18,13 +19,21 @@ let activeRequest: AbortController | null = null;
 /** Rendered workspace identity is a precondition only. The server determines the actor. */
 export function setDiagnosticWorkspace(next: string | null) {
   if (workspace === next) return;
-  activeRequest?.abort();
+  setDiagnosticConsent(false);
   workspace = next;
-  recent = [];
-  queue = [];
 }
 
 export function getDiagnosticWorkspace() { return workspace ?? null; }
+
+/** Optional collection starts only after the rendered account has consented. */
+export function setDiagnosticConsent(enabled: boolean) {
+  consent = enabled === true && typeof workspace === "string" && workspace.length > 0;
+  if (!consent) {
+    activeRequest?.abort();
+    recent = [];
+    queue = [];
+  }
+}
 
 export function captureDiagnosticContext(): DiagnosticContext {
   const page = normalizeDiagnosticPage(window.location.pathname);
@@ -58,15 +67,16 @@ export function captureDiagnosticContext(): DiagnosticContext {
 }
 
 export function getRecentDiagnosticEvents(): SafeDiagnosticEvent[] {
+  if (!consent) return [];
   return recent.map(event => ({ ...event, context: { ...event.context } }));
 }
 
 /** Best effort metadata delivery. Failures stay in memory and never interrupt the artist. */
 export async function flushDiagnosticEvents() {
-  if (sending || typeof window === "undefined" || !navigator.onLine) return;
+  if (!consent || !workspace || sending || typeof window === "undefined" || !navigator.onLine) return;
   sending = true;
   try {
-    while (queue.length && navigator.onLine) {
+    while (consent && workspace && queue.length && navigator.onLine) {
       const item = queue[0];
       if (item.workspaceIdAtClick !== workspace) { queue.shift(); continue; }
       const controller = new AbortController();
@@ -79,7 +89,8 @@ export async function flushDiagnosticEvents() {
           body: JSON.stringify({ ...item.event, workspaceIdAtClick: item.workspaceIdAtClick }),
         });
         if (queue[0] !== item) continue;
-        if (response.ok || [400, 403, 409].includes(response.status)) queue.shift();
+        if ([401, 403, 409].includes(response.status)) { setDiagnosticConsent(false); break; }
+        if (response.ok || response.status === 400) queue.shift();
         else break;
       } catch { break; }
       finally {
@@ -92,7 +103,8 @@ export async function flushDiagnosticEvents() {
 
 /** Never pass an Error, message, stack, URL, field value or business record here. */
 export function emitDiagnostic(code: DiagnosticCode, metadata: DiagnosticMetadata = {}): string | null {
-  if (typeof window === "undefined" || !CLIENT_DIAGNOSTIC_CODES.includes(code) || !window.crypto?.randomUUID) return null;
+  // Do not read page, browser or connection context before this consent gate.
+  if (!consent || !workspace || typeof window === "undefined" || !CLIENT_DIAGNOSTIC_CODES.includes(code) || !window.crypto?.randomUUID) return null;
   const safe = parseSafeDiagnosticEvent({
     id: crypto.randomUUID(), occurredAt: new Date().toISOString(), code, context: captureDiagnosticContext(),
     ...(DIAGNOSTIC_OUTCOMES.includes(metadata.outcome as NonNullable<DiagnosticMetadata["outcome"]>) ? { outcome: metadata.outcome } : {}),

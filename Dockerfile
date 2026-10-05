@@ -29,6 +29,7 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 ENV DESIGN_STORAGE_DIR=/data/designs
 ENV DIAGNOSTICS_DIR=/data/diagnostics
+ENV PRIVACY_MAINTENANCE_ENABLED=true
 COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 COPY --from=builder --chown=node:node /app/public ./public

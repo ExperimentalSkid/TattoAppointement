@@ -11,6 +11,7 @@ import { appointmentDraftKey, parseAppointmentDraft, readAppointmentDraft, remov
 import { LocalDateTime } from "@/components/local-date-time";
 import { SyncEditConflict } from "@/components/sync-edit-conflict";
 import { emitDiagnostic } from "@/lib/client-diagnostics";
+import { HealthDataHint } from "@/components/legal-links";
 
 type AppointmentAction = (state: AppointmentFormState, formData: FormData) => Promise<AppointmentFormState>;
 type ClientOption = { id: string; name: string; phone: string };
@@ -180,7 +181,7 @@ export function AppointmentForm({ action, clients, designs, copy, initial, initi
         {fieldError("designIds")}
         {model.designIds.length ? <label className="no-final-choice" id="appointment-final" tabIndex={-1} {...fieldProps("finalDesignId")}><input type="radio" name="finalDesignId" value="" checked={!model.finalDesignId} disabled={pending} onChange={() => change("finalDesignId", "")} />{copy.noFinalDesign}</label> : <input type="hidden" name="finalDesignId" value="" />}{fieldError("finalDesignId")}
       </section>
-      <section className="appointment-form-section workspace-section section-intro"><h2>{copy.notesSection}</h2><div className="field"><label htmlFor="appointment-notes">{copy.notes} <span className="field-optional">({copy.optional})</span></label><textarea id="appointment-notes" name="notes" rows={4} maxLength={APPOINTMENT_NOTES_MAX_LENGTH} value={model.notes} onChange={event => change("notes", event.target.value)} disabled={pending} {...fieldProps("notes")} />{fieldError("notes")}</div></section>
+      <section className="appointment-form-section workspace-section section-intro"><h2>{copy.notesSection}</h2><div className="field"><label htmlFor="appointment-notes">{copy.notes} <span className="field-optional">({copy.optional})</span></label><textarea id="appointment-notes" name="notes" rows={4} maxLength={APPOINTMENT_NOTES_MAX_LENGTH} value={model.notes} onChange={event => change("notes", event.target.value)} disabled={pending} {...fieldProps("notes")} />{fieldError("notes")}<HealthDataHint locale={locale} /></div></section>
       <details id="appointment-money" className="appointment-money-disclosure appointment-form-section workspace-section section-intro" open={model.moneyOpen || moneyHasError} onToggle={event => change("moneyOpen", event.currentTarget.open)}>
         <summary>{copy.moneySection} <span className="field-optional">({copy.optional})</span></summary><p className="muted-copy">{copy.moneyOptionalHelp}</p><div className="appointment-form-grid">
           <div className="field"><label htmlFor="agreed-price">{copy.agreedPrice} (€) <span className="field-optional">({copy.optional})</span></label><input id="agreed-price" name="agreedPrice" type="text" inputMode="decimal" placeholder="0.00" value={model.agreedPrice} onChange={event => change("agreedPrice", event.target.value)} disabled={pending} {...fieldProps("agreedPrice")} />{fieldError("agreedPrice")}</div>

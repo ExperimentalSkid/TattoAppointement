@@ -24,6 +24,11 @@ model User {
   studioName               String?
   whatsappReminderTemplate String?
   language                 String   @default("es")
+  diagnosticsConsent       Boolean  @default(false)
+  diagnosticsConsentUpdatedAt DateTime?
+  diagnosticsConsentNoticeVersion String?
+  diagnosticsPurgeRequestedAt DateTime?
+  deletionRequestedAt      DateTime?
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
 

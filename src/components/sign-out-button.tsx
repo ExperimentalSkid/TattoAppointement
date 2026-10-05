@@ -5,6 +5,7 @@ import { flushSync } from "react-dom";
 import { authClient } from "@/lib/auth-client";
 import { useClearWorkspace } from "@/components/workspace-access";
 import { emitDiagnostic } from "@/lib/client-diagnostics";
+import { clearAppointmentDrafts } from "@/lib/appointment-draft";
 
 export function SignOutButton({ label }: { label: string }) {
   const clearWorkspace = useClearWorkspace();
@@ -20,6 +21,7 @@ export function SignOutButton({ label }: { label: string }) {
     try {
       const result = await authClient.signOut();
       if (result.error) throw new Error("Sign-out failed");
+      clearAppointmentDrafts();
       flushSync(clearWorkspace);
       window.location.replace("/sign-in");
     } catch {

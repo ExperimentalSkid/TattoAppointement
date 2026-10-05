@@ -8,6 +8,7 @@ import type { DesignFormState } from "@/app/(app)/designs/actions";
 import { designDetailPath } from "@/lib/design-navigation";
 import { SyncEditConflict } from "@/components/sync-edit-conflict";
 import { emitDiagnostic } from "@/lib/client-diagnostics";
+import { HealthDataHint } from "@/components/legal-links";
 
 type DesignAction = (
   state: DesignFormState,
@@ -112,6 +113,7 @@ export function DesignMetadataForm({
           aria-describedby={state.error === "notes" ? "design-notes-error" : undefined}
         />
         {state.error === "notes" ? <p id="design-notes-error" className="field-error form-error">{copy.notesError}</p> : null}
+        <HealthDataHint locale={locale} />
       </div>
 
       <div className="form-actions">

@@ -7,11 +7,11 @@ the dialog is open; account changes still clear private workspace views.
 
 Opening the dialog freezes a UTC click time, browser timezone, canonical page
 pattern, view and validated calendar anchor, device category, connection/sync
-state and up to twenty recent safe error references. The artist writes the
+state and, only after optional diagnostics opt-in, up to twenty recent safe error references. The artist writes the
 description. No screenshot, form contents, record IDs, notes, artwork, cookies,
 passwords, OAuth parameters, raw user agents, error messages or stacks are
 automatically collected. The form asks artists to leave private details out of
-their descriptions. Unsigned reports remain anonymous.
+their descriptions. Unsigned reports are not linked to an account; their text may still identify a person.
 
 The server verifies the session and pins submissions to the account where they
 were opened. A changed account returns 409 and requires explicit review. The
@@ -33,7 +33,16 @@ and recovery. Daily `reports-YYYY-MM-DD.jsonl` files contain artist-written
 reports and their attached metadata. Only operators with filesystem access can
 read either stream: the two web endpoints support intake by POST, never reading.
 
-Files older than thirty calendar days are pruned on the next write. Diagnostics
+Optional browser diagnostics are off by default and require an authenticated
+account's explicit opt-in in Settings. Enabling is unavailable until verified
+operator facts have completed the notice configuration. Withdrawal stops intake
+and removes stored optional browser events; failed purges remain queued for
+retry. Necessary server events and explicitly submitted reports are separate.
+
+Files older than thirty calendar days are pruned on writes and by runtime privacy
+maintenance at startup and every fifteen minutes while the app is running. An
+idle application therefore still prunes. Downtime delays cleanup until restart;
+backup retention requires its own documented operator procedure. Diagnostics
 are capped at 10 MiB per day; reports at 5 MiB/1000 reports per day. Intake has strict
 origin/schema/size checks and transient network/account rate limits. Automatic
 logging waits at most 500 ms and fails safely; a report is acknowledged only after

@@ -376,7 +376,8 @@ test("sync exposes only a private revision and an expired device session clears 
     expect(response.headers()["cache-control"]).toContain("private");
     expect(response.headers()["cache-control"]).toContain("no-store");
     const body = await response.json();
-    expect(Object.keys(body)).toEqual(["workspaceId", "revision"]);
+    expect(Object.keys(body)).toEqual(["workspaceId", "revision", "diagnosticsConsent"]);
+    expect(body.diagnosticsConsent).toBe(false);
     expect(body.workspaceId).toEqual(expect.any(String));
     expect(body.revision).toMatch(/^\d+$/);
     const queried = await peer.page.request.get("/api/workspace/sync?artistId=someone-else");

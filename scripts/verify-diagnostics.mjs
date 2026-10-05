@@ -78,4 +78,36 @@ try {
   check((await logger.readDiagnosticBody(bodyRequest, 24 * 1024)).reportId, report.reportId);
   await assert.rejects(logger.readDiagnosticBody(new Request(origin, { method: "POST", headers: { "Content-Type": "application/json" }, body: "x".repeat(100) }), 10), { code: "too_large" }); checks++;
 } finally { if (previousOrigin === undefined) delete process.env.BETTER_AUTH_URL; else process.env.BETTER_AUTH_URL = previousOrigin; }
+// Export, scoped withdrawal, durable suppression and cleanup without traffic.
+{
+  let clock = new Date();
+  const privacy = logger.createDiagnosticStore({ directory: path.join(directory, "privacy"), now: () => clock });
+  const fresh = { ...event, id: randomUUID(), occurredAt: clock.toISOString() };
+  check(await privacy.writeEvent({ ...fresh, artistId: "qa-privacy-a" }, "client"), true);
+  check(await privacy.writeEvent({ ...fresh, id: randomUUID(), artistId: "qa-privacy-a" }), true);
+  check(await privacy.writeEvent({ ...fresh, id: randomUUID(), artistId: "qa-privacy-b" }, "client"), true);
+  const instruction = { ...report, reportId: randomUUID(), clickedAt: clock.toISOString() };
+  const saved = await privacy.saveReport(instruction, "qa-privacy-a");
+  check(saved.ok, true);
+  const exported = await privacy.exportAccount("qa-privacy-a");
+  check(exported.diagnostics.length, 2);
+  check(exported.reports.length, 1);
+  check(JSON.stringify(exported).includes("qa-privacy-b"), false);
+  check(JSON.stringify(exported).includes("idempotencyKey"), false);
+  check(JSON.stringify(exported).includes("fingerprint"), false);
+  check(await privacy.purgeAccount("qa-privacy-a", true), true);
+  check((await privacy.exportAccount("qa-privacy-a")).diagnostics.map(row => row.source), ["server"]);
+  check((await privacy.exportAccount("qa-privacy-a")).reports.length, 1);
+  check((await privacy.exportAccount("qa-privacy-b")).diagnostics.length, 1);
+  check(await privacy.saveReport(instruction, "qa-privacy-a"), saved, "Withdrawal preserves manual report retry identity");
+  check(await privacy.purgeAccount("qa-privacy-a"), true);
+  check(await privacy.exportAccount("qa-privacy-a"), { diagnostics: [], reports: [] });
+  check(await privacy.writeEvent({ ...fresh, artistId: "qa-privacy-a" }), false, "Late writes cannot resurrect erased account data");
+  check((await privacy.saveReport(instruction, "qa-privacy-a")).ok, false);
+  const restarted = logger.createDiagnosticStore({ directory: path.join(directory, "privacy"), now: () => clock });
+  check(await restarted.writeEvent({ ...fresh, artistId: "qa-privacy-a" }), false, "Suppression survives restart");
+  clock = new Date(clock.getTime() + 31 * 86_400_000);
+  check(await restarted.cleanup(), true);
+  check((await readdir(path.join(directory, "privacy"))).filter(file => /jsonl$|^\.erased-/.test(file)), [], "Idle cleanup expires records and minimal markers");
+}
 console.log(`Diagnostics storage, privacy, retry and intake validation: ${checks} checks passed.`);

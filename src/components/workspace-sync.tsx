@@ -5,7 +5,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { flushSync } from "react-dom";
 import { useClearWorkspace } from "@/components/workspace-access";
 import type { Locale } from "@/i18n";
-import { emitDiagnostic } from "@/lib/client-diagnostics";
+import { emitDiagnostic, setDiagnosticConsent } from "@/lib/client-diagnostics";
+import { clearAppointmentDrafts } from "@/lib/appointment-draft";
 import "./workspace-sync.css";
 
 type SyncStatus = "current" | "pending" | "offline" | "error" | "refreshing";
@@ -147,6 +148,7 @@ export function WorkspaceSync({ workspaceId, revision, locale }: { workspaceId: 
     function leaveWorkspace(path: "/sign-in" | "/calendar") {
       // Remove every private view, including profile and drafts, before waiting
       // for document navigation. Draft protection applies only to this artist.
+      clearAppointmentDrafts();
       flushSync(clearWorkspace);
       window.location.replace(path);
     }
@@ -185,6 +187,13 @@ export function WorkspaceSync({ workspaceId, revision, locale }: { workspaceId: 
         if (!("revision" in body)
           || typeof body.revision !== "string" || !/^(0|[1-9]\d{0,18})$/.test(body.revision)) {
           throw new Error("Workspace refresh response invalid.");
+        }
+        // Withdrawal takes effect even while an unsaved business form delays
+        // the normal page refresh. Enabling still requires rendered consent.
+        if ("diagnosticsConsent" in body && body.diagnosticsConsent === false) {
+          const marker = document.querySelector<HTMLElement>("[data-diagnostic-workspace]");
+          if (marker?.dataset.diagnosticWorkspace === workspaceId) marker.dataset.diagnosticConsent = "false";
+          setDiagnosticConsent(false);
         }
         observedRevision.current = body.revision;
         checked = true;

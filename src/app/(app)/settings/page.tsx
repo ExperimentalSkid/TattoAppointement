@@ -8,12 +8,15 @@ import { isGoogleSignInConfigured } from "@/lib/studio-access";
 import { settingsCopy } from "./copy";
 import { PasswordSettingsForm, ReminderSettingsForm, StudioSettingsForm } from "./settings-form";
 import { getDefaultReminderTemplate } from "@/lib/whatsapp-reminder";
+import { PrivacySettingsForm } from "@/components/privacy-settings-form";
+import { AccountErasureForm } from "@/components/account-erasure-form";
+import { getPrivacyConfig } from "@/lib/privacy-config";
 
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const artistId = await requireArtistId();
   const { locale } = await getDictionary();
   const copy = settingsCopy[locale];
-  const artist = await prisma.user.findUniqueOrThrow({ where: { id: artistId }, select: { name: true, studioName: true, email: true, whatsappReminderTemplate: true } });
+  const artist = await prisma.user.findUniqueOrThrow({ where: { id: artistId }, select: { name: true, studioName: true, email: true, whatsappReminderTemplate: true, diagnosticsConsent: true } });
   const hasPassword = Boolean(await prisma.account.findFirst({ where: { userId: artistId, providerId: "credential", password: { not: null } }, select: { id: true } }));
   const googleLinked = Boolean(await prisma.account.findFirst({ where: { userId: artistId, providerId: "google" }, select: { id: true } }));
   const params = await searchParams;
@@ -27,6 +30,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       <section className="settings-card workspace-section workspace-split" data-layout="labelled"><div className="settings-card-heading section-intro"><h2>{copy.security}</h2><p className="muted-copy">{copy.securityNote}</p></div><PasswordSettingsForm copy={copy} hasPassword={hasPassword} /></section>
       {isGoogleSignInConfigured() ? <section className="settings-card workspace-section workspace-split" data-layout="labelled"><div className="settings-card-heading section-intro"><h2>{copy.google}</h2><p className="muted-copy">{googleLinked ? copy.googleConnected : copy.googleNote}</p></div><div>{params.error === "oauth" ? <p className="form-error" role="alert">{copy.googleError}</p> : null}{!googleLinked ? <GoogleLinkButton locale={locale} /> : null}</div></section> : null}
       <section className="settings-card workspace-section workspace-split" data-layout="labelled"><div className="settings-card-heading section-intro"><h2>{copy.data}</h2><p className="muted-copy">{copy.dataNote}</p></div><div><AccountExportButton copy={copy} /><p className="muted-copy">{copy.privateNote}</p></div></section>
+      <section className="workspace-section workspace-split" data-layout="labelled"><div className="section-intro"><h2>{locale === "es" ? "Privacidad" : "Privacy"}</h2></div><PrivacySettingsForm key={artistId} locale={locale} enabled={artist.diagnosticsConsent} configured={getPrivacyConfig().isConfigured} /></section>
+      <AccountErasureForm locale={locale} email={artist.email} />
     </section>
   );
 }

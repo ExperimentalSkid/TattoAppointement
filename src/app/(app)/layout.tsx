@@ -16,7 +16,7 @@ export default async function ProtectedAppLayout({
   const dictionary = dictionaries[locale];
   const [artist, syncRevision] = await Promise.all([prisma.user.findUniqueOrThrow({
     where: { id: session.user.id },
-    select: { name: true, studioName: true },
+    select: { name: true, studioName: true, diagnosticsConsent: true },
   }), getWorkspaceRevision(session.user.id)]);
 
   return (
@@ -28,6 +28,7 @@ export default async function ProtectedAppLayout({
       studioName={artist.studioName}
       syncRevision={syncRevision}
       workspaceId={session.user.id}
+      diagnosticsConsent={artist.diagnosticsConsent}
     >
       {children}
     </AppShell>

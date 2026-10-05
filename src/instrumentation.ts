@@ -1,5 +1,11 @@
 import type { Instrumentation } from "next";
 
+export async function register() {
+  if (process.env.NEXT_RUNTIME !== "nodejs" || process.env.PRIVACY_MAINTENANCE_ENABLED !== "true") return;
+  const { startPrivacyMaintenance } = await import("@/lib/privacy-maintenance");
+  startPrivacyMaintenance();
+}
+
 export const onRequestError: Instrumentation.onRequestError = async (error, request) => {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
   const { writeDiagnostic, classifyDiagnosticError } = await import("@/lib/diagnostics");

@@ -6,13 +6,17 @@ import { useRouter } from "next/navigation";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { appointmentReturnWithSelection, validateAppointmentReturn } from "@/lib/appointment-return";
 import { emitDiagnostic } from "@/lib/client-diagnostics";
+import { HealthDataHint } from "@/components/legal-links";
+import type { Locale } from "@/i18n";
 
 export function DesignUploadForm({
   copy,
   returnTo,
+  locale = "es",
 }: {
   copy: Dictionary["designs"];
   returnTo?: string | null;
+  locale?: Locale;
 }) {
   const router = useRouter();
   const appointmentReturn = validateAppointmentReturn(returnTo);
@@ -106,6 +110,7 @@ export function DesignUploadForm({
         />
         <p className="field-help">{copy.chooseImage}</p>
         <p className="field-help">{copy.imageHelp}</p>
+        <p className="field-help">{locale === "es" ? "Los originales conservan sus metadatos. Revisa las fotos para evitar datos de ubicación, documentos de identidad o información médica." : "Original files keep their metadata. Check photos for location data, identity documents or medical information before uploading."}</p>
       </div>
 
       {previewUrl ? (
@@ -133,6 +138,7 @@ export function DesignUploadForm({
           {copy.notes} <span className="field-optional">({copy.optional})</span>
         </label>
         <textarea id="design-notes" name="notes" rows={5} maxLength={4000} />
+        <HealthDataHint locale={locale} />
       </div>
 
       {error ? <p className="form-error">{error}</p> : null}

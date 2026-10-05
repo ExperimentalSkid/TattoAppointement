@@ -7,6 +7,8 @@ import type { Dictionary } from "@/i18n/dictionaries";
 import { authClient } from "@/lib/auth-client";
 import { AuthFeedback } from "@/components/auth-feedback";
 import { emitDiagnostic } from "@/lib/client-diagnostics";
+import { useRememberLogin } from "@/components/remember-login-choice";
+import { persistLoginPreference } from "@/lib/login-preference";
 
 export function AuthForm({
   mode,
@@ -21,6 +23,7 @@ export function AuthForm({
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const inFlightRef = useRef(false);
+  const loginChoice = useRememberLogin();
 
   async function persistLanguage(language: Locale) {
     try {
@@ -36,7 +39,7 @@ export function AuthForm({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (inFlightRef.current) return;
+    if (inFlightRef.current || (loginChoice && !loginChoice.beginLogin())) return;
     inFlightRef.current = true;
     setPending(true);
     setError(null);
@@ -47,8 +50,10 @@ export function AuthForm({
 
     let leaving = false;
     try {
+      const rememberMe = loginChoice?.remember ?? false;
+      await persistLoginPreference(rememberMe);
       if (mode === "sign-in") {
-        const result = await authClient.signIn.email({ email, password });
+        const result = await authClient.signIn.email({ email, password, rememberMe });
         if (result.error) {
           emitDiagnostic("auth_sign_in_failed", { outcome: "failed", reason: "response" });
           setError(copy.invalid);
@@ -78,6 +83,7 @@ export function AuthForm({
       setError(locale === "es" ? "No se pudo conectar. Comprueba tu conexión e inténtalo de nuevo." : "Could not connect. Check your connection and try again.");
     } finally {
       if (!leaving) {
+        loginChoice?.endLogin();
         inFlightRef.current = false;
         setPending(false);
       }
@@ -89,7 +95,7 @@ export function AuthForm({
       {mode === "sign-up" ? (
         <div className="field">
           <label htmlFor="name">{copy.name}</label>
-          <input id="name" name="name" autoComplete="name" maxLength={80} disabled={pending} required />
+          <input id="name" name="name" autoComplete="name" maxLength={80} disabled={pending || loginChoice?.pending} required />
         </div>
       ) : null}
 
@@ -101,7 +107,7 @@ export function AuthForm({
           type="email"
           autoComplete="email"
           inputMode="email"
-          disabled={pending}
+          disabled={pending || loginChoice?.pending}
           required
         />
       </div>
@@ -116,10 +122,10 @@ export function AuthForm({
           minLength={8}
           maxLength={128}
           autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
-          disabled={pending}
+          disabled={pending || loginChoice?.pending}
           required
         />
-        <button type="button" className="password-toggle" disabled={pending} onClick={() => setShowPassword(!showPassword)} aria-label={locale === "es" ? (showPassword ? "Ocultar contraseña" : "Mostrar contraseña") : (showPassword ? "Hide password" : "Show password")} aria-pressed={showPassword}>
+        <button type="button" className="password-toggle" disabled={pending || loginChoice?.pending} onClick={() => setShowPassword(!showPassword)} aria-label={locale === "es" ? (showPassword ? "Ocultar contraseña" : "Mostrar contraseña") : (showPassword ? "Hide password" : "Show password")} aria-pressed={showPassword}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" />{showPassword ? <path d="m3 3 18 18" /> : null}</svg>
         </button>
         </div>
@@ -128,7 +134,7 @@ export function AuthForm({
 
       {error ? <AuthFeedback id="auth-error">{error}</AuthFeedback> : null}
 
-      <button className="primary-button" type="submit" disabled={pending}>
+      <button className="primary-button" type="submit" disabled={pending || loginChoice?.pending}>
         {pending ? (locale === "es" ? "Un momento…" : "Please wait…") : mode === "sign-in" ? copy.signIn : copy.signUp}
       </button>
     </form>

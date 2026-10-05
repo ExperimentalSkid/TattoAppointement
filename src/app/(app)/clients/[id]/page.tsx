@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { LocalDateTime } from "@/components/local-date-time";
+import { ClientPrivacyTools } from "@/components/client-privacy-tools";
 import { prisma } from "@/lib/prisma";
 import { requireArtistId } from "@/lib/session";
 import { studioTimeZone } from "@/lib/studio-time";
@@ -115,6 +116,7 @@ export default async function ClientDetailsPage({
           <p className="client-added"><span className="client-context-label">{copy.created}</span><time dateTime={client.createdAt.toISOString()}>{addedDate}</time></p>
         </section>
       </div>
+      <ClientPrivacyTools key={client.id} clientId={client.id} clientName={client.name} expectedVersion={client.updatedAt.toISOString()} locale={locale} />
     </section>
   );
 }

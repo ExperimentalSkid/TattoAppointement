@@ -1,5 +1,6 @@
 import { getSession } from "@/lib/session";
 import { getWorkspaceRevision } from "@/lib/workspace-sync";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -11,6 +12,7 @@ export async function GET() {
     return Response.json({ error: "unauthorized" }, { status: 401, headers: responseHeaders });
   }
 
-  const revision = await getWorkspaceRevision(session.user.id);
-  return Response.json({ workspaceId: session.user.id, revision }, { headers: responseHeaders });
+  const [revision, artist] = await Promise.all([getWorkspaceRevision(session.user.id), prisma.user.findUnique({ where: { id: session.user.id }, select: { diagnosticsConsent: true, deletionRequestedAt: true } })]);
+  if (!artist || artist.deletionRequestedAt) return Response.json({ error: "unauthorized" }, { status: 401, headers: responseHeaders });
+  return Response.json({ workspaceId: session.user.id, revision, diagnosticsConsent: artist.diagnosticsConsent }, { headers: responseHeaders });
 }

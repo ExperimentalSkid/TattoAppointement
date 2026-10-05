@@ -4,17 +4,17 @@ import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState
 import type { Locale } from "@/i18n";
 import { isDiagnosticUuid, isDiagnosticWorkspace, type ProblemReport } from "@/lib/diagnostic-context";
 import { captureDiagnosticContext, emitDiagnostic, flushDiagnosticEvents, getDiagnosticWorkspace,
-  getRecentDiagnosticEvents, setDiagnosticWorkspace } from "@/lib/client-diagnostics";
+  getRecentDiagnosticEvents, setDiagnosticConsent, setDiagnosticWorkspace } from "@/lib/client-diagnostics";
 import "./problem-report.css";
 
 const ReportContext = createContext<(() => void) | null>(null);
 const copy = {
   es: { title: "Informar de un problema", close: "Cerrar", description: "¿Qué ha pasado?", help: "Cuéntanos qué esperabas y qué ocurrió. No incluyas contraseñas ni datos privados de clientes.",
-    context: "Página y hora del problema", send: "Enviar informe", retry: "Reintentar envío", sending: "Enviando…", sent: "Informe recibido", reference: "Referencia", privacy: "Adjuntamos la página, la hora, el estado de conexión y referencias de errores. No copiamos formularios, notas ni imágenes.",
-    offline: "Estás sin conexión. Conservamos el informe aquí; podrás enviarlo cuando vuelvas a conectarte.", failed: "No se pudo enviar. Tu texto y la hora original se conservan. Inténtalo de nuevo.", changed: "La cuenta ha cambiado. Revisa el contexto antes de enviar desde la cuenta actual.", review: "Revisar con la cuenta actual", limited: "Has enviado varios informes. Espera unos minutos y vuelve a intentarlo.", thanks: "Gracias. Esta referencia nos permite encontrar el informe y los eventos relacionados.", anonymous: "Sin una sesión activa, el informe será anónimo." },
+    context: "Página y hora del problema", send: "Enviar informe", retry: "Reintentar envío", sending: "Enviando…", sent: "Informe recibido", reference: "Referencia", privacy: "Al enviar adjuntamos la página, la hora y el estado de conexión. Si has activado los diagnósticos opcionales, también sus referencias recientes. No copiamos formularios, notas ni imágenes.", privacyLink: "Información de privacidad",
+    offline: "Estás sin conexión. Conservamos el informe aquí; podrás enviarlo cuando vuelvas a conectarte.", failed: "No se pudo enviar. Tu texto y la hora original se conservan. Inténtalo de nuevo.", changed: "La cuenta ha cambiado. Revisa el contexto antes de enviar desde la cuenta actual.", review: "Revisar con la cuenta actual", limited: "Has enviado varios informes. Espera unos minutos y vuelve a intentarlo.", thanks: "Gracias. Esta referencia nos permite encontrar el informe y los eventos relacionados.", anonymous: "Sin una sesión activa, no vinculamos el informe a una cuenta. El texto que escribas puede identificarte." },
   en: { title: "Report a problem", close: "Close", description: "What happened?", help: "Tell us what you expected and what happened. Leave out passwords and private client details.",
-    context: "Problem page and time", send: "Send report", retry: "Retry sending", sending: "Sending…", sent: "Report received", reference: "Reference", privacy: "We attach the page, time, connection state and error references. Forms, notes and images are not copied.",
-    offline: "You’re offline. Your report stays here; send it when you reconnect.", failed: "Could not send. Your text and original time are kept. Please try again.", changed: "The account has changed. Review the context before sending from the current account.", review: "Review with the current account", limited: "You’ve sent several reports. Wait a few minutes and try again.", thanks: "Thank you. This reference lets us find your report and related events.", anonymous: "Without an active session, your report will be anonymous." },
+    context: "Problem page and time", send: "Send report", retry: "Retry sending", sending: "Sending…", sent: "Report received", reference: "Reference", privacy: "When you send, we attach the page, time and connection state. If you enabled optional diagnostics, we also attach their recent references. Forms, notes and images are not copied.", privacyLink: "Privacy information",
+    offline: "You’re offline. Your report stays here; send it when you reconnect.", failed: "Could not send. Your text and original time are kept. Please try again.", changed: "The account has changed. Review the context before sending from the current account.", review: "Review with the current account", limited: "You’ve sent several reports. Wait a few minutes and try again.", thanks: "Thank you. This reference lets us find your report and related events.", anonymous: "Without an active session, we do not link the report to an account. The text you enter may identify you." },
 };
 
 function pageLabel(report: ProblemReport, es: boolean) {
@@ -60,12 +60,15 @@ export function ProblemReports({ children, locale }: { children: ReactNode; loca
       const marker = document.querySelector<HTMLElement>("[data-diagnostic-workspace]");
       if (marker) fallbackWorkspace.current = null;
       setDiagnosticWorkspace(marker ? marker.dataset.diagnosticWorkspace || null : fallbackWorkspace.current);
+      const consented = Boolean(marker?.dataset.diagnosticWorkspace && marker.dataset.diagnosticConsent === "true");
+      setDiagnosticConsent(consented);
+      if (!consented) setReport(current => current?.recentEvents.length ? { ...current, reportId: crypto.randomUUID(), recentEvents: [] } : current);
       setFallback(!document.querySelector('[data-problem-report-trigger="regular"]'));
     }
     update();
     const observer = new MutationObserver(update);
-    observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-diagnostic-workspace"] });
-    return () => observer.disconnect();
+    observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-diagnostic-workspace", "data-diagnostic-consent"] });
+    return () => { observer.disconnect(); setDiagnosticConsent(false); };
   }, []);
 
   useEffect(() => {
@@ -151,6 +154,7 @@ export function ProblemReports({ children, locale }: { children: ReactNode; loca
             setDescription(event.target.value);
           }} /><p id="problem-report-help" className="field-help">{dictionary.help}</p></div>
           <p className="problem-report-privacy">{dictionary.privacy}</p>
+          <p className="field-help"><a href={`/privacy?lang=${locale}`} target="_blank" rel="noopener noreferrer">{dictionary.privacyLink}</a></p>
           {report?.workspaceIdAtClick === null ? <p className="field-help">{dictionary.anonymous}</p> : null}
           {error ? <p role="alert" className="form-error">{dictionary[error]}</p> : null}
           <div className="form-actions">{error === "changed" ? <button type="button" className="primary-button" onClick={event => { event.preventDefault(); if (reviewWorkspace.current !== undefined) { fallbackWorkspace.current = reviewWorkspace.current; setDiagnosticWorkspace(reviewWorkspace.current); } setReport(capture()); setError(null); setAttempted(false); }}>{dictionary.review}</button>

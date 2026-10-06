@@ -36,8 +36,11 @@ The admin link opens `/admin`, with Invitations, Artists and Reports:
   are exposed by the panel. Artists paginate fifty at a time.
 - Pause or restore an activated artist's workspace with the access switch. A
   pause preserves their records, sessions and original invitation membership.
-  Every workspace request reads the current pause state; an open device clears
-  its workspace on the next visible sync check and opens the paused-account page.
+  Each workspace request reads the current pause state when authorizing access.
+  A pause blocks subsequent authorization; already-authorized requests may finish.
+  An open device clears its workspace when a later visible sync check observes
+  the pause, then opens the paused-account page. Offline devices catch up when
+  they reconnect.
   They can still authenticate, export their own account or request erasure.
   Another invitation cannot override a pause. Your operator account, pending
   invitations and accounts awaiting erasure cannot be changed with this switch.

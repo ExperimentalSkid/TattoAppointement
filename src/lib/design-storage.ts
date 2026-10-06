@@ -1,11 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 
 export const MAX_DESIGN_FILE_SIZE = 25 * 1024 * 1024;
+export const MAX_DESIGN_PIXELS = 40_000_000;
 
-const STORAGE_ROOT = path.resolve(
+// Private runtime storage is mounted separately; it must not enter build traces.
+const STORAGE_ROOT = path.resolve(/* turbopackIgnore: true */
   process.env.DESIGN_STORAGE_DIR ?? path.join(process.cwd(), "storage", "designs"),
 );
 
@@ -22,8 +24,10 @@ const formats = {
 type SupportedFormat = keyof typeof formats;
 
 export class DesignImageError extends Error {
-  constructor(public readonly code: "missing" | "too_large" | "unsupported") {
+  readonly code: "missing" | "too_large" | "unsupported";
+  constructor(code: "missing" | "too_large" | "unsupported") {
     super(code);
+    this.code = code;
   }
 }
 
@@ -36,7 +40,7 @@ export type StoredDesignImage = {
 };
 
 function resolveStoragePath(key: string) {
-  const resolved = path.resolve(STORAGE_ROOT, key);
+  const resolved = path.resolve(/* turbopackIgnore: true */ STORAGE_ROOT, key);
   const rootPrefix = `${STORAGE_ROOT}${path.sep}`;
 
   if (!resolved.startsWith(rootPrefix)) {
@@ -59,7 +63,8 @@ export async function saveDesignImage(file: File, artistId: string): Promise<Sto
   let detectedFormat: string | undefined;
 
   try {
-    detectedFormat = (await sharp(buffer).metadata()).format;
+    const metadata = await sharp(buffer, { limitInputPixels: MAX_DESIGN_PIXELS }).metadata();
+    detectedFormat = metadata.format === "heif" && metadata.compression === "av1" ? "avif" : metadata.format;
   } catch {
     throw new DesignImageError("unsupported");
   }
@@ -77,15 +82,23 @@ export async function saveDesignImage(file: File, artistId: string): Promise<Sto
   const originalPath = resolveStoragePath(storageKey);
   const previewPath = resolveStoragePath(previewKey);
 
-  await mkdir(path.dirname(originalPath), { recursive: true });
-
+  let preview: Buffer;
   try {
-    await writeFile(originalPath, buffer, { flag: "wx" });
-    await sharp(buffer)
+    preview = await sharp(buffer, { limitInputPixels: MAX_DESIGN_PIXELS })
       .rotate()
       .resize({ width: 1400, height: 1400, fit: "inside", withoutEnlargement: true })
       .webp({ quality: 84 })
-      .toFile(previewPath);
+      .toBuffer();
+  } catch {
+    throw new DesignImageError("unsupported");
+  }
+
+  await mkdir(path.dirname(originalPath), { recursive: true, mode: 0o700 });
+  await chmod(path.dirname(originalPath), 0o700);
+
+  try {
+    await writeFile(originalPath, buffer, { flag: "wx", mode: 0o600 });
+    await writeFile(previewPath, preview, { flag: "wx", mode: 0o600 });
   } catch (error) {
     await Promise.allSettled([
       rm(originalPath, { force: true }),
@@ -98,17 +111,51 @@ export async function saveDesignImage(file: File, artistId: string): Promise<Sto
     storageKey,
     previewKey,
     mimeType: formatInfo.mimeType,
-    originalName: file.name?.trim() || null,
+    originalName: file.name?.trim().slice(0, 255) || null,
     fileSize: file.size,
   };
 }
 
 export async function readDesignFile(key: string) {
-  return readFile(resolveStoragePath(key));
+  return readFile(/* turbopackIgnore: true */ resolveStoragePath(key));
 }
 
 export async function removeDesignFiles(keys: Array<string | null | undefined>) {
   await Promise.allSettled(
     keys.filter((key): key is string => Boolean(key)).map((key) => rm(resolveStoragePath(key), { force: true })),
   );
+}
+
+/** Account erasure includes originals, previews and any abandoned upload files. */
+export async function removeArtistDesignFiles(artistId: string) {
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(artistId)) throw new Error("Invalid artist directory");
+  const directory = resolveStoragePath(artistId);
+  if (path.dirname(directory) !== STORAGE_ROOT) throw new Error("Invalid artist directory");
+  // Removing a symlink removes the link; rm does not follow it recursively.
+  await rm(directory, { recursive: true, force: true });
+}
+
+/** Catch interrupted uploads/deletes. Fresh uploads get a full day to finish. */
+export async function pruneUnreferencedDesignFiles(referenced: (keys: string[]) => Promise<Set<string>>) {
+  let directories;
+  try { directories = await readdir(STORAGE_ROOT, { withFileTypes: true }); }
+  catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return; throw error; }
+  await chmod(STORAGE_ROOT, 0o700);
+  const cutoff = Date.now() - 24 * 60 * 60_000;
+  for (const directory of directories) {
+    if (!directory.isDirectory() || !/^[A-Za-z0-9_-]{1,128}$/.test(directory.name)) continue;
+    await chmod(resolveStoragePath(directory.name), 0o700);
+    const keys: string[] = [];
+    for (const file of await readdir(resolveStoragePath(directory.name), { withFileTypes: true })) {
+      if (!file.isFile() || !/^[A-Za-z0-9_.-]+$/.test(file.name)) continue;
+      const key = `${directory.name}/${file.name}`;
+      await chmod(resolveStoragePath(key), 0o600);
+      if ((await stat(resolveStoragePath(key))).mtimeMs < cutoff) keys.push(key);
+    }
+    for (let start = 0; start < keys.length; start += 100) {
+      const batch = keys.slice(start, start + 100);
+      const retained = await referenced(batch);
+      for (const key of batch) if (!retained.has(key)) await rm(resolveStoragePath(key), { force: true });
+    }
+  }
 }

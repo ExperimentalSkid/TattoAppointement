@@ -1,6 +1,7 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useState, useTransition } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import type { Locale } from "@/i18n";
 
 export function LanguageSwitcher({
@@ -11,10 +12,16 @@ export function LanguageSwitcher({
   label: string;
 }) {
   const selectorId = useId();
-  const [pending, setPending] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
+  const [saving, setPending] = useState(false);
+  const [refreshing, startTransition] = useTransition();
+  const pending = saving || refreshing;
+  const [failed, setFailed] = useState(false);
 
   async function changeLanguage(language: Locale) {
     setPending(true);
+    setFailed(false);
     try {
       const response = await fetch("/api/preferences/language", {
         method: "POST",
@@ -26,10 +33,16 @@ export function LanguageSwitcher({
         throw new Error("Could not update language");
       }
 
-      window.location.reload();
-    } catch (error) {
+      if (!["/sign-in", "/sign-up", "/forgot-password", "/reset-password"].includes(pathname)) {
+        // Merge translated workspace content without discarding unsaved form state.
+        startTransition(() => router.refresh());
+        setPending(false);
+      } else {
+        window.location.reload();
+      }
+    } catch {
       setPending(false);
-      throw error;
+      setFailed(true);
     }
   }
 
@@ -46,6 +59,7 @@ export function LanguageSwitcher({
         <option value="en">EN</option>
         <option value="es">ES</option>
       </select>
+      {failed ? <span className="form-error" role="alert">{locale === "es" ? "No se pudo cambiar el idioma. Inténtalo de nuevo." : "Language could not be changed. Please try again."}</span> : null}
     </div>
   );
 }

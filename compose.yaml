@@ -1,0 +1,70 @@
+services:
+  db:
+    image: postgres:17-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tinta
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: tatto_appointement
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tinta -d tatto_appointement"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build:
+      context: .
+      target: migrate
+    environment:
+      DATABASE_URL: postgresql://tinta:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/tatto_appointement?schema=public
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      target: runner
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://tinta:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/tatto_appointement?schema=public
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in .env}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:?Set BETTER_AUTH_URL in .env}
+      DESIGN_STORAGE_DIR: /data/designs
+      DIAGNOSTICS_DIR: /data/diagnostics
+      TINTA_RELEASE: ${TINTA_RELEASE:-0.1.0}
+      PRIVACY_MAINTENANCE_ENABLED: "true"
+      PRIVACY_OPERATOR_NAME: ${PRIVACY_OPERATOR_NAME:-}
+      PRIVACY_OPERATOR_ADDRESS: ${PRIVACY_OPERATOR_ADDRESS:-}
+      PRIVACY_OPERATOR_COUNTRY: ${PRIVACY_OPERATOR_COUNTRY:-}
+      PRIVACY_CONTACT_EMAIL: ${PRIVACY_CONTACT_EMAIL:-}
+      PRIVACY_SERVER_COUNTRY: ${PRIVACY_SERVER_COUNTRY:-}
+      PRIVACY_TRANSFER_NOTICE: ${PRIVACY_TRANSFER_NOTICE:-}
+      PRIVACY_TAX_ID: ${PRIVACY_TAX_ID:-}
+      PRIVACY_REGISTRATION: ${PRIVACY_REGISTRATION:-}
+      PRIVACY_REPRESENTATIVE: ${PRIVACY_REPRESENTATIVE:-}
+      DISABLE_SIGN_UP: ${DISABLE_SIGN_UP:-false}
+      REQUIRE_INVITATION: ${REQUIRE_INVITATION:-false}
+      TINTA_ADMIN_USER_ID: ${TINTA_ADMIN_USER_ID:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      STUDIO_OWNER_EMAIL: ${STUDIO_OWNER_EMAIL:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - designs:/data/designs
+      - diagnostics:/data/diagnostics
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  database:
+  designs:
+  diagnostics:

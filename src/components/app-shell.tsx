@@ -1,58 +1,85 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
+import { BrandMark } from "@/components/brand-mark";
 import type { Locale } from "@/i18n";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { NavLinks } from "@/components/nav-links";
 import { SignOutButton } from "@/components/sign-out-button";
+import { WorkspaceSync } from "@/components/workspace-sync";
+import { WorkspaceAccess } from "@/components/workspace-access";
+import { ReportProblemButton } from "@/components/problem-report";
+import { LegalLinks } from "@/components/legal-links";
+import { BetaNotice } from "@/components/beta-notice";
+import { InvitationCleanup } from "@/components/invitation-cleanup";
 
 export function AppShell({
   children,
   dictionary,
   locale,
   userName,
+  studioName,
+  syncRevision,
+  workspaceId,
+  diagnosticsConsent,
+  isTintaAdmin = false,
 }: {
   children: ReactNode;
   dictionary: Dictionary;
   locale: Locale;
   userName: string;
+  studioName?: string | null;
+  syncRevision: string;
+  workspaceId: string;
+  diagnosticsConsent: boolean;
+  isTintaAdmin?: boolean;
 }) {
+  const es = locale === "es";
+  const studio = studioName?.trim() || (es ? "Tu estudio" : "Your studio");
+  const initials = userName.trim().split(/\s+/).slice(0, 2).map(word => word[0]).join("").toUpperCase();
+  const date = new Intl.DateTimeFormat(es ? "es-ES" : "en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Madrid" }).format(new Date());
   return (
-    <div className="app-shell">
+    <WorkspaceAccess key={workspaceId} locale={locale}>
+    <div className="app-shell" data-diagnostic-workspace={workspaceId} data-diagnostic-consent={String(diagnosticsConsent)}>
+      <a className="skip-link" href="#main-content">{es ? "Saltar al contenido" : "Skip to content"}</a>
       <aside className="desktop-sidebar">
-        <div className="desktop-brand">
-          <span className="desktop-brand-mark" aria-hidden="true">T</span>
+        <Link href="/calendar" className="desktop-brand" aria-label="Tinta">
+          <span className="desktop-brand-mark"><BrandMark /></span>
           <span className="desktop-brand-copy">
-            <strong>{dictionary.appName}</strong>
+            <strong>Tinta</strong><small>{es ? "ESPACIO DEL ARTISTA" : "ARTIST WORKSPACE"}</small>
           </span>
-        </div>
-        <NavLinks copy={dictionary.nav} variant="desktop" />
+        </Link>
+        <div className="sidebar-workspace"><span className="studio-dot" /><span title={studio}>{studio}</span></div>
+        <p className="sidebar-section-label">{es ? "TU ESPACIO" : "YOUR WORKSPACE"}</p>
+        <NavLinks copy={dictionary.nav} variant="desktop" isTintaAdmin={isTintaAdmin} />
+        <div className="sidebar-note"><BrandMark /><p>{es ? "El arte es tuyo.\nEl orden, también." : "Your art.\nYour rhythm."}</p></div>
         <div className="desktop-sidebar-footer">
-          <div className="desktop-user" title={userName}>
-            {userName}
-          </div>
-          <LanguageSwitcher locale={locale} label={dictionary.language} />
+          <Link href="/settings" className="artist-profile"><span className="artist-avatar">{initials}</span><span><strong title={userName}>{userName}</strong><small>{es ? "Artista del estudio" : "Studio artist"}</small></span></Link>
           <SignOutButton label={dictionary.auth.signOut} />
         </div>
       </aside>
 
       <div className="app-main-wrap">
         <header className="app-topbar">
-          <div className="topbar-identity">
-            <span className="topbar-brand-mark" aria-hidden="true">T</span>
+          <Link href="/calendar" className="topbar-identity">
+            <span className="topbar-brand-mark"><BrandMark /></span>
             <span className="topbar-identity-copy">
-              <p className="topbar-app-name">{dictionary.appName}</p>
-              <p className="topbar-user">{userName}</p>
+              <span className="topbar-app-name">{studio}</span>
+              <span className="topbar-user">{es ? "Espacio del artista" : "Artist workspace"}</span>
             </span>
-          </div>
+          </Link>
           <div className="topbar-actions">
+            <ReportProblemButton locale={locale} compact />
+            <span className="workspace-date">{date}</span>
             <LanguageSwitcher locale={locale} label={dictionary.language} />
-            <SignOutButton label={dictionary.auth.signOut} />
+            <span className="mobile-signout"><SignOutButton label={dictionary.auth.signOut} /></span>
           </div>
         </header>
 
-        <main className="app-content">{children}</main>
-        <NavLinks copy={dictionary.nav} variant="mobile" />
+        <main className="app-content" id="main-content" tabIndex={-1}><InvitationCleanup /><BetaNotice locale={locale} expandable /><WorkspaceSync workspaceId={workspaceId} revision={syncRevision} locale={locale} />{children}<LegalLinks locale={locale} /></main>
+        <NavLinks copy={dictionary.nav} variant="mobile" isTintaAdmin={isTintaAdmin} />
       </div>
     </div>
+    </WorkspaceAccess>
   );
 }

@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Tinta backup
+
+[Timer]
+OnCalendar=*-*-* 03:15:00 UTC
+RandomizedDelaySec=10min
+Persistent=true
+Unit=tinta-backup.service
+
+[Install]
+WantedBy=timers.target

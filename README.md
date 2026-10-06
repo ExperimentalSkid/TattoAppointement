@@ -1,61 +1,61 @@
-# TattoAppointement
+# Tinta · Tattoo artist workspace
 
-A practical tattoo-artist appointment management application for desktop and mobile.
+An artist's private workspace for one tattoo studio: appointments, clients, artwork and manually recorded deposits. Built from the [TattoAppointement project](https://github.com/ExperimentalSkid/TattoAppointement).
 
-## Implemented product scope
+Tinta is the application name. Artists choose their own studio name in Settings. The interface supports Spanish and English, with Spain defaults, euro amounts and appointment scheduling in Europe/Madrid.
 
-- artist-only email/password accounts with persistent sessions
-- artist-owned client records with search, editing, phone-contact picker support where available, and manual fallback
-- private design library with image upload, search, full-screen viewing, metadata editing, preserved originals, and optimized previews
-- artist-created appointments connecting client, schedule, duration, notes, status, multiple designs, and an optional final design
-- day/week calendar with phone and desktop layouts, rescheduling, duration display, and overlap warnings
-- deposit tracking with agreed price, required deposit, manual payments, payment history, deposit remaining, total balance, and payment/deposit states
-- English and Spanish UI with persistent artist language preference
-- responsive navigation and forms designed separately for phone and desktop use
-- installable PWA shell with manifest, standalone display, application icon placeholder, service-worker registration, and conservative static-asset caching
-- server-side artist ownership checks for client, design, appointment, payment, and private image access
+The dark editorial interface uses six shared layout primitives, open sections and artwork-led detail pages. See [the design system](docs/design-system.md) for the audit, tokens and rules for extending it.
 
-The application intentionally does not include customer accounts, public booking, payment processing, invoicing/accounting, inventory, marketing, consent/medical workflows, or other features outside the defined artist appointment-management scope.
+## Product scope
+
+- One artist per private workspace, with email/password and optional Google sign-in. During an invitation-only beta, new artists sign in first and enter a code to activate their empty workspace. Returning on another device opens the same artist's records without another code. An installation can host independent artists without sharing their data.
+- A privately configured operator account manages single-use invitations, aggregate artist activity and submitted problem reports. Other artists cannot access administration or each other's records. See [invitation administration](docs/beta-invitations.md) for configuration, activation and recovery.
+- Optional password recovery by email through Resend, with single-use reset links and session revocation.
+- Successful account access reaches the calendar even if saving the language preference fails. Sign-in and recovery lock submitted fields while pending, retain values after failures and focus clear feedback for correction or recovery.
+- Day, week and month calendars with client details, appointment status and overlap confirmation.
+- Client records put Call/Email and Edit by the name, show upcoming active bookings before full remaining history, and use each appointment's own final/reference artwork. Plain rows keep bookings without artwork readable; notes and the Madrid creation date stay secondary, with appointments first on mobile.
+- Client creation and editing retain every field after rejected saves, link errors to the affected controls and share validation limits with the server. Contact selection keeps optional details intact, and failed saves can be corrected and retried.
+- Private artwork library with original files, optimized previews and reusable design selections.
+- Fullscreen artwork loads the original on demand, falls back to the private preview if needed and offers Retry after a loading failure. Design edits preserve entered values after rejected saves; library search stays with detail/edit, Cancel, Save and Delete navigation.
+- Design records show owned linked appointments in upcoming/history groups with explicit Final design/Reference roles, all outcomes retained and Madrid dates.
+- Settings retain rejected profile edits, identify field errors and distinguish unsaved changes from saved values. Reminder fields insert at the cursor, restoring the default message is undoable, and data downloads show progress and retryable failures.
+- Client directory with real appointment artwork, next/last-completed booking context and labelled appointment history counts, with responsive editorial rows.
+- Appointments with optional references, a final design, price, deposit and manual payment history. Date and time use the studio's Madrid timezone.
+- Booking drafts survive adding a client or importing artwork. Field-specific errors preserve entered values; focused rescheduling identifies conflicts before an explicit override. Confirmed cancellation frees the calendar slot and preserves history.
+- Studio profile, artist preferences and persistent language selection.
+- Saved changes update other open devices automatically. Visible online pages check the private workspace revision every three seconds and catch up on focus or reconnection. Unsaved edits stay intact; stale saves are rejected before they can overwrite a newer record.
+- Optional manual WhatsApp appointment reminders with a customizable template in Settings. Client, date, time and studio placeholders fill in appointment details; the artist reviews the message and presses Send in WhatsApp. No WhatsApp API account or messaging fees are required.
+- A private download of the artist's client, appointment, design metadata and payment records.
+- Responsive desktop workspace and mobile navigation; installable PWA metadata and static asset caching.
+- Ownership checks on records and private image requests; authenticated responses are not publicly cached.
+
+Payments are a manual record of money received. This project does not charge cards, generate invoices, offer customer accounts/public booking or handle medical/consent records. Artists have separate clients, artwork, bookings, payments and settings. Password and Google credentials can belong to the same artist account through an explicit same-email connection in Settings.
 
 ## Stack
 
-- Next.js 16
-- React 19
-- TypeScript
-- PostgreSQL
-- Prisma ORM 7
-- Better Auth
-- Sharp
-- Playwright
+Next.js 16 · React 19 · TypeScript · PostgreSQL 17 · Prisma 7 · Better Auth · Sharp · Playwright. Use Node.js 22.18 or newer; the container and CI use Node.js 22.
 
-## Local setup
+## Run locally
 
-1. Install Node.js 22 and PostgreSQL.
-2. Copy `.env.example` to `.env` and set the database URL, Better Auth secret/URL, and design storage directory as appropriate.
-3. Install dependencies:
+1. Copy `.env.example` to `.env`. Generate a secret with `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`, then replace `BETTER_AUTH_SECRET`. Leave `STUDIO_OWNER_EMAIL` blank to allow independent artists, or set an email to restrict the entire installation to that account. Keep `.env` private.
+2. Run PostgreSQL 17. With Docker installed, `docker compose -f compose.dev.yaml up -d --wait` creates an isolated development database at `localhost:5432` matching the example URL.
+3. Install and prepare the database:
 
-```bash
-npm install
-```
-
-4. Apply migrations and generate Prisma Client:
-
-```bash
-npm run db:deploy
+```sh
+npm ci
 npm run db:generate
+npm run db:deploy
 ```
 
-5. Start development:
+4. Run `npm run dev` and open [localhost:3000](http://localhost:3000). Create an artist account and configure the studio in Settings.
 
-```bash
-npm run dev
-```
+For an existing PostgreSQL installation, set `DATABASE_URL` to its own empty application database. Prisma's configuration is `prisma.config.ts`. `db:deploy` applies checked-in migrations; `db:migrate` is only for authoring migrations during development.
 
-Uploaded design originals/previews are stored under `DESIGN_STORAGE_DIR`; use persistent server storage for production deployments.
+When updating an existing studio, back up its database and artwork first, then run `db:deploy`. The workspace revision migrations add change tracking. The independent-workspaces migration removes the former installation-wide account limit while preserving existing artist IDs, accounts, sessions and studio records. Stop the old app before applying this migration; its generated database client expects the retired column. Do not reset the database.
 
 ## Verification
 
-```bash
+```sh
 npm run test:unit
 npm run lint
 npm run typecheck
@@ -63,6 +63,22 @@ npm run build
 npm run test:integration
 ```
 
-The integration suite exercises responsive layouts and the complete artist workflows against the production build in Chromium, including persistence, overlap warnings, deposits, language persistence, ownership isolation, private image access, and PWA registration.
+Install the browser once with `npx playwright install chromium`. Browser tests require a disposable migrated database whose name ends in `_e2e`, `ALLOW_TEST_DB_RESET=true`, a blank `STUDIO_OWNER_EMAIL`, and `BETTER_AUTH_URL=http://127.0.0.1:3000`. Each test resets the disposable database. The reset fixture rejects normal studio databases. Never point QA at a real studio; restore your normal `.env` before resuming development. Leave Google/Resend credentials blank in QA to avoid external authentication or mail. See the launch guide for the complete QA procedure.
 
-For browser installation outside local development, serve the application over HTTPS.
+GitHub Actions installs the locked dependencies, audits advisories, migrates PostgreSQL, checks lint/types, builds the app, runs browser workflows and builds the application/migration container images. Failure traces are retained for seven days.
+
+## Production
+
+Problem reports and account-linked diagnostic logs are described in [the reporting guide](docs/problem-reports.md). Persist the private diagnostics volume and label each deployment with `TINTA_RELEASE`.
+
+See [the launch guide](docs/launch.md) for Docker deployment, HTTPS, persistent artwork storage, registration closure, backups and release checks. A Node.js server and persistent disk are required. Static hosting cannot serve authentication, server actions or the database.
+
+All devices access the same server database and private artwork storage. Google identifies the artist and selects that account's workspace; records are not stored in Google Drive. An HTTPS deployment is needed to test a phone and computer against the same workspace. Saving requires a connection; offline status pauses refresh checks and catches up after reconnection. Changing accounts in another browser tab clears the previous artist's view and opens the new account's calendar, even when a form had unsaved edits.
+
+`GET /api/health` returns `200 {"status":"ready"}` when the database and migrated user table are available, or `503 {"status":"unavailable"}`. It does not expose records or connection information. Design images require a current artist session and use `private, no-store` caching.
+
+Set `RESEND_API_KEY` and `EMAIL_FROM` to enable password recovery. Without a configured mail provider, the recovery link is hidden and the recovery page explains that email recovery is unavailable. Email unit checks use a mocked transport and never send messages.
+
+For Google, configure `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. The prominent Google button is then enabled above the expandable **Sign in with email here** option. With registration open, each new verified Google identity creates its own account. `REQUIRE_INVITATION=true` sends new artists to `/join` until they redeem a valid invitation; existing activated artists keep access. Returning identities reuse their existing account. `STUDIO_OWNER_EMAIL` is an optional installation-wide restriction, and an invalid nonempty value denies access. A password-created artist connects same-email Google in Settings after signing in. A Google-created artist can add a password in Settings. Automated Google checks replace the remote token/JWKS transport while exercising the real authentication handler and token verification; they do not verify Google's live consent screen. See the launch guide for Google Cloud callback configuration and the separate live check.
+
+The dependency overrides for Prisma's `mysql2` and `deepmerge-ts` pin patched transitive versions. Revisit the overrides when Prisma updates its own dependency pins. Keep Node, container base images and the lockfile maintained.

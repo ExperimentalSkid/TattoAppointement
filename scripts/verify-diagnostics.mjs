@@ -1,0 +1,131 @@
+import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
+import { appendFile, mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import ts from "typescript";
+
+// Compile the real modules in memory; no production data or database is used.
+const contextSource = await readFile(new URL("../src/lib/diagnostic-context.ts", import.meta.url), "utf8");
+const contextModule = `data:text/javascript;base64,${Buffer.from(ts.transpileModule(contextSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText).toString("base64")}`;
+const loggerSource = (await readFile(new URL("../src/lib/diagnostics.ts", import.meta.url), "utf8")).replace('"./diagnostic-context"', JSON.stringify(contextModule));
+const logger = await import(`data:text/javascript;base64,${Buffer.from(ts.transpileModule(loggerSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText).toString("base64")}`);
+const context = await import(contextModule);
+let checks = 0;
+function check(actual, expected, message) { assert.deepEqual(actual, expected, message); checks++; }
+await mkdir(".tmp", { recursive: true });
+const directory = await mkdtemp(path.resolve(".tmp", "diagnostics-unit-"));
+const now = new Date();
+const day = now.toISOString().slice(0, 10);
+const event = { id: randomUUID(), occurredAt: now.toISOString(), code: "page_error", digest: "1234567", context: { ...context.defaultDiagnosticContext(), page: "/calendar", view: "week", calendarAnchor: "2026-10-05" } };
+const report = { reportId: randomUUID(), clickedAt: now.toISOString(), description: "QA report\nSecond line", context: event.context, workspaceIdAtClick: "qa-artist-a", recentEvents: [event] };
+check(context.normalizeDiagnosticPage("/clients/private-record?token=private#notes"), "/clients/:id", "only route patterns survive");
+check(context.normalizeDiagnosticPage("/reset-password?token=secret"), "/reset-password");
+check(context.parseProblemReport({ ...report, artistId: "qa-artist-b" }), null, "untrusted actor fields rejected");
+check(context.parseProblemReport({ ...report, description: "x".repeat(2001) }), null);
+check(context.parseProblemReport({ ...report, description: "\0private" }), null);
+check(context.parseDiagnosticIntake({ ...event, workspaceIdAtClick: "qa-artist-a", cookie: "secret" }), null);
+check(context.parseDiagnosticIntake({ ...event, code: "auth_sign_in_success", workspaceIdAtClick: null }), null, "browser cannot fabricate server events");
+check(context.parseDiagnosticContext({ ...event.context, calendarAnchor: "2026-02-30" }), null);
+check(context.parseDiagnosticContext({ ...event.context, timezone: "unknown-zone" }), null);
+check(context.parseSafeDiagnosticEvent({ ...event, digest: "password-like-text" }), null);
+check(context.parseSafeDiagnosticEvent({ ...event, stack: "private-stack" }), null);
+check(logger.classifyDiagnosticError({ code: "P2002", message: "secret" }), "database_unique");
+check(logger.classifyDiagnosticError({ code: "ENOSPC" }), "storage_io");
+check(logger.classifyDiagnosticError({ name: "TimeoutError" }), "timeout");
+check(logger.classifyDiagnosticError({ get code() { throw new Error("private"); } }), "unknown");
+check(logger.classifyDiagnosticError({ code: { toString() { throw new Error("private"); } } }), "unknown");
+const store = logger.createDiagnosticStore({ directory });
+check(await store.writeEvent({ ...event, artistId: "qa-artist-a", password: "must-never-be-recorded" }), true);
+const logged = JSON.parse((await readFile(path.join(directory, `diagnostics-${day}.jsonl`), "utf8")).trim());
+check(logged.artistId, "qa-artist-a");
+check(logged.password, undefined);
+check(logged.context.page, "/calendar");
+const first = await store.saveReport(report, "qa-artist-a");
+check(first.ok, true);
+check(await store.saveReport(report, "qa-artist-a"), first, "retry returns the same reference");
+check(await logger.createDiagnosticStore({ directory }).saveReport(report, "qa-artist-a"), first, "dedupe survives a restart");
+check((await store.saveReport({ ...report, description: "different" }, "qa-artist-a")).error, "conflict");
+const other = await store.saveReport(report, "qa-artist-b");
+check(other.ok, true);
+assert.notEqual(other.reference, first.reference); checks++;
+check((await readFile(path.join(directory, `reports-${day}.jsonl`), "utf8")).trim().split("\n").length, 2);
+const interruptedDirectory = path.join(directory, "interrupted");
+const interruptedStore = logger.createDiagnosticStore({ directory: interruptedDirectory });
+check((await interruptedStore.saveReport(report, "qa-artist-a")).ok, true);
+const interruptedPath = path.join(interruptedDirectory, `reports-${day}.jsonl`);
+await appendFile(interruptedPath, '{"partial":');
+const interruptedContents = await readFile(interruptedPath, "utf8");
+check((await interruptedStore.saveReport({ ...report, reportId: randomUUID() }, "qa-artist-a")).error, "unavailable");
+check(await readFile(interruptedPath, "utf8"), interruptedContents, "a partial record is never silently extended");
+check(await logger.createDiagnosticStore({ directory: path.join(directory, "limited"), maxDiagnosticBytes: 1 }).writeEvent(event), false);
+check((await logger.createDiagnosticStore({ directory: path.join(directory, "report-limit"), maxReportBytes: 1 }).saveReport(report, "qa-artist-a")).error, "unavailable");
+const unavailable = path.join(directory, "not-a-directory"); await writeFile(unavailable, "QA");
+check(await logger.createDiagnosticStore({ directory: unavailable }).writeEvent(event), false);
+check((await logger.createDiagnosticStore({ directory: unavailable }).saveReport(report, null)).error, "unavailable");
+await writeFile(path.join(directory, "diagnostics-2000-01-01.jsonl"), "{}\n");
+await logger.createDiagnosticStore({ directory }).writeEvent(event);
+check((await readdir(directory)).includes("diagnostics-2000-01-01.jsonl"), false, "expired files pruned");
+const origin = "http://127.0.0.1:3000";
+const previousOrigin = process.env.BETTER_AUTH_URL; process.env.BETTER_AUTH_URL = origin;
+try {
+  check(logger.diagnosticSameOrigin(new Request(`${origin}/api/reports`, { headers: { Origin: origin } })), true);
+  check(logger.diagnosticSameOrigin(new Request(`${origin}/api/reports`)), false);
+  check(logger.diagnosticSameOrigin(new Request(`${origin}/api/reports`, { headers: { Origin: "https://other.example" } })), false);
+  check(logger.diagnosticSameOrigin(new Request(`${origin}/api/reports`, { headers: { Origin: origin, "sec-fetch-site": "cross-site" } })), false);
+  for (let i = 0; i < 10; i++) check(logger.consumeDiagnosticRate(new Request(origin, { headers: { "x-forwarded-for": "10.23.4.5" } }), "reports"), true);
+  check(logger.consumeDiagnosticRate(new Request(origin, { headers: { "x-forwarded-for": "10.23.4.5" } }), "reports"), false);
+  const bodyRequest = new Request(origin, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(report) });
+  check((await logger.readDiagnosticBody(bodyRequest, 24 * 1024)).reportId, report.reportId);
+  await assert.rejects(logger.readDiagnosticBody(new Request(origin, { method: "POST", headers: { "Content-Type": "application/json" }, body: "x".repeat(100) }), 10), { code: "too_large" }); checks++;
+} finally { if (previousOrigin === undefined) delete process.env.BETTER_AUTH_URL; else process.env.BETTER_AUTH_URL = previousOrigin; }
+// Export, scoped withdrawal, durable suppression and cleanup without traffic.
+{
+  let clock = new Date();
+  const privacy = logger.createDiagnosticStore({ directory: path.join(directory, "privacy"), now: () => clock });
+  const fresh = { ...event, id: randomUUID(), occurredAt: clock.toISOString() };
+  check(await privacy.writeEvent({ ...fresh, artistId: "qa-privacy-a" }, "client"), true);
+  check(await privacy.writeEvent({ ...fresh, id: randomUUID(), artistId: "qa-privacy-a" }), true);
+  check(await privacy.writeEvent({ ...fresh, id: randomUUID(), artistId: "qa-privacy-b" }, "client"), true);
+  const instruction = { ...report, reportId: randomUUID(), clickedAt: clock.toISOString() };
+  const saved = await privacy.saveReport(instruction, "qa-privacy-a");
+  check(saved.ok, true);
+  const exported = await privacy.exportAccount("qa-privacy-a");
+  check(exported.diagnostics.length, 2);
+  check(exported.reports.length, 1);
+  check(JSON.stringify(exported).includes("qa-privacy-b"), false);
+  check(JSON.stringify(exported).includes("idempotencyKey"), false);
+  check(JSON.stringify(exported).includes("fingerprint"), false);
+  check(await privacy.purgeAccount("qa-privacy-a", true), true);
+  check((await privacy.exportAccount("qa-privacy-a")).diagnostics.map(row => row.source), ["server"]);
+  check((await privacy.exportAccount("qa-privacy-a")).reports.length, 1);
+  check((await privacy.exportAccount("qa-privacy-b")).diagnostics.length, 1);
+  check(await privacy.saveReport(instruction, "qa-privacy-a"), saved, "Withdrawal preserves manual report retry identity");
+  check(await privacy.purgeAccount("qa-privacy-a"), true);
+  check(await privacy.exportAccount("qa-privacy-a"), { diagnostics: [], reports: [] });
+  check(await privacy.writeEvent({ ...fresh, artistId: "qa-privacy-a" }), false, "Late writes cannot resurrect erased account data");
+  check((await privacy.saveReport(instruction, "qa-privacy-a")).ok, false);
+  const restarted = logger.createDiagnosticStore({ directory: path.join(directory, "privacy"), now: () => clock });
+  check(await restarted.writeEvent({ ...fresh, artistId: "qa-privacy-a" }), false, "Suppression survives restart");
+  clock = new Date(clock.getTime() + 31 * 86_400_000);
+  check(await restarted.cleanup(), true);
+  check((await readdir(path.join(directory, "privacy"))).filter(file => /jsonl$|^\.erased-/.test(file)), [], "Idle cleanup expires records and minimal markers");
+}
+// Admin reads only submitted, bounded, recent reports through the same erasure queue.
+{
+  const adminStore = logger.createDiagnosticStore({ directory: path.join(directory, "admin-reader"), now: () => now });
+  for (let index = 0; index < 55; index++) {
+    const clickedAt = new Date(now.getTime() - index * 1000).toISOString();
+    check((await adminStore.saveReport({ ...report, reportId: randomUUID(), clickedAt, description: `Report ${index}` }, "qa-admin-reader")).ok, true);
+  }
+  const rows = await adminStore.readAdminReports();
+  check(rows.length, 50, "Admin reads at most fifty reports");
+  check(Object.keys(rows[0]).sort(), ["id", "artistId", "createdAt", "clickedAt", "message", "route", "pageview", "deviceCategory", "calendarAnchor", "appVersion"].sort());
+  check(JSON.stringify(rows).includes("idempotencyKey"), false);
+  check(JSON.stringify(rows).includes("fingerprint"), false);
+  await adminStore.purgeAccount("qa-admin-reader");
+  check(await adminStore.readAdminReports(), [], "Account erasure removes reports from the admin view");
+  check(await logger.createDiagnosticStore({ directory: interruptedDirectory }).readAdminReports(), null, "Corrupt storage reports unavailable rather than no reports");
+  check(context.normalizeDiagnosticPage("/join#code=SECRET"), "/join", "Invitation codes never enter canonical pages");
+  check(context.normalizeDiagnosticPage("/admin/artists?page=2"), "/admin/artists");
+}
+console.log(`Diagnostics storage, privacy, retry and intake validation: ${checks} checks passed.`);

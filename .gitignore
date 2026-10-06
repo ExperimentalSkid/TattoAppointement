@@ -10,3 +10,12 @@ coverage/
 *.log
 src/generated/
 storage/
+.data/
+.tmp/
+test-results/
+playwright-report/
+*.tsbuildinfo
+__pycache__/
+production.env
+backups/
+ops/state/

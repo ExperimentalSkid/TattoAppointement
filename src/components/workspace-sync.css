@@ -1,0 +1,4 @@
+.workspace-sync-status:not([hidden]) { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--muted); }
+.workspace-sync-status p { margin: 0; }
+.workspace-sync-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.workspace-sync-status button { min-height: 44px; padding: 0; border: 0; background: transparent; color: var(--text); cursor: pointer; font: inherit; }

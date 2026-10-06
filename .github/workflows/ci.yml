@@ -4,16 +4,21 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:17
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: tatto_appointement
+          POSTGRES_DB: tinta_utf8_e2e
+          TZ: UTC
         ports:
           - 5432:5432
         options: >-
@@ -23,9 +28,29 @@ jobs:
           --health-retries 5
 
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tatto_appointement?schema=public
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tinta_utf8_e2e?schema=public
+      ALLOW_TEST_DB_RESET: "true"
+      STUDIO_OWNER_EMAIL: ""
+      TINTA_ADMIN_USER_ID: tinta-e2e-admin
+      REQUIRE_INVITATION: "false"
       BETTER_AUTH_SECRET: ci-only-secret-with-at-least-thirty-two-characters
       BETTER_AUTH_URL: http://127.0.0.1:3000
+      GOOGLE_CLIENT_ID: ""
+      GOOGLE_CLIENT_SECRET: ""
+      RESEND_API_KEY: ""
+      EMAIL_FROM: ""
+      TZ: UTC
+      DIAGNOSTICS_DIR: .tmp/diagnostics-e2e
+      PRIVACY_MAINTENANCE_ENABLED: "false"
+      # Synthetic facts for disposable QA only; never deployment configuration.
+      PRIVACY_OPERATOR_NAME: Isolated QA operator
+      PRIVACY_OPERATOR_ADDRESS: Isolated QA address, 1 test street
+      PRIVACY_OPERATOR_COUNTRY: ES
+      PRIVACY_CONTACT_EMAIL: privacy@tinta-qa.local
+      PRIVACY_SERVER_COUNTRY: ES
+      PRIVACY_TRANSFER_NOTICE: >-
+        Isolated test fixture only; no external authentication, email or hosting
+        provider participates in this QA environment.
 
     steps:
       - name: Checkout
@@ -35,9 +60,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
+
+      - name: Dependency advisory check
+        run: npm audit --audit-level=high
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
@@ -48,6 +77,16 @@ jobs:
       - name: Unit tests
         run: npm run test:unit
 
+      - name: Verify backup and monitoring failure handling
+        run: |
+          python3 -m unittest discover -s ops -p test_backup.py -v
+          python3 -m unittest discover -s ops/tests -v
+
+      - name: Verify privacy configuration validation and QA fixtures
+        run: |
+          npm run verify:privacy-config
+          npm run privacy:check
+
       - name: Generate Prisma client
         run: npm run db:generate
 
@@ -55,7 +94,9 @@ jobs:
         run: npm run db:deploy
 
       - name: Lint
-        run: npm run lint
+        run: |
+          npm run verify:eslint-glob
+          npm run lint
 
       - name: Type check
         run: npm run typecheck
@@ -65,3 +106,29 @@ jobs:
 
       - name: Browser integration QA
         run: npm run test:integration
+
+      - name: Keep failure traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-test-results
+          path: test-results/
+          retention-days: 7
+      - name: Keep invitation and admin layout evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-invitation-layouts
+          path: .tmp/admin-layouts/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build application and migration images
+        run: |
+          docker build --target runner -t tinta-app .
+          docker build --target migrate -t tinta-migrate .

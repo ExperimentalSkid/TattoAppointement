@@ -1,0 +1,27 @@
+[Unit]
+Description=Private Tinta backup and isolated restore verification
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+UMask=0077
+WorkingDirectory=/srv/tinta
+Environment=PATH=/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/usr/bin/python3 /srv/tinta/ops/backup.py --project-dir /srv/tinta --keep-days 7
+TimeoutStartSec=1h
+TimeoutStopSec=3min
+KillMode=mixed
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/srv/tinta/backups /srv/tinta/ops/state
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

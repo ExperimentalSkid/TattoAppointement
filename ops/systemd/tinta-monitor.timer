@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Tinta every five minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=10s
+Unit=tinta-monitor.service
+
+[Install]
+WantedBy=timers.target

@@ -1,18 +1,18 @@
 :root {
   color-scheme: light;
-  --bg: #f1eee8;
-  --surface: #fffdf9;
-  --surface-soft: #e9e4dc;
-  --text: #292521;
-  --muted: #655d55;
-  --border: #d7cfc3;
-  --accent: #7b342e;
-  --accent-hover: #672923;
+  --bg: #f7f7f2;
+  --surface: #ffffff;
+  --surface-soft: #eef1e9;
+  --text: #1f2925;
+  --muted: #66716b;
+  --border: #dfe4db;
+  --accent: #305e46;
+  --accent-hover: #244a36;
   --accent-text: #ffffff;
   --danger: #a12e2e;
   --success: #426248;
-  --radius: 8px;
-  --radius-small: 5px;
+  --radius: 12px;
+  --radius-small: 7px;
   --shadow: 0 1px 2px rgba(38, 31, 25, 0.05);
   --content-width: 1480px;
 }
@@ -61,7 +61,7 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid #8b3932;
+  outline: 3px solid var(--accent);
   outline-offset: 3px;
 }
 

@@ -41,7 +41,7 @@ export async function GET(
       headers: {
         "Content-Type": contentType,
         "Content-Length": String(file.byteLength),
-        "Cache-Control": "private, max-age=3600",
+        "Cache-Control": "private, no-store",
         "X-Content-Type-Options": "nosniff",
       },
     });

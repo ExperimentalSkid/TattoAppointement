@@ -4,6 +4,7 @@ export function LocalDateTime({ iso, locale }: { iso: string; locale: "en" | "es
   const formatted = new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", {
     dateStyle: "medium",
     timeStyle: "short",
+    timeZone: "Europe/Madrid",
   }).format(new Date(iso));
 
   return (

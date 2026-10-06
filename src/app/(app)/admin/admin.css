@@ -1,0 +1,78 @@
+.admin-page { max-width: 1220px; }
+.admin-tabs { display: flex; flex-wrap: wrap; gap: 12px 28px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+.admin-tabs a { padding: 8px 0; color: var(--muted); font-size: 13px; }
+.admin-tabs a[aria-current="page"] { color: var(--text); box-shadow: inset 0 -1px var(--accent); }
+.admin-tabs a:hover { color: var(--text); }
+.admin-create-form { display: flex; flex-wrap: wrap; align-items: end; gap: 24px; }
+.admin-create-form .field { min-width: 160px; }
+/* Use the shared input geometry; .field already supplies studio colors and focus. */
+.admin-create-form .field select { width: 100%; min-height: 46px; border-width: 1px; border-style: solid; border-radius: var(--radius-small); padding: 10px 12px; transition: border-color 140ms ease, box-shadow 140ms ease; }
+.admin-create-form .primary-button { min-height: 46px; }
+.admin-created-invitation { margin-top: 32px; border-top: 1px solid var(--rule); padding-top: 28px; }
+.admin-created-invitation h3 { font: 400 25px/1.3 Georgia, serif; margin: 0 0 12px; }
+.admin-created-invitation > p { font-size: 13px; line-height: 1.7; }
+.admin-created-invitation .field { margin-top: 20px; }
+.admin-created-invitation input { font-family: monospace; letter-spacing: .04em; }
+.admin-created-invitation textarea { resize: vertical; overflow-wrap: anywhere; }
+.admin-created-invitation .secondary-button { font-size: 12px; }
+.admin-copy-status { min-height: 20px; }
+.admin-ledger-heading { margin-bottom: 24px; }
+.admin-ledger-heading > p { max-width: 70ch; font-size: 13px; }
+.admin-invitation-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.2fr) max-content; gap: 24px; align-items: start; }
+.admin-row-title { display: block; font: 400 22px/1.3 Georgia, serif; }
+.admin-reference { display: block; margin-top: 8px; color: var(--muted); font: 10px/1.6 monospace; overflow-wrap: anywhere; }
+.admin-page dl { margin: 0; }
+.admin-page dt { color: var(--muted); font-size: 10px; line-height: 1.6; }
+.admin-page dd { margin: 4px 0 0; font-size: 12px; overflow-wrap: anywhere; }
+.admin-row-dates, .admin-artist-dates { display: grid; gap: 12px; }
+.admin-redemption { display: grid; gap: 4px; font-size: 12px; color: var(--muted); min-width: 0; overflow-wrap: anywhere; }
+.admin-redemption strong { font-weight: 400; color: var(--text); }
+.admin-revoke-control { font-size: 12px; }
+.admin-revoke-control .danger-button { font-size: 12px; }
+.admin-summary { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 24px; }
+.admin-summary dd { font: 400 38px/1.2 Georgia, serif; margin-top: 10px; }
+.admin-artist-row { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1.3fr) minmax(0, 1fr); gap: 32px; }
+.admin-artist-identity h3, .admin-report-heading h3 { margin: 0; font: 400 24px/1.3 Georgia, serif; overflow-wrap: anywhere; }
+.admin-artist-identity p { color: var(--muted); font-size: 12px; margin: 6px 0 12px; overflow-wrap: anywhere; }
+.admin-identity-state { color: var(--accent); font-size: 11px; }
+.artist-access-control { margin-top: 14px; }
+.artist-access-switch { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 0; border: 0; background: transparent; color: var(--text); font-size: 12px; cursor: pointer; }
+.artist-access-switch:disabled { cursor: default; }
+.artist-access-switch[aria-busy="true"] { cursor: wait; }
+.artist-access-track { display: flex; align-items: center; flex: 0 0 42px; width: 42px; height: 24px; padding: 2px; border: 1px solid var(--border); border-radius: 24px; background: var(--surface-soft); transition: background-color 140ms ease, border-color 140ms ease; }
+.artist-access-track > span { width: 18px; height: 18px; border-radius: 50%; background: var(--muted); transition: transform 140ms ease; }
+.artist-access-switch[aria-checked="true"] .artist-access-track { background: var(--action); border-color: var(--action); }
+.artist-access-switch[aria-checked="true"] .artist-access-track > span { background: var(--text); transform: translateX(18px); }
+.artist-access-switch:disabled .artist-access-track { opacity: .55; }
+.admin-artist-identity .artist-access-note, .artist-access-feedback p { margin: 4px 0 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.artist-access-feedback p { color: var(--danger); }
+.artist-access-feedback .secondary-button { font-size: 12px; }
+.admin-artist-dates { grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; }
+.admin-record-totals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-content: start; }
+.admin-record-totals dd { font: 400 24px/1.2 Georgia, serif; }
+.admin-pagination { margin-top: 28px; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 12px; color: var(--muted); }
+.admin-report-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.admin-report-heading > time { color: var(--muted); font-size: 12px; }
+.admin-report-email { font-size: 12px; margin-top: 6px; overflow-wrap: anywhere; }
+.admin-report-message { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; max-width: 80ch; margin: 24px 0; }
+.admin-report-context { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px 24px; }
+@media (max-width: 1000px) {
+  .admin-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .admin-invitation-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .admin-artist-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); }
+  .admin-record-totals { grid-column: 1 / -1; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .admin-report-context { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .admin-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+  .admin-summary dd { font-size: 30px; }
+  .admin-tabs { gap: 12px 20px; }
+  .admin-tabs a { font-size: 12px; }
+  .admin-invitation-row, .admin-artist-row { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .admin-row-dates { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-create-form { align-items: stretch; flex-direction: column; gap: 16px; }
+  .admin-created-invitation input { font-size: 12px; }
+  .admin-record-totals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-report-context { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { .artist-access-track, .artist-access-track > span { transition: none; } }

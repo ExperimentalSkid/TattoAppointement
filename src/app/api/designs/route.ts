@@ -3,19 +3,33 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import {
   DesignImageError,
+  MAX_DESIGN_FILE_SIZE,
   removeDesignFiles,
   saveDesignImage,
 } from "@/lib/design-storage";
+import { readUploadFormData, UploadBodyError } from "@/lib/uploads";
+import { classifyDiagnosticError, writeDiagnostic } from "@/lib/diagnostics";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const expectedOrigin = new URL(process.env.BETTER_AUTH_URL ?? request.url).origin;
+  const origin = request.headers.get("origin");
+  if ((origin && origin !== expectedOrigin) || request.headers.get("sec-fetch-site") === "cross-site") {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const formData = await request.formData();
+  let formData: FormData;
+  try {
+    formData = await readUploadFormData(request, MAX_DESIGN_FILE_SIZE + 64 * 1024);
+  } catch (error) {
+    const code = error instanceof UploadBodyError ? error.code : "invalid_body";
+    return NextResponse.json({ error: code }, { status: code === "too_large" ? 413 : 400 });
+  }
   const title = String(formData.get("title") ?? "").trim();
   const notesText = String(formData.get("notes") ?? "").trim();
   const image = formData.get("image");
@@ -51,6 +65,7 @@ export async function POST(request: Request) {
       select: { id: true },
     });
 
+    await writeDiagnostic({ code: "design_upload_saved", artistId: session.user.id, outcome: "saved" });
     return NextResponse.json({ id: design.id }, { status: 201 });
   } catch (error) {
     if (stored) {
@@ -58,10 +73,11 @@ export async function POST(request: Request) {
     }
 
     if (error instanceof DesignImageError) {
+      await writeDiagnostic({ code: "design_upload_failed", artistId: session.user.id, outcome: "failed", reason: "validation", status: 400 });
       return NextResponse.json({ error: error.code }, { status: 400 });
     }
 
-    console.error("Could not store design image", error);
+    await writeDiagnostic({ code: "design_upload_failed", artistId: session.user.id, outcome: "failed", reason: "save", status: 500, errorKind: classifyDiagnosticError(error) });
     return NextResponse.json({ error: "save" }, { status: 500 });
   }
 }

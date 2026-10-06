@@ -16,23 +16,73 @@ enum AppointmentStatus {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  name          String
-  email         String   @unique
-  emailVerified Boolean  @default(false)
-  image         String?
-  language      String   @default("en")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                       String   @id @default(cuid())
+  name                     String
+  email                    String   @unique
+  emailVerified            Boolean  @default(false)
+  image                    String?
+  studioName               String?
+  whatsappReminderTemplate String?
+  language                 String   @default("es")
+  diagnosticsConsent       Boolean  @default(false)
+  diagnosticsConsentUpdatedAt DateTime?
+  diagnosticsConsentNoticeVersion String?
+  diagnosticsPurgeRequestedAt DateTime?
+  deletionRequestedAt      DateTime?
+  activatedAt              DateTime? @default(now())
+  deactivatedAt            DateTime?
+  lastSignInAt             DateTime?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
 
-  sessions     Session[]
-  accounts     Account[]
-  clients      Client[]
-  designs      Design[]
-  appointments Appointment[]
-  payments     Payment[]
+  sessions          Session[]
+  accounts          Account[]
+  clients           Client[]
+  designs           Design[]
+  appointments      Appointment[]
+  payments          Payment[]
+  workspaceRevision WorkspaceRevision?
+  createdInvitations Invitation[] @relation("InvitationCreator")
+  redeemedInvitations Invitation[] @relation("InvitationRedeemer")
+  invitationAttemptWindow InvitationAttemptWindow?
 
   @@map("user")
+}
+
+model Invitation {
+  id           String   @id @default(cuid())
+  codeHash     String   @unique
+  createdById  String?
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  redeemedAt   DateTime?
+  redeemedById String?
+
+  createdBy User? @relation("InvitationCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  redeemedBy User? @relation("InvitationRedeemer", fields: [redeemedById], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([createdById])
+  @@index([redeemedById])
+  @@map("beta_invitation")
+}
+
+model InvitationAttemptWindow {
+  userId          String   @id
+  windowStartedAt DateTime
+  attempts        Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("invitation_attempt_window")
+}
+
+model WorkspaceRevision {
+  artistId String @id
+  revision BigInt @default(0)
+
+  artist User @relation(fields: [artistId], references: [id], onDelete: Cascade)
 }
 
 model Session {

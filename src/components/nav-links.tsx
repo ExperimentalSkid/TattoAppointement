@@ -22,18 +22,20 @@ const items = [
 export function NavLinks({
   copy,
   variant,
+  isTintaAdmin = false,
 }: {
   copy: NavigationCopy;
   variant: "desktop" | "mobile";
+  isTintaAdmin?: boolean;
 }) {
   const pathname = usePathname();
 
   return (
-    <nav className={variant === "desktop" ? "desktop-nav" : "mobile-nav"}>
+    <nav className={variant === "desktop" ? "desktop-nav" : "mobile-nav"} data-admin={isTintaAdmin || undefined} aria-label={copy.calendar === "Calendar" ? "Main navigation" : "Navegación principal"}>
       {items.map(([href, key, icon]) => {
         const active = pathname === href || pathname.startsWith(`${href}/`);
         return (
-          <Link key={href} href={href} data-active={active ? "true" : "false"}>
+          <Link key={href} href={href} data-active={active ? "true" : "false"} aria-current={active ? "page" : undefined}>
             <span className="nav-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <path d={icon} />
@@ -43,6 +45,10 @@ export function NavLinks({
           </Link>
         );
       })}
+      {isTintaAdmin ? <Link href="/admin" data-active={pathname === "/admin" || pathname.startsWith("/admin/") ? "true" : "false"} aria-current={pathname === "/admin" || pathname.startsWith("/admin/") ? "page" : undefined}>
+        <span className="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3 3 7v5c0 5 9 9 9 9s9-4 9-9V7l-9-4Z" /><path d="M9 12h6m-3-3v6" /></svg></span>
+        <span className="nav-label">Admin</span>
+      </Link> : null}
     </nav>
   );
 }

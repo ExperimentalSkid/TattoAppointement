@@ -4,9 +4,22 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Dictionary } from "@/i18n/dictionaries";
+import { appointmentReturnWithSelection, validateAppointmentReturn } from "@/lib/appointment-return";
+import { emitDiagnostic } from "@/lib/client-diagnostics";
+import { HealthDataHint } from "@/components/legal-links";
+import type { Locale } from "@/i18n";
 
-export function DesignUploadForm({ copy }: { copy: Dictionary["designs"] }) {
+export function DesignUploadForm({
+  copy,
+  returnTo,
+  locale = "es",
+}: {
+  copy: Dictionary["designs"];
+  returnTo?: string | null;
+  locale?: Locale;
+}) {
   const router = useRouter();
+  const appointmentReturn = validateAppointmentReturn(returnTo);
   const [title, setTitle] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -55,6 +68,7 @@ export function DesignUploadForm({ copy }: { copy: Dictionary["designs"] }) {
       }
 
       if (!response.ok || !result.id) {
+        emitDiagnostic("action_failed", { outcome: "failed", reason: response.status >= 500 ? "save" : "validation", ...(response.status >= 400 ? { status: response.status } : {}) });
         const message =
           result.error === "title"
             ? copy.titleError
@@ -71,9 +85,10 @@ export function DesignUploadForm({ copy }: { copy: Dictionary["designs"] }) {
         return;
       }
 
-      router.push(`/designs/${result.id}`);
+      router.push(appointmentReturnWithSelection(appointmentReturn, "createdDesign", result.id) ?? `/designs/${result.id}`);
       router.refresh();
     } catch {
+      emitDiagnostic("action_failed", { outcome: "failed", reason: "network" });
       setError(copy.uploadError);
     } finally {
       setPending(false);
@@ -81,7 +96,7 @@ export function DesignUploadForm({ copy }: { copy: Dictionary["designs"] }) {
   }
 
   return (
-    <form className="design-form" onSubmit={submit}>
+    <form data-sync-protect data-sync-pending={pending} className="design-form" onSubmit={submit}>
       <div className="field">
         <label htmlFor="design-image">{copy.image}</label>
         <input
@@ -95,6 +110,7 @@ export function DesignUploadForm({ copy }: { copy: Dictionary["designs"] }) {
         />
         <p className="field-help">{copy.chooseImage}</p>
         <p className="field-help">{copy.imageHelp}</p>
+        <p className="field-help">{locale === "es" ? "Los originales conservan sus metadatos. Revisa las fotos para evitar datos de ubicación, documentos de identidad o información médica." : "Original files keep their metadata. Check photos for location data, identity documents or medical information before uploading."}</p>
       </div>
 
       {previewUrl ? (
@@ -122,6 +138,7 @@ export function DesignUploadForm({ copy }: { copy: Dictionary["designs"] }) {
           {copy.notes} <span className="field-optional">({copy.optional})</span>
         </label>
         <textarea id="design-notes" name="notes" rows={5} maxLength={4000} />
+        <HealthDataHint locale={locale} />
       </div>
 
       {error ? <p className="form-error">{error}</p> : null}
@@ -130,7 +147,7 @@ export function DesignUploadForm({ copy }: { copy: Dictionary["designs"] }) {
         <button className="primary-button" type="submit" disabled={pending}>
           {pending ? copy.uploading : copy.upload}
         </button>
-        <Link className="secondary-button button-link" href="/designs">
+        <Link className="secondary-button button-link" href={appointmentReturn ?? "/designs"}>
           {copy.cancel}
         </Link>
       </div>

@@ -11,7 +11,7 @@ import { getDictionary } from "@/i18n";
 import { cancelAppointment, deleteAppointment, rescheduleAppointment } from "@/app/(app)/appointments/actions";
 import { deletePayment, recordPayment } from "@/app/(app)/appointments/payment-actions";
 import { calculateMoneySummary, decimalToCents, formatEuro } from "@/lib/money";
-import { studioTimeZone } from "@/lib/studio-time";
+import { studioLocalInputValue, studioTimeZone } from "@/lib/studio-time";
 import { getDefaultReminderTemplate, getWhatsAppReminderUrl, renderReminderTemplate } from "@/lib/whatsapp-reminder";
 
 export default async function AppointmentDetailPage({
@@ -91,6 +91,7 @@ export default async function AppointmentDetailPage({
           </div>
         </div>
         <div className="appointment-record-actions">
+          {appointment.status !== "CANCELLED" ? <Link className="secondary-button button-link" href={`/calendar?view=week&anchor=${studioLocalInputValue(appointment.startsAt.toISOString()).slice(0, 10)}`}>{locale === "es" ? "Ver en el calendario" : "View in calendar"}</Link> : null}
           <Link className="secondary-button button-link" href={`/appointments/${appointment.id}/edit`}>{dictionary.appointments.edit}</Link>
           <AppointmentRescheduleForm key={`${appointment.id}-${reschedule === "1"}`} action={rescheduleAction} appointmentId={appointment.id} startsAtIso={appointment.startsAt.toISOString()} expectedVersion={appointment.updatedAt.toISOString()} isActive={isActive} copy={dictionary.appointments} locale={locale} initialExpanded={reschedule === "1"} />
           {reminderUrl ? <a className="secondary-button button-link" href={reminderUrl} target="_blank" rel="noopener noreferrer">{locale === "es" ? "Preparar recordatorio por WhatsApp" : "Prepare WhatsApp reminder"}</a> : null}

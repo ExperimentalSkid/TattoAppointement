@@ -5,19 +5,20 @@ import { DIAGNOSTICS_RETENTION_DAYS, readAdminProblemReports } from "@/lib/diagn
 const PAGE_SIZE = 50;
 
 export async function getAdminSnapshot(requestedPage = 1) {
-  await requireAdminSession();
+  const admin = await requireAdminSession();
   return prisma.$transaction(async tx => {
-    const [totalUsers, activated, pending, signInsLast7Days] = await Promise.all([
+    const [totalUsers, activated, deactivated, pending, signInsLast7Days] = await Promise.all([
       tx.user.count(),
-      tx.user.count({ where: { activatedAt: { not: null }, deletionRequestedAt: null } }),
-      tx.user.count({ where: { activatedAt: null, deletionRequestedAt: null } }),
+      tx.user.count({ where: { activatedAt: { not: null }, deactivatedAt: null, deletionRequestedAt: null } }),
+      tx.user.count({ where: { deactivatedAt: { not: null }, deletionRequestedAt: null } }),
+      tx.user.count({ where: { activatedAt: null, deactivatedAt: null, deletionRequestedAt: null } }),
       tx.user.count({ where: { lastSignInAt: { gte: new Date(Date.now() - 7 * 86_400_000) }, deletionRequestedAt: null } }),
     ]);
     const totalPages = Math.max(1, Math.ceil(totalUsers / PAGE_SIZE));
     const page = Math.min(totalPages, Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1);
     const records = await tx.user.findMany({
       orderBy: [{ createdAt: "desc" }, { id: "desc" }], skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE,
-      select: { id: true, name: true, email: true, emailVerified: true, createdAt: true, activatedAt: true,
+      select: { id: true, name: true, email: true, emailVerified: true, createdAt: true, activatedAt: true, deactivatedAt: true,
         lastSignInAt: true, diagnosticsConsent: true, deletionRequestedAt: true,
         _count: { select: { clients: true, designs: true, appointments: true, payments: true } } },
     });
@@ -37,10 +38,11 @@ export async function getAdminSnapshot(requestedPage = 1) {
     }
     return {
       users: records.map(({ _count, ...record }) => ({ ...record, totals: _count,
+        canManageAccess: record.id !== admin.user.id && Boolean(record.activatedAt && !record.deletionRequestedAt),
         lastRecordChangeAt: changes.get(record.id) ?? null, activity: null })),
       invitations: invitationRecords.map(({ redeemedBy, ...invitation }) => ({ ...invitation,
         redeemedByName: redeemedBy?.name ?? null, redeemedByEmail: redeemedBy?.email ?? null })),
-      summary: { artists: totalUsers, activated, pending, signInsLast7Days },
+      summary: { artists: totalUsers, activated, deactivated, pending, signInsLast7Days },
       pagination: { page, pageSize: PAGE_SIZE, totalPages, totalUsers },
     };
   }, { isolationLevel: "RepeatableRead" });

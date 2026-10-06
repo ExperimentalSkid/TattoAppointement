@@ -14,6 +14,7 @@ export async function POST(request: Request) {
     const instruction = parseInvitationRedemption(await readDiagnosticBody(request, 512));
     if (!instruction) return Response.json({ error: "invalid_instruction" }, { status: 400, headers });
     const result = await redeemInvitation(session.user.id, instruction.code);
+    if (result.status === "account_paused") return Response.json({ error: "account_paused" }, { status: 403, headers });
     if (result.status === "rate_limited") {
       return Response.json({ error: "INVITATION_RATE_LIMITED", retryAfterSeconds: result.retryAfterSeconds },
         { status: 429, headers: { ...headers, "Retry-After": String(result.retryAfterSeconds) } });

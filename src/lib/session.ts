@@ -16,23 +16,24 @@ export async function getIdentitySession() {
   if (!session) return null;
   const artist = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, email: true, emailVerified: true, activatedAt: true, lastSignInAt: true, deletionRequestedAt: true },
+    select: { id: true, email: true, emailVerified: true, activatedAt: true, deactivatedAt: true, lastSignInAt: true, deletionRequestedAt: true },
   });
   if (!artist || artist.deletionRequestedAt || !isAllowedStudioEmail(artist.email)) return null;
-  // Activation must be read from the database on every request, including just
-  // after redemption; a previously issued auth response cannot grant access.
+  // Membership and paused access are read from the database on every request;
+  // a previously issued auth response cannot grant workspace access.
   return { ...session, user: { ...session.user, ...artist } };
 }
 
 /** Every workspace API and action must use this active account boundary. */
 export async function getSession() {
   const session = await getIdentitySession();
-  return session?.user.activatedAt ? session : null;
+  return session?.user.activatedAt && !session.user.deactivatedAt ? session : null;
 }
 
 export async function requireSession() {
   const session = await getIdentitySession();
   if (!session) redirect("/sign-in");
+  if (session.user.deactivatedAt) redirect("/account-paused");
   if (!session.user.activatedAt) redirect("/join");
   return session;
 }

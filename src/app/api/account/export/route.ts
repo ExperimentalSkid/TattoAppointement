@@ -11,7 +11,7 @@ export async function GET() {
   const logs = await exportAccountDiagnostics(artistId);
   if (!logs) return Response.json({ error: "unavailable" }, { status: 503, headers: { "Cache-Control": "private, no-store" } });
   const [profile, clients, designs, appointments, payments, accounts, sessions, invitationsCreated, invitationsRedeemed] = await prisma.$transaction([
-    prisma.user.findUniqueOrThrow({ where: { id: artistId }, select: { id: true, name: true, studioName: true, email: true, emailVerified: true, image: true, language: true, whatsappReminderTemplate: true, createdAt: true, updatedAt: true, activatedAt: true, lastSignInAt: true, diagnosticsConsent: true, diagnosticsConsentUpdatedAt: true, diagnosticsConsentNoticeVersion: true } }),
+    prisma.user.findUniqueOrThrow({ where: { id: artistId }, select: { id: true, name: true, studioName: true, email: true, emailVerified: true, image: true, language: true, whatsappReminderTemplate: true, createdAt: true, updatedAt: true, activatedAt: true, deactivatedAt: true, lastSignInAt: true, diagnosticsConsent: true, diagnosticsConsentUpdatedAt: true, diagnosticsConsentNoticeVersion: true } }),
     prisma.client.findMany({ where: { artistId }, orderBy: { createdAt: "asc" } }),
     prisma.design.findMany({ where: { artistId }, orderBy: { createdAt: "asc" }, select: { id: true, title: true, notes: true, originalName: true, mimeType: true, fileSize: true, createdAt: true, updatedAt: true } }),
     prisma.appointment.findMany({ where: { artistId, client: { artistId } }, orderBy: { startsAt: "asc" }, include: { designs: { where: { design: { artistId } }, select: { designId: true, isFinal: true } } } }),

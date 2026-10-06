@@ -127,6 +127,18 @@ try {
   check(response.status, 200, "Signup remains valid before the new user is visible outside its transaction");
   loginCookies(response, false);
   const defaultUser = state.database.user.find(user => user.email === "default@example.com");
+  const pausedAt = new Date("2026-10-06T09:00:00.000Z");
+  defaultUser.deactivatedAt = pausedAt;
+  response = await request("/update-user", { name: defaultUser.name, deactivatedAt: null }, defaultJar);
+  check(response.status, 200);
+  check(defaultUser.deactivatedAt, pausedAt, "Auth profile updates cannot override administrator-paused workspace access");
+  response = await request("/sign-in/email", { email: defaultUser.email, password }, defaultJar);
+  check(response.status, 200, "Paused artists can authenticate for their own privacy rights");
+  check("deactivatedAt" in (await response.json()).user, false, "Private access administration is not returned by the auth provider");
+  loginCookies(response, false);
+  response = await request("/get-session", null, defaultJar);
+  check("deactivatedAt" in (await response.json()).user, false, "Workspace boundaries read fresh access state rather than auth output");
+  defaultUser.deactivatedAt = null;
   const defaultProfileVersion = new Date(defaultUser.updatedAt).getTime();
   const defaultSignInAt = new Date(defaultUser.lastSignInAt).getTime();
   check(defaultUser.lastSignInAt != null, true, "A successful signup must not leave a null sign-in timestamp");

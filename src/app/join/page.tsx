@@ -1,4 +1,5 @@
 import { AuthShell } from "@/components/auth-shell";
+import { redirect } from "next/navigation";
 import { ActiveJoinRedirect, JoinActivation } from "@/components/join-activation";
 import { BetaNotice } from "@/components/beta-notice";
 import { getDictionary } from "@/i18n";
@@ -9,6 +10,7 @@ export const metadata = { title: "Join Tinta", referrer: "no-referrer" as const 
 
 export default async function JoinPage() {
   const identity = await getIdentitySession();
+  if (identity?.user.deactivatedAt) redirect("/account-paused");
   const { locale, dictionary } = await getDictionary();
   const es = locale === "es";
   if (identity?.user.activatedAt) return <AuthShell locale={locale} languageLabel={dictionary.language}><ActiveJoinRedirect locale={locale} /></AuthShell>;

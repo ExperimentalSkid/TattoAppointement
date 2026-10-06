@@ -6,7 +6,7 @@ import { isAllowedStudioEmail } from "@/lib/studio-access";
 
 export class InvitationAccessError extends Error {}
 
-const identitySelection = { id: true, email: true, emailVerified: true, activatedAt: true, deletionRequestedAt: true } as const;
+const identitySelection = { id: true, email: true, emailVerified: true, activatedAt: true, deactivatedAt: true, deletionRequestedAt: true } as const;
 const invitationSelection = { id: true, createdAt: true, expiresAt: true, revokedAt: true, redeemedAt: true } as const;
 
 async function lockIdentity(tx: Prisma.TransactionClient, userId: string) {
@@ -54,6 +54,7 @@ export async function redeemInvitation(userId: string, code: string) {
   return prisma.$transaction(async tx => {
     const user = await lockIdentity(tx, userId);
     if (!user || user.deletionRequestedAt || !isAllowedStudioEmail(user.email)) throw new InvitationAccessError("unauthorized");
+    if (user.deactivatedAt) return { status: "account_paused" as const };
     if (user.activatedAt) return { status: "already_active" as const };
 
     const now = new Date();

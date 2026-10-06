@@ -13,7 +13,7 @@ import { BetaNotice } from "@/components/beta-notice";
 export default async function SignInPage({ searchParams }: { searchParams: Promise<{ error?: string | string[] }> }) {
   const session = await getIdentitySession();
   if (session) {
-    redirect(session.user.activatedAt ? "/calendar" : "/join");
+    redirect(session.user.deactivatedAt ? "/account-paused" : session.user.activatedAt ? "/calendar" : "/join");
   }
 
   const { locale, dictionary } = await getDictionary();

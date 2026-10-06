@@ -13,7 +13,7 @@ import { invitationsRequired } from "@/lib/beta-access";
 export default async function SignUpPage() {
   const session = await getIdentitySession();
   if (session) {
-    redirect(session.user.activatedAt ? "/calendar" : "/join");
+    redirect(session.user.deactivatedAt ? "/account-paused" : session.user.activatedAt ? "/calendar" : "/join");
   }
   if (process.env.DISABLE_SIGN_UP === "true") {
     redirect("/sign-in");

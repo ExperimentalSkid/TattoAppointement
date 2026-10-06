@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { invitationsRequired, getTintaAdminUserId, isTintaAdminIdentity } from "../src/lib/beta-access.ts";
+import { invitationsRequired, getTintaAdminUserId, isTintaAdminIdentity, isArtistAccessId, parseArtistAccessChange } from "../src/lib/beta-access.ts";
 import { createInvitationCode, hashInvitationCode, normalizeInvitationCode, parseInvitationCreation,
   parseInvitationRedemption, isInvitationId, invitationAttemptState, INVITATION_ATTEMPT_WINDOW_MS } from "../src/lib/invitation-code.ts";
 
@@ -21,12 +21,25 @@ try {
   assert.equal(isTintaAdminIdentity({ ...admin, id: "other-id", name: "Kim", email: "kim@example.com" }), false);
   assert.equal(isTintaAdminIdentity({ ...admin, emailVerified: false }), false);
   assert.equal(isTintaAdminIdentity({ ...admin, activatedAt: null }), false);
+  assert.equal(isTintaAdminIdentity({ ...admin, deactivatedAt: new Date() }), false);
   assert.equal(isTintaAdminIdentity({ ...admin, deletionRequestedAt: new Date() }), false);
   for (const invalid of [" verified-admin-id", "verified-admin-id ", "id@example.com", "", "a".repeat(129)]) {
     process.env.TINTA_ADMIN_USER_ID = invalid;
     assert.equal(getTintaAdminUserId(), null);
     assert.equal(isTintaAdminIdentity(admin), false);
   }
+
+  const pausedAt = "2026-10-06T09:00:00.000Z";
+  assert.deepEqual(parseArtistAccessChange({ enabled: false, expectedDeactivatedAt: null }), { enabled: false, expectedDeactivatedAt: null });
+  assert.deepEqual(parseArtistAccessChange({ enabled: true, expectedDeactivatedAt: pausedAt }), { enabled: true, expectedDeactivatedAt: pausedAt });
+  for (const invalid of [null, [], {}, { enabled: true }, { enabled: "true", expectedDeactivatedAt: null },
+    { enabled: true, expectedDeactivatedAt: null, role: "admin" }, { enabled: false, expectedDeactivatedAt: "invalid" },
+    { enabled: true, expectedDeactivatedAt: "2026-02-29T09:00:00.000Z" }, { enabled: true, expectedDeactivatedAt: "2026-10-06T09:00:00Z" },
+    { enabled: true, expectedDeactivatedAt: "2026-10-06T11:00:00.000+02:00" }, { enabled: true, expectedDeactivatedAt: 0 }]) {
+    assert.equal(parseArtistAccessChange(invalid), null, "Only exact bounded access instructions are accepted");
+  }
+  assert.equal(isArtistAccessId("tinta-e2e-admin"), true);
+  for (const invalid of ["", "../private", "id@example.com", "a".repeat(129), 123]) assert.equal(isArtistAccessId(invalid), false);
 
   const code = createInvitationCode();
   assert.match(code, /^TINTA-[0-7][0123456789ABCDEFGHJKMNPQRSTVWXYZ]{4}(?:-[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{5}){3}-[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{6}$/);

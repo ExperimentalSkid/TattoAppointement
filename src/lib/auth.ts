@@ -72,7 +72,7 @@ export const auth = betterAuth({
           if (!isAllowedStudioEmail(user.email)) {
             throw new APIError("FORBIDDEN", { code: "STUDIO_ACCESS_DENIED", message: "This account is not authorized for this installation." });
           }
-          return { data: { image: null, activatedAt: invitationsRequired() ? null : new Date(), lastSignInAt: null } };
+          return { data: { image: null, activatedAt: invitationsRequired() ? null : new Date(), deactivatedAt: null, lastSignInAt: null } };
         },
       },
       update: {
@@ -178,6 +178,12 @@ export const auth = betterAuth({
         input: false,
       },
       lastSignInAt: {
+        type: "date",
+        required: false,
+        input: false,
+        returned: false,
+      },
+      deactivatedAt: {
         type: "date",
         required: false,
         input: false,

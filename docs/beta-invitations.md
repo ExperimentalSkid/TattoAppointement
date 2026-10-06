@@ -34,6 +34,15 @@ The admin link opens `/admin`, with Invitations, Artists and Reports:
   refreshes are not sign-ins. Totals are stored records, not audience analytics.
   No client contacts, notes, artwork files, bank details or user impersonation
   are exposed by the panel. Artists paginate fifty at a time.
+- Pause or restore an activated artist's workspace with the access switch. A
+  pause preserves their records, sessions and original invitation membership.
+  Every workspace request reads the current pause state; an open device clears
+  its workspace on the next visible sync check and opens the paused-account page.
+  They can still authenticate, export their own account or request erasure.
+  Another invitation cannot override a pause. Your operator account, pending
+  invitations and accounts awaiting erasure cannot be changed with this switch.
+  Concurrent changes use the observed pause timestamp; a stale switch refreshes
+  its state instead of overwriting the newer change.
 - Review the latest fifty explicitly submitted reports within thirty days:
   account, page, reported/received time, device category, release and reference.
   Text is escaped. Read errors display unavailable, never a false empty state.
@@ -47,7 +56,7 @@ pending, not invented.
 
 ## Activation and privacy
 
-The session boundary re-reads `activatedAt` from PostgreSQL on every workspace
+The session boundary re-reads `activatedAt` and `deactivatedAt` from PostgreSQL on every workspace
 request. Pending identities can only authenticate, activate and manage their own
 registration privacy; opening a workspace page redirects to `/join`, while its
 private APIs reject access. Activation and account erasure take the same user
@@ -67,6 +76,8 @@ invitation metadata without code hashes or anyone else's identity.
 The additive migration backfills existing artists' activation from their account
 creation date. Future invitation-gated authentication explicitly writes NULL
 until redemption; no existing records, sessions or artist IDs are reset.
+The access migration adds a nullable pause timestamp, leaving all existing
+accounts unpaused. Changing access does not alter the profile's edit version.
 
 Take and verify the usual matched database/artwork backup before applying the
 migration and replacing the app. Preserve the existing auth secret and providers.
@@ -74,10 +85,10 @@ After a release, verify the configured operator is active/verified, anonymous
 admin access is denied, new registration is pending, and activation succeeds with
 a disposable invitation/account. Erase QA identities and revoke unused QA codes.
 
-An older app image does not enforce activation. If emergency rollback is needed,
+An older app image may not enforce activation or paused access. If emergency rollback is needed,
 close new registration in the restored configuration, revoke sessions belonging
-to pending identities, and enforce a temporary database session-insert guard for
-those pending identities before serving the old image. Active artists may keep
+to pending or paused identities, and enforce a temporary database session-insert guard for
+those pending or paused identities before serving the old image. Active artists may keep
 using their workspaces. Never restore an older open-registration image while
 pending identities can obtain sessions. Remove only the temporary guard when
 the new activation-aware app is verified healthy again. Do not reset live data or
